@@ -4,12 +4,13 @@
  * as SCENARIO.md describes. The campaign simulation (src/campaign) runs only while playing;
  * the screen reads its state and sends commands, it never edits it.
  */
-import { loadStrings, t } from './flow/strings.js';
+import { loadStrings, setStringVars, t } from './flow/strings.js';
+import { earthMarsLinkForSol, formatDelay } from './data/nasa/lightTime.js';
 import { loadAtlas } from './render/atlas.js';
 import { drawCampaign, buildSoil, createWalker, SCREEN } from './render/campaign-world.js';
 import { ROVER, arrived, place as placeBody } from './render/movers.js';
 import { garageSpots, entryGeometry } from './render/geometry.js';
-import { createCampaign, step, command } from './campaign/engine.js';
+import { createCampaign, step, command, clockAt } from './campaign/engine.js';
 import { SECONDS_PER_SOL, SOL, RECIPES } from './campaign/data.js';
 import { openingFrameAt, cuesBetween, skipTarget, T, GAMEPLAY_VIEW, INTRO_TEXT, introTextAt, flowStateAt, astronautPathAt, entryDoorsAt } from './flow/intro.js';
 import { createGuide, say } from './flow/astra.js';
@@ -83,6 +84,17 @@ muteBtn?.addEventListener('click', () => { audio.unlock(); audio.director.toggle
 if (muteBtn) showMute();
 
 // ------------------------------------------------------------------ helpers
+
+// {delay} in ASTRA lines and the antenna counter: the real Earth-Mars one-way light time on the
+// current Sol (NASA/JPL Keplerian elements, label: approximation). Recomputed once per Sol.
+let delaySol = 0, delaySeconds = 840;
+function updateLightTime() {
+  const { sol } = clockAt(s.minute);
+  if (sol === delaySol) return;
+  delaySol = sol;
+  delaySeconds = earthMarsLinkForSol(sol).oneWaySeconds;
+  setStringVars({ delay: formatDelay(delaySeconds) });
+}
 
 let toastShowing = null; // { prio, until } of the message on the screen
 const toastQueue = []; // lower-priority messages that arrived while a warning was showing
@@ -176,7 +188,7 @@ function openMini(game, { onDone = null } = {}) {
   const win = () => { closeMini(); finish(true); onDone?.(true); };
   if (game === 'solar_wipe') mini = startSolarWipe({ ...common, title: t('ui.mg.solar_wipe.title'), hint: 'Tap the sparkly clumps to zap them, then swipe to wipe.', onWin: () => { closeMini(); onSolarWin(); onDone?.(true); } });
   else if (game === 'battery') mini = startBatteryStep({ ...common, title: 'Wake up Drone #01', hint: 'Drag the charged battery into the hatch, then plug in the cable.', onDone: () => { closeMini(); onBatteryDone(); } });
-  else if (hasMini2(game)) mini = startMini2(game, { ...common, title: miniTitle(game), hint: 'Follow the one-line instruction at the top. You have time!', onWin: win, onFail: () => finish(false) });
+  else if (hasMini2(game)) mini = startMini2(game, { ...common, delaySeconds, title: miniTitle(game), hint: 'Follow the one-line instruction at the top. You have time!', onWin: win, onFail: () => finish(false) });
   else { toast('That job is not ready yet.'); $('mgWrap').hidden = true; }
 }
 function closeMini() {
@@ -480,6 +492,7 @@ function loop(now) {
       }
     }
     if (mode === 'play' && Math.floor(now / 1000) !== loop.lastSec) { loop.lastSec = Math.floor(now / 1000); checkAllBadges(); }
+    if (s) updateLightTime();
     audio.director.tick({ s, mode });
     if (extras) extras.update(mode === 'play');
     if (ui && (mode === 'tutorial' || mode === 'play')) { ui.update(); $('hud').hidden = false; if (mode === 'play') $('side').hidden = false; }

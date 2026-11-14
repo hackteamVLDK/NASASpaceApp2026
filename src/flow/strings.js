@@ -5,14 +5,28 @@
  * Code references IDs, never English text.
  */
 let table = {};
+let vars = {};
 
 export function setStrings(obj) {
   table = obj;
 }
 
-/** English text for a line ID. An unknown ID is returned as is, so a missing line is visible. */
-export function t(id) {
-  return Object.hasOwn(table, id) ? table[id] : id;
+/**
+ * Values for `{name}` placeholders in the lines, e.g. `{ delay: '14 min 10 s' }` (the Earth-Mars
+ * light time on the current Sol). Merged into the current set.
+ */
+export function setStringVars(obj) {
+  vars = { ...vars, ...obj };
+}
+
+/**
+ * English text for a line ID, with `{name}` placeholders filled from `setStringVars` and `extra`.
+ * An unknown ID is returned as is, so a missing line is visible; an unknown placeholder stays visible too.
+ */
+export function t(id, extra) {
+  if (!Object.hasOwn(table, id)) return id;
+  const v = extra ? { ...vars, ...extra } : vars;
+  return table[id].replace(/\{(\w+)\}/g, (m, k) => (Object.hasOwn(v, k) ? String(v[k]) : m));
 }
 
 export const hasString = (id) => Object.hasOwn(table, id);
