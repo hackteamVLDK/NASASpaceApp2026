@@ -227,7 +227,7 @@ export async function loadAtlas(onProgress = () => {}) {
       ctx.save();
       ctx.globalAlpha = alpha;
       const cx = x;
-      const dy = anchor === 'center' ? y - dh / 2 : y - dh; // feet (frame bottom) on the baseline
+      const dy = anchor === 'center' ? y - dh / 2 : anchor === 'top' ? y : y - dh; // feet (frame bottom) on the baseline; 'top' hangs the frame below y
       if (flip) { ctx.translate(cx, 0); ctx.scale(-1, 1); ctx.translate(-cx, 0); }
       ctx.drawImage(src, own.x, own.y, own.w, own.h, cx - dw / 2, dy, dw, dh);
       ctx.restore();

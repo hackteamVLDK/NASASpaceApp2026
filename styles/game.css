@@ -113,3 +113,9 @@ button:hover { background:#1a4668; } button:disabled { opacity:.45; cursor:defau
 #g-power { flex: 1.5; } #g-power .val { white-space: nowrap; }
 
 #toast.alert { border-color: #ff5252; background: #2a0f12; box-shadow: 0 0 24px #ff525288; }
+/* A14: thin, semi-transparent scroll bars in the icon colour on every scrolling text box */
+#stage * { scrollbar-width: thin; scrollbar-color: rgba(0,229,255,.45) transparent; }
+#stage ::-webkit-scrollbar { width: 8px; height: 8px; }
+#stage ::-webkit-scrollbar-track { background: transparent; }
+#stage ::-webkit-scrollbar-thumb { background: rgba(0,229,255,.4); border-radius: 4px; }
+#stage ::-webkit-scrollbar-thumb:hover { background: rgba(0,229,255,.65); }
