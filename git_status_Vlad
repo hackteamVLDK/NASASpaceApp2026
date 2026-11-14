@@ -1,10 +1,8 @@
 # git_status_Vlad
 
 ## DOING NOW
-- Waiting for `gh auth login` to open PRs. All branches pushed; merge in this order (each is based on the previous):
-  1. content/science-fact-check  2. content/scenario-open-items  3. content/characters
-  4. content/astra-voice (also changes AGENTS.md: one paragraph pointing to the ASTRA voice guide)
-  5. content/readability (readability pass for ages 7-8 + review fixes for 3-5)
+- Nothing in progress. All five SCENARIO branches are merged into main (PRs #2-#4; fact-check and
+  open-items came in with them). main tests: 85/88 (the 3 old flow tests).
 - content/space-apps-submission: parked until the end of the hackathon.
 
 ## FOR MYKHAILO (sim / flow / assets)
@@ -42,7 +40,7 @@
 - Show the team the 'needs fix' science rows; apply agreed fixes to SCENARIO.md in a separate PR.
 
 ## FILES / FOLDERS I AM EDITING (please do not edit these right now)
-- content/, SCENARIO.md (until both PRs are merged)
+- content/ (SCENARIO.md is free again)
 
 ## FREE FOR OTHERS
 - Everything else. I am not touching docs/ (Mykhailo owns it).

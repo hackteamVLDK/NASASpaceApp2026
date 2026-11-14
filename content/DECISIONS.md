@@ -22,3 +22,4 @@ files, so every task branch can add to it without merge conflicts.
 - 2026-11-14 · Codex review (tasks 1–3): accepted 4 findings, with finding 1 only partly (cards use the 20-word 8.1 limit, not 15) · details in content/ai-collaboration/records/20261114-characters-voice-readability-review.md.
 - 2026-11-14 · EVA art keeps the existing gold-tinted visor; no helmet head overlay · consistent with crew.eva; crew told apart by stripe colour.
 - 2026-11-14 · No PRs opened or merged: gh still not logged in · user's rule; branches are pushed and ready.
+- 2026-11-14 · gh logged in; no new PRs opened · the user had already merged #2–#4 into main, which (stacked) brought in all 5 branches; main tests 85/88 as expected.
