@@ -19,6 +19,9 @@ export const SURFACE = Object.freeze({
   mound: [{ x: 1830, w: 170, flip: false }, { x: 1790, w: 130, flip: true }], // the cutscene only: SCENARIO has Drones #02 and #03 in the Garage after it
 });
 
+/** The flying lander is drawn a little narrower than the landed one (the landed picture has its legs out). */
+export const LANDER_FLIGHT_W = SURFACE.lander.w - 20;
+
 /** How tall a body is drawn (about 1.85 m is 92 units: half of the first version, which towered over doors and beds). */
 export const PERSON_H = 92;
 export const DRONE_H = 66;
