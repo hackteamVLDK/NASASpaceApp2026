@@ -97,8 +97,10 @@ export function onSol(s, emit, now, rand) {
     if (sol - (s.flags.lastEvent[ev.id] ?? -99) < ev.cooldown) continue;
     if (rand() >= ev.chance) continue;
     s.flags.lastEvent[ev.id] = sol;
-    if (ev.id === 'e1' && s.modules.lab.tier === 2) { say(emit, 'astra.e1.watch', 'curious'); s.flags.flareWarned = true; }
-    after(s, at(sol, 10), `event:${ev.id}`);
+    // D-T17g: the Lab T2 forecast comes one Sol early (6, E1) and is used up when that flare is answered
+    const forecast = ev.id === 'e1' && s.modules.lab.tier === 2;
+    if (forecast) { say(emit, 'astra.e1.watch', 'curious'); s.flags.flareWarned = true; }
+    after(s, at(forecast ? sol + 1 : sol, 10), `event:${ev.id}`);
     break;
   }
 }
@@ -239,6 +241,7 @@ export function applyChoice(s, pending, choice, emit, rand) {
   const key = `${pending.id}${choice}`;
   const { sol } = clockAt(s.minute);
   if (pending.id === 'e1' || pending.id === 'd5') s.flags.flare = false;
+  if (pending.id === 'e1') s.flags.flareWarned = false; // the forecast was for this flare
   const follow = (lineId, mood = 'cheerful') => say(emit, lineId, mood);
   switch (key) {
     // ---- Dilemma 1: the dust storm
@@ -329,7 +332,7 @@ export function applyChoice(s, pending, choice, emit, rand) {
     case 'e3b': setRes(s, 'sp', -1); s.mods = s.mods.filter((m) => m.id !== 'leak' && m.id !== 'leak_w'); after(s, s.minute + 3 * SOL, 'leak_returns'); follow('astra.e3.b'); break; // the tape stops the leak at once
     case 'e3c': s.flags.noLaunchUntil = s.minute + SOL; droneChore(s, emit, 'leak', 'garage', 1); follow('astra.e3.c'); break; // a drone fixes the leak (1 Sol)
     // ---- Event 4: nutrient drift
-    case 'e4a': addTask(s, 'nutrient_match', 'Match the nutrients.'); s.mult.food = 0.6; s.flags.freshOff = true; break;
+    case 'e4a': addTask(s, 'nutrient_match', 'Match the nutrients.'); s.mult.food = 0.6; s.flags.freshOff = true; s.flags.e4aFix = true; break; // astra.e4.a when the fix is won
     case 'e4b': setRes(s, 'water', -10); s.mult.food = 0.6; after(s, at(sol + 1, 6), 'drift_fixed'); follow('astra.e4.b'); break;
     case 'e4c': s.mult.food = 0.6; s.flags.freshOff = true; after(s, s.minute + 2 * SOL, 'drift_wilt'); break;
     default:
@@ -362,7 +365,7 @@ export function runTimer(s, id, emit) {
     case 'solar_normal': s.mult.solar = 1; break;
     case 'leak_returns': addMod(s, 'leak', 'oxygen', -2); addMod(s, 'leak_w', 'water', -1); break;
     case 'drift_fixed': s.mult.food = 1; break;
-    case 'drift_wilt': if (s.mult.food < 1) { setRes(s, 'food', -10); addTask(s, 'nutrient_match', 'The plants wilted. Fix the mix.'); } break; // nothing wilts if the mix was fixed in time
+    case 'drift_wilt': if (s.mult.food < 1) { setRes(s, 'food', -10); addTask(s, 'nutrient_match', 'The plants wilted. Fix the mix.'); say(emit, 'astra.e4.c', 'calm'); } break; // nothing wilts if the mix was fixed in time
     case 'harvest': say(emit, 'astra.act2.first_harvest', 'cheerful'); break;
     case 'd4_cold_end': s.flags.freshOff = false; s.mult.food = 1; break;
     case 'finale_earth': follow('astra.finale.earth'); after(s, s.minute + 60, 'finale_closing'); break;
@@ -405,7 +408,8 @@ export function onMini(s, { game, win }, emit) {
     s.stats.miniWins += 1;
     if (game === 'solar_wipe') s.stats.wipes += 1;
     setRes(s, 'sp', 2);
-    if (!rec[game]) { rec[game] = true; if (MINI_LINES[game]) say(emit, MINI_LINES[game], 'cheerful'); } else emit({ type: 'toast', text: 'Nice work!' });
+    if (game === 'nutrient_match' && s.flags.e4aFix) { rec[game] = true; s.flags.e4aFix = false; say(emit, 'astra.e4.a', 'cheerful'); } // E4 A's own explanation
+    else if (!rec[game]) { rec[game] = true; if (MINI_LINES[game]) say(emit, MINI_LINES[game], 'cheerful'); } else emit({ type: 'toast', text: 'Nice work!' });
   }
   if (game === 'solar_wipe') {
     if (win) {

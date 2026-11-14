@@ -96,3 +96,24 @@ test('D-T17f: timed event effects last elapsed Sols, not until a calendar dawn',
   assert.ok(Math.abs(m.perSol + 0.2 * MODULES.greenhouse.t2.food) < 1e-9, 'D4 C: -20% of the Greenhouse food');
   assert.equal(m.untilMinute - d4c.minute, SOL);
 });
+
+test('D-T17g: ASTRA explains Dilemma 5 and Event 4 choices; the flare forecast is used once', async () => {
+  const { applyChoice, onMini } = await import('../src/campaign/story.js');
+  const { resolveD5 } = await import('../src/campaign/expeditions.js');
+  for (const c of ['a', 'b', 'c']) {
+    const s = createCampaign();
+    s.away = { end: s.minute + 600, decisionDone: false }; s.flags.d5Choice = c;
+    const ev = []; resolveD5(s, (e) => ev.push(e));
+    assert.ok(ev.some((e) => e.lineId === `astra.d5.${c}`), `astra.d5.${c}`);
+  }
+  const s = createCampaign();
+  s.modules.greenhouse.status = 'online';
+  applyChoice(s, { kind: 'event', id: 'e4' }, 'a', () => {}, () => 0.5);
+  const ev = []; onMini(s, { game: 'nutrient_match', win: true }, (e) => ev.push(e));
+  assert.deepEqual(ev.filter((e) => e.type === 'astra').map((e) => e.lineId), ['astra.e4.a']);
+  const w = createCampaign();
+  applyChoice(w, { kind: 'event', id: 'e1' }, 'a', () => {}, () => 0.5);
+  w.flags.flareWarned = true;
+  applyChoice(w, { kind: 'event', id: 'e1' }, 'c', () => {}, () => 0.5);
+  assert.equal(w.flags.flareWarned, false, 'the forecast is used up by the flare it was for');
+});
