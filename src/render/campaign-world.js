@@ -11,7 +11,7 @@ import { LAYOUT, MODULES } from '../campaign/data.js';
 import { clockAt, isDay, online } from '../campaign/util.js';
 import { ICON } from './atlas.js';
 import { buildSoil, SCREEN, CREW_COLORS, DRONE_BUMPERS, SOIL } from './world.js';
-import { SURFACE, PERSON_H, DRONE_H, SHAFT_X, GROUND_Y, roomRect, anchor, feetY, bedroomSpots, garageSpots, baseBottom, rightWingWidth } from './geometry.js';
+import { SURFACE, PERSON_H, DRONE_H, SHAFT_X, GROUND_Y, LADDER, roomRect, anchor, feetY, bedroomSpots, garageSpots, baseBottom, rightWingWidth } from './geometry.js';
 import { onSurface, createMover, setGoal, advance, place as placeAt, arrived, roverPose, ROVER } from './movers.js';
 
 export { SCREEN, buildSoil, roomRect, anchor };
@@ -28,6 +28,18 @@ const ROOMS_WITH_CONSOLE = ['workshop', 'lab', 'garage', 'battery', 'greenhouse'
 
 /** The Commander's body (see movers.js): it walks the base by the shaft. */
 export const createWalker = createMover;
+
+/** The climbing frame whose reaching hands decide where a climber hangs on the ladder, per crew sheet (the painted ladder is cut out, see ladders.js). */
+const CLIMB_REF = { crewEva: 16, crewIndoor: 18 };
+
+/**
+ * How far (world units) a climber moves from the middle of the shaft so that his reaching hands are on the shaft's ladder (A31).
+ * The frames face right, the hands are the right edge of the sprite; `box` is the shared box that scales the person.
+ */
+function climbShift(atlas, sheet, box) {
+  if (!atlas.has(sheet)) return 0;
+  return LADDER.gripX - atlas.spriteWidth(sheet, CLIMB_REF[sheet], { h: PERSON_H, box }) / 2 - SHAFT_X;
+}
 
 /**
  * Draw one frame. S: { s (campaign state), cx, cy, zoom, shake, nowMs, worldMs, dtMs (world time that passed),
@@ -217,7 +229,10 @@ export function drawCampaign(ctx, atlas, S) {
         else if (eva) frame = s.where === 'outside' ? 8 + (tick % 4) : frame;
         else if (s.where === 'kitchen' && [6, 12, 18].includes(clock.hour)) { frame = 12 + (Math.floor(wm / 450) % 2); still = true; }
         else if (ROOMS_WITH_CONSOLE.includes(s.where)) { frame = 8 + (tick % 4); still = true; }
-        atlas.sprite(ctx, sheet, frame, w.pos.x, w.pos.y, { h: PERSON_H, box, flip: !still && Boolean(w.faceLeft), sheet: tinted });
+        // on the ladder he hangs on its right rail: he slides there when the climb starts and back when it ends (render only)
+        w.grip = Math.min(1, Math.max(0, (w.grip ?? 0) + (w.climbing ? dt : -dt) / LADDER.easeMs));
+        const x = w.pos.x + (w.grip > 0 ? climbShift(atlas, sheet, box) * w.grip : 0);
+        atlas.sprite(ctx, sheet, frame, x, w.pos.y, { h: PERSON_H, box, flip: !still && !w.climbing && Boolean(w.faceLeft), sheet: tinted });
         hits.push({ id: 'crew:cmdr', x: w.pos.x - 45, y: w.pos.y - PERSON_H - 25, w: 90, h: PERSON_H + 35 });
       }
     }
@@ -226,7 +241,9 @@ export function drawCampaign(ctx, atlas, S) {
     const A = cut.astronaut.pose;
     if (A.visible) {
       const sheet = A.sheet;
-      atlas.sprite(ctx, sheet, A.frame, A.x, A.y, { h: PERSON_H, box: atlas.unionBox(sheet, [0, 1, 2, 3, 4, 5, 6, 7]), flip: A.flip, sheet: atlas.tinted(sheet, CREW_COLORS.cmdr) });
+      const box = atlas.unionBox(sheet, [0, 1, 2, 3, 4, 5, 6, 7]);
+      const x = A.x + (A.grip ? climbShift(atlas, sheet, box) * A.grip : 0); // on the ladder, hands on its right rail (A31)
+      atlas.sprite(ctx, sheet, A.frame, x, A.y, { h: PERSON_H, box, flip: A.flip, sheet: atlas.tinted(sheet, CREW_COLORS.cmdr) });
     }
   }
 

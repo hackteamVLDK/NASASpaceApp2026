@@ -201,6 +201,7 @@ export const ENTRY = Object.freeze({
   helmetHeldAt: 30.6, // holds it under the arm
   standsAt: 31.2, // then stands about
   walkFps: 6.25, // walking and climbing frames per second
+  gripEaseS: 0.2, // at the bottom of the shaft he lets go of the ladder over this long (the renderer slides him off its rail)
 });
 
 /** The open or closed hatch of the dome. */
@@ -211,7 +212,8 @@ export function entryDoorsAt(sec) {
 /**
  * Where the astronaut is and what he looks like at time `sec`, for any time, in any order (it is a pure function).
  * `geo` comes from src/render/geometry.js: { landerHatch, landerExit, domeHatch, shaftTop, shaftBottom, bedroomStand },
- * each { x, y } feet. Returns { visible, x, y, sheet ('crewEva' | 'crewIndoor'), frame, flip, phase }.
+ * each { x, y } feet. Returns { visible, x, y, sheet ('crewEva' | 'crewIndoor'), frame, flip, phase }, and `grip` (0-1) while he is on the
+ * ladder: how far he hangs on its rail instead of the middle of the shaft (1 all the way down, easing to 0 as he steps off).
  */
 export function astronautPathAt(sec, geo) {
   const E = ENTRY;
@@ -223,7 +225,7 @@ export function astronautPathAt(sec, geo) {
   if (sec < E.atDomeAt) { const p = lerpPt(geo.landerExit, geo.domeHatch, unit(sec, E.walksToDomeAt, E.atDomeAt)); return { visible: true, ...p, sheet: 'crewEva', frame: walkFrame(E.walksToDomeAt), flip: true, phase: 'walks to the dome' }; }
   if (sec < E.hatchClosesAt) return { visible: true, ...geo.domeHatch, sheet: 'crewEva', frame: Math.floor(sec * 2) % 2, flip: true, phase: 'at the hatch' };
   if (sec < E.insideUntil) return { ...none, phase: 'inside' };
-  if (sec < E.shaftBottomAt) { const p = lerpPt(geo.shaftTop, geo.shaftBottom, unit(sec, E.insideUntil, E.shaftBottomAt)); return { visible: true, ...p, sheet: 'crewEva', frame: 16 + (Math.floor((sec - E.insideUntil) * E.walkFps) % 2), flip: false, phase: 'climbs down' }; }
+  if (sec < E.shaftBottomAt) { const p = lerpPt(geo.shaftTop, geo.shaftBottom, unit(sec, E.insideUntil, E.shaftBottomAt)); return { visible: true, ...p, sheet: 'crewEva', frame: 16 + (Math.floor((sec - E.insideUntil) * E.walkFps) % 2), flip: false, grip: Math.min(1, (E.shaftBottomAt - sec) / E.gripEaseS), phase: 'climbs down' }; }
   if (sec < E.atBedroomAt) { const p = lerpPt(geo.shaftBottom, geo.bedroomStand, unit(sec, E.shaftBottomAt, E.atBedroomAt)); return { visible: true, ...p, sheet: 'crewEva', frame: walkFrame(E.shaftBottomAt), flip: true, phase: 'walks into the Bedroom' }; }
   const at = { visible: true, ...geo.bedroomStand, flip: false };
   if (sec < E.helmetOffAt) return { ...at, sheet: 'crewEva', frame: 0, phase: 'stands, helmet on' };
