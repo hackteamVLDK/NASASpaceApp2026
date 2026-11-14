@@ -268,9 +268,15 @@ test('the mini-game rewards: +2 Spare Parts per win, the explanation only the fi
   const a = command(s, { type: 'miniResult', game: 'solar_wipe', win: true });
   assert.equal(s.res.sp, 62);
   assert.ok(a.events.some((e) => e.type === 'astra' && e.lineId === 'astra.mg.solar_wipe'));
+  s.tasks.push({ game: 'solar_wipe', why: 'Dust on the panels.' }); // the base asks for it again
   const b = command(s, { type: 'miniResult', game: 'solar_wipe', win: true });
   assert.equal(s.res.sp, 64);
   assert.ok(b.events.every((e) => e.type !== 'astra'));
+  // A game the base did not ask for is refused: no free Spare Parts from repeating wins.
+  const c = command(s, { type: 'miniResult', game: 'solar_wipe', win: true });
+  assert.equal(c.ok, false);
+  assert.equal(command(s, { type: 'miniResult', game: 'bogus', win: true }).ok, false);
+  assert.equal(s.res.sp, 64);
 });
 
 test('upgrades and recipes reference real strings and items', () => {

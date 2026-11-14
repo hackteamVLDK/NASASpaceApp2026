@@ -22,7 +22,11 @@ test('the autopilot reaches the Canyon Anomaly finale on several seeds', () => {
 
 test('every radio line of every expedition exists as a string', () => {
   for (const ex of Object.values(EXPEDITIONS)) {
-    if (ex.id === 'run') continue;
+    if (ex.radioPool) { // the repeatable runs pick one line from a pool: radio.run.<percent>.<variant>
+      for (const [mark, pool] of Object.entries(ex.radioPool)) for (const n of pool) assert.ok(hasString(`radio.run.${mark}.${n}`), `radio.run.${mark}.${n}`);
+      assert.ok(hasString(ex.nameId), ex.nameId);
+      continue;
+    }
     for (const mark of ex.radio) {
       const suffix = ex.radioIdMap ? ex.radioIdMap[mark] : String(mark).padStart(2, '0');
       const id = `radio.exp${ex.id}.${suffix}`;

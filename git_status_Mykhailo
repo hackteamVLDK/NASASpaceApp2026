@@ -31,6 +31,7 @@ file set and say which in a line below this block (or in git_status_Pavlo).
   "in the same style"). The team generates images and drops them in assets/incoming/.
 
 ## DOING NOW
+- 2026-11-14 21:38: Resuming the paused Git sync at the user's request. No source files are being edited for this operational task.
 - Done: the playable game on SCENARIO v2 (src/campaign = engine, story, expeditions, logbook; src/render, src/ui, src/main.js).
   npm run dev. The old src/sim is no longer used by the game. Review of animation and logic done (docs/REVIEW_2026-11-14.md):
   camera now shows the surface; Commander and drones walk by the shaft (src/render/movers.js); Rover drives out and in;
