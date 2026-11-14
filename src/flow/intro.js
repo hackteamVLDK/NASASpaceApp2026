@@ -267,7 +267,7 @@ export function cuesBetween(t0, t1) {
     const full = text(line.id);
     for (let k = 1; k <= full.length; k++) {
       const at = line.start + k / CRAWL_CHARS_PER_SECOND;
-      if (at > t0 && at <= t1 && full[k - 1] !== ' ') cues.push({ at, type: 'sfx', id: 'type-blip' });
+      if (at > t0 && at <= t1 && full[k - 1] !== ' ') cues.push({ at, type: 'sfx', id: 'type-blip', char: full[k - 1] });
     }
     const end = crawlLineEnd(i);
     if (line.bassBoom && end > t0 && end <= t1) cues.push({ at: end, type: 'sfx', id: 'bass-boom' });
