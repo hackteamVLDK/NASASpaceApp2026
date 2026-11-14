@@ -4,7 +4,7 @@
  * line ID (strings.js); this file only decides WHEN something happens and WHAT it changes.
  * Delayed effects are timers with a name (`runTimer`), so the whole state stays plain data.
  */
-import { SOL, MODULE_LINES, RECYCLER, BREAKDOWNS, BREAKDOWN_RULES } from './data.js';
+import { SOL, MODULES, MODULE_LINES, RECYCLER, BREAKDOWNS, BREAKDOWN_RULES } from './data.js';
 import { clockAt, online, at, addMod, after, clampTo, powerCapOf } from './util.js';
 
 const say = (emit, lineId, mood = 'calm') => emit({ type: 'astra', lineId, mood });
@@ -300,7 +300,7 @@ export function applyChoice(s, pending, choice, emit, rand) {
       s.flags.d4b = true;
       break;
     case 'd4c':
-      addMod(s, 'd4c_food', 'food', -2, at(sol + 1, 6));
+      addMod(s, 'd4c_food', 'food', -0.2 * MODULES.greenhouse[s.modules.greenhouse.tier === 2 ? 't2' : 't1'].food, s.minute + SOL); // D-T17f: Greenhouse food -20% for 1 Sol
       droneChore(s, emit, 'trays', 'kitchen', 0.5); // 1 drone for half a Sol
       setRes(s, 'morale', 5);
       follow('astra.d4.c');
@@ -320,18 +320,18 @@ export function applyChoice(s, pending, choice, emit, rand) {
     case 'e1c': { const h0 = s.hp; hurt(s, 1); s.stats.flares += 1; s.stats.flareMaxLoss = Math.max(s.stats.flareMaxLoss, h0 - s.hp); follow('astra.e1.c'); break; }
     // ---- Event 2: dust devil
     case 'e2a':
-      if (rand() < 0.5) { s.mult.solar = 1.2; after(s, at(sol + 3, 6), 'solar_normal'); follow('astra.e2.a.clean'); } else { s.mult.solar = 0.7; addTask(s, 'solar_wipe', 'The dust devil dumped dust on the panels.'); follow('astra.e2.a.dusty', 'calm'); }
+      if (rand() < 0.5) { s.mult.solar = 1.2; after(s, s.minute + 3 * SOL, 'solar_normal'); follow('astra.e2.a.clean'); } else { s.mult.solar = 0.7; addTask(s, 'solar_wipe', 'The dust devil dumped dust on the panels.'); follow('astra.e2.a.dusty', 'calm'); }
       break;
-    case 'e2b': s.mult.solar = 0.5; after(s, at(sol + 1, 6), 'solar_normal'); follow('astra.e2.b'); break;
-    case 'e2c': hurt(s, 5); s.mult.solar = 1.1; after(s, at(sol + 3, 6), 'solar_normal'); follow('astra.e2.c'); break;
+    case 'e2b': s.mult.solar = 0.5; after(s, at(sol + 1, 0), 'solar_normal'); /* the rest of this Sol */ follow('astra.e2.b'); break;
+    case 'e2c': hurt(s, 5); s.mult.solar = 1.1; after(s, s.minute + 3 * SOL, 'solar_normal'); follow('astra.e2.c'); break;
     // ---- Event 3: airlock micro-leak
     case 'e3a': addTask(s, 'valve_balance', 'Hunt the leak.'); break;
-    case 'e3b': setRes(s, 'sp', -1); s.mods = s.mods.filter((m) => m.id !== 'leak' && m.id !== 'leak_w'); after(s, at(sol + 3, 6), 'leak_returns'); follow('astra.e3.b'); break; // the tape stops the leak at once
-    case 'e3c': s.flags.noLaunchUntil = at(sol + 1, 6); droneChore(s, emit, 'leak', 'garage', 1); follow('astra.e3.c'); break; // a drone fixes the leak (1 Sol)
+    case 'e3b': setRes(s, 'sp', -1); s.mods = s.mods.filter((m) => m.id !== 'leak' && m.id !== 'leak_w'); after(s, s.minute + 3 * SOL, 'leak_returns'); follow('astra.e3.b'); break; // the tape stops the leak at once
+    case 'e3c': s.flags.noLaunchUntil = s.minute + SOL; droneChore(s, emit, 'leak', 'garage', 1); follow('astra.e3.c'); break; // a drone fixes the leak (1 Sol)
     // ---- Event 4: nutrient drift
     case 'e4a': addTask(s, 'nutrient_match', 'Match the nutrients.'); s.mult.food = 0.6; s.flags.freshOff = true; break;
     case 'e4b': setRes(s, 'water', -10); s.mult.food = 0.6; after(s, at(sol + 1, 6), 'drift_fixed'); follow('astra.e4.b'); break;
-    case 'e4c': s.mult.food = 0.6; s.flags.freshOff = true; after(s, at(sol + 2, 6), 'drift_wilt'); break;
+    case 'e4c': s.mult.food = 0.6; s.flags.freshOff = true; after(s, s.minute + 2 * SOL, 'drift_wilt'); break;
     default:
       if (pending.id === 'd5') s.flags.d5Choice = choice; // read by expeditions.js
   }

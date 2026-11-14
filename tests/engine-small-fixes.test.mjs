@@ -73,3 +73,26 @@ test('D-T17e: with every drone busy, the chore waits first in a queue', async ()
   assert.equal(s.drones[0].task.type, 'build');
   assert.equal(s.drones[0].queue[0].type, 'chore');
 });
+
+test('D-T17f: timed event effects last elapsed Sols, not until a calendar dawn', async () => {
+  const { applyChoice } = await import('../src/campaign/story.js');
+  const { SOL, MODULES } = await import('../src/campaign/data.js');
+  const pick = (id, choice, setup = () => {}) => {
+    const s = createCampaign();
+    command(s, { type: 'wakeDrone', drone: 'drone-01' });
+    step(s, 3 * 60); // 10:00 on Sol 1
+    setup(s);
+    applyChoice(s, { kind: 'event', id }, choice, () => {}, () => 0.1);
+    return s;
+  };
+  const e2c = pick('e2', 'c');
+  assert.equal(e2c.timers.find((t) => t.id === 'solar_normal').at - e2c.minute, 3 * SOL, 'E2 C: +10% for 3 whole Sols');
+  const e3c = pick('e3', 'c');
+  assert.equal(e3c.flags.noLaunchUntil - e3c.minute, SOL, 'E3 C: closed for 1 Sol');
+  const e2b = pick('e2', 'b');
+  assert.equal(e2b.timers.find((t) => t.id === 'solar_normal').at, 1 * SOL, 'E2 B: only the rest of this Sol');
+  const d4c = pick('d4', 'c', (s) => { s.modules.greenhouse.status = 'online'; s.modules.greenhouse.tier = 2; });
+  const m = d4c.mods.find((x) => x.id === 'd4c_food');
+  assert.ok(Math.abs(m.perSol + 0.2 * MODULES.greenhouse.t2.food) < 1e-9, 'D4 C: -20% of the Greenhouse food');
+  assert.equal(m.untilMinute - d4c.minute, SOL);
+});
