@@ -9,8 +9,10 @@ Method: for each claim a NASA page, a peer-reviewed paper, or a major science or
 page was **opened** (not just a search snippet). Where a PDF was the source, its text was
 extracted and the quoted sentence was found in it. Line numbers refer to `SCENARIO.md`.
 
-**Result: 75 claims checked. 59 correct, 16 needed a fix (all fixed on this branch), 0 unverifiable.**
-Rows F10–F16 and the six rows marked "added after Codex review" came from the independent Codex review. The team's decisions on the
+**Result: 98 claims checked. 82 correct, 16 needed a fix (all fixed), 0 unverifiable.**
+Rows F10–F16 and the six rows marked "added after Codex review" came from the independent Codex review.
+The 23 rows marked "added with the open-items specs" cover new claims in SCENARIO.md Sections 3.10, 3.11 and 8;
+the other Science Logbook cards restate claims already checked above. The team's decisions on the
 9 fixes are in [Decisions](#decisions-2026-11-14); an independent Codex review is in
 [content/ai-collaboration/records/20261114-science-fact-check-review.md](../ai-collaboration/records/20261114-science-fact-check-review.md).
 This file does not change `SCENARIO.md`; fixes need a team decision first.
@@ -114,6 +116,29 @@ Data label: the label the claim should carry in `src/data/*.js` and in docs:
 | astra.t2.greenhouse | Stacking trays grows more food in the same small room | correct (vertical farms grow more crops in a much smaller area) | https://spinoff.nasa.gov/indoor-farming | approximation | — (added after Codex review) |
 | 4.2 ASTRA | Dust rides in on spacesuits; clean filters keep it out of lungs | correct (suits collect fine dust; fine particles can reach deep into the lungs) | https://www.nasa.gov/missions/mars-2020-perseverance/nasas-perseverance-offers-clues-to-protect-crews-from-mars-dust/ | approximation | — (added after Codex review) |
 | Expedition 1, ASTRA on return | Weather probes measure wind, dust and temperature | correct (MEDA measures temperature, wind, pressure, humidity and dust) | https://www.jpl.nasa.gov/news/mars-is-getting-a-new-robotic-meteorologist/ | approximation | — (added after Codex review) |
+| 3.11; astra.fit.intro; card.strong_in_space | In space, weight-bearing bones lose about 1% of their density per month without countermeasures; station crews exercise about 2 h a day | correct ("roughly 1% less dense" per month; "an average of two hours a day") | https://www.nasa.gov/missions/station/iss-research/counteracting-bone-and-muscle-loss-in-microgravity/ | nasa_measurement | — (added with the open-items specs) |
+| astra.fit.rec_open; 3.11 | The space station has an exercise bike, a treadmill and a weight machine | correct (stationary bike, TVIS treadmill, ARED resistive device) | https://www.nasa.gov/missions/station/iss-research/counteracting-bone-and-muscle-loss-in-microgravity/ | approximation | — (added with the open-items specs) |
+| astra.fit.mars; card.mars_gravity_body; 3.11 | Bone and muscle loss in Mars gravity is not well known; rats carrying 40% of their weight lost grip strength in two weeks | correct (partial-gravity physiology "far less well understood"; grip force −6.18% after 14 days at 40% weight bearing) | https://doi.org/10.3389/fphys.2019.00899 | approximation | — (added with the open-items specs) |
+| card.gravity | At 38% gravity you could jump about two and a half times higher | correct (jump height scales with 1/g: 9.82/3.73 = 2.6; ignores a spacesuit) | https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html | approximation | — (added with the open-items specs) |
+| card.cold_nights | Perseverance measured −83 °C one night at Jezero | correct | https://www.jpl.nasa.gov/news/nasas-first-weather-report-from-jezero-crater-on-mars/ | nasa_measurement | — (added with the open-items specs) |
+| card.wet_soil | Soil with water in it shields radiation better, because of its hydrogen | correct (hydrogen in water-rich regolith reduces equivalent dose) | https://doi.org/10.1029/2019JE006246 | approximation | — (added with the open-items specs) |
+| card.hydrogen_shield | Liquid hydrogen is the best shield but hard to use | correct ("Liquid hydrogen remains the optimal shielding material") | https://three.jsc.nasa.gov/articles/CucinottaKimChappell0512.pdf | approximation | — (added with the open-items specs) |
+| card.dose_adds_up | NASA's career limit is 600 mSv of spaceflight radiation | correct (NASA-STD-3001: career effective dose less than 600 mSv) | https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-020-radiation-protection.pdf | nasa_measurement | — (added with the open-items specs) |
+| card.radiation_badge | A personal dosimeter is required for every crew member | correct (required by CFR and OSHA for monitoring astronaut exposure) | https://www.nasa.gov/wp-content/uploads/2025/09/ochmo-tb-050-spacesuits.pdf | approximation | — (added with the open-items specs) |
+| card.dust_devils | In March 2005 dust devils raised Spirit's power from about 60% to 93% | correct | https://science.nasa.gov/mission/mer-spirit/ | nasa_measurement | — (added with the open-items specs) |
+| card.stacked_farm | A two-acre indoor farm grows about as much as a 720-acre outdoor farm | correct as reported by NASA Spinoff (a company figure) | https://spinoff.nasa.gov/indoor-farming | approximation | — (added with the open-items specs) |
+| card.green_air | Plants for space life support have been tested since the 1950s and 60s | correct | https://ntrs.nasa.gov/citations/20170011105 | approximation | — (added with the open-items specs) |
+| card.marsquakes | Some marsquakes were caused by space rocks hitting Mars | correct ("including quakes caused by meteoroid impacts") | https://www.jpl.nasa.gov/news/nasa-retires-insight-mars-lander-mission-after-years-of-science/ | nasa_measurement | — (added with the open-items specs) |
+| card.last_storm | Opportunity fell silent in the June 2018 storm and was never heard from again | correct (last communication June 10, 2018; recovery ended) | https://www.nasa.gov/news-release/nasas-record-setting-opportunity-rover-mission-on-mars-comes-to-end/ | nasa_measurement | — (added with the open-items specs) |
+| card.sealed_samples | Samples are sealed in airtight titanium tubes for possible future collection | correct | https://www.jpl.nasa.gov/news/nasas-perseverance-rover-collects-first-mars-rock-sample/ | approximation | — (added with the open-items specs) |
+| card.sleep_missions | Crews keep strict sleep schedules, even before launch; sleep loss causes fatigue errors | correct | https://www.nasa.gov/missions/station/seven-ways-astronauts-improve-sleep-may-help-you-snooze-better-on-earth/ | approximation | — (added with the open-items specs) |
+| card.no_showers | No showers on the station because water is limited and microgravity | correct | https://www.nasa.gov/image-article/astronaut-koichi-wakata-demonstrates-washing-his-hair-space/ | approximation | — (added with the open-items specs) |
+| card.rock_pages | Rock layers get younger upward; Curiosity reads them for ancient lakes and rivers | correct | https://www.jpl.nasa.gov/news/curiosity-peels-back-layers-on-ancient-martian-lake/ | approximation | — (added with the open-items specs) |
+| card.brine | Tiny amounts of brine may form in Martian soil on some nights | correct | https://www.jpl.nasa.gov/news/nasa-mars-rovers-weather-data-bolster-case-for-brine/ | approximation | — (added with the open-items specs) |
+| card.weather_station | MEDA measures temperature, wind, pressure, humidity, and dust amount, size and shape | correct | https://www.jpl.nasa.gov/news/mars-is-getting-a-new-robotic-meteorologist/ | approximation | — (added with the open-items specs) |
+| card.hidden_ice | NASA maps buried ice to choose landing sites for astronauts | correct | https://www.jpl.nasa.gov/news/nasa-is-locating-ice-on-mars-with-this-new-map/ | approximation | — (added with the open-items specs) |
+| card.ingenuity | Ingenuity first flew on April 19, 2021; mission ended 2024 | correct | https://www.nasa.gov/news-release/after-three-years-on-mars-nasas-ingenuity-helicopter-mission-ends/ | nasa_measurement | — (added with the open-items specs) |
+| badge.first_contact.text | A message to Earth crosses millions of kilometers | correct (54.6 to 401.4 million km) | https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html | nasa_measurement | — (added with the open-items specs) |
 
 ## Other observations (outside the science scope)
 
