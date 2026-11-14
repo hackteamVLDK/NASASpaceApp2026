@@ -151,7 +151,8 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
     body.append(el('p', 'why', 'Tap a drone, then tap a room frame in the base to send it there. Each drone can keep 2 jobs waiting.'));
     for (const d of s.drones) {
       const row = el('div', `mod ${selected === `drone:${d.id}` ? 'sel' : ''}`);
-      const jobText = (j) => `${j.type === 'upgrade' ? 'Upgrade' : 'Build'} ${name(MODULES[j.module].nameId)}`;
+      const CHORES = { wash: 'Wash the soil', trays: 'Move the trays to the Kitchen', leak: 'Fix the airlock leak' };
+      const jobText = (j) => (j.type === 'chore' ? CHORES[j.id] ?? 'A job for the crew' : `${j.type === 'upgrade' ? 'Upgrade' : 'Build'} ${name(MODULES[j.module].nameId)}`);
       const what = d.status !== 'awake' ? 'Asleep' : d.task ? `Now: ${jobText(d.task)}` : 'Idle: salvaging parts';
       row.innerHTML = `<div><b>${nick[d.id]}</b> <small>(${d.id.replace('drone-', 'Drone #')})</small><br><small>${what}</small>${(d.queue ?? []).map((j, i) => `<br><small>Next ${i + 1}: ${jobText(j)} <a href="#" data-unq="${d.id}:${i}">remove</a></small>`).join('')}</div>`;
       const kit = { 'drone-02': 'repair_kit', 'drone-03': 'reboot_kit' }[d.id];

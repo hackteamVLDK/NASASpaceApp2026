@@ -207,6 +207,11 @@ function tick(s, emit) {
       m.upgrading.progress += (dt / UPGRADE_SOLS) * mult;
       if (m.upgrading.progress >= 1) finishUpgrade(s, d, emit);
     }
+    else if (d.task.type === 'chore' && s.minute >= d.task.until) { // D-T17e: a story job (wash the soil, move trays, fix the leak) is done
+      emit({ type: 'choreDone', drone: d.id, chore: d.task.id });
+      d.task = null;
+      nextJob(s, d, emit);
+    }
   }
 
   // Life Support Tier 2 melts Ice Cores by itself (3.5): each gives +25 Water
@@ -443,6 +448,7 @@ function queueCheck(s, job, d) {
 
 /** Start a build or upgrade on a free drone: all checks, payment and effects. Returns an error text or null. */
 function startJob(s, d, job, emit) {
+  if (job.type === 'chore') { d.task = { ...job, until: s.minute + job.sols * SOL }; return null; }
   const id = job.module;
   const m = s.modules[id];
   if (job.type === 'build') {

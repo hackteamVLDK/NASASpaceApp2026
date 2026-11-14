@@ -43,3 +43,33 @@ test('D-T17b: a dry Greenhouse gives no food, no fresh-crop HP, no Soil Beds bon
   assert.ok(s.hp <= hp, `no fresh-crop healing (${hp} -> ${s.hp})`);
   assert.equal(s.stats.harvest ?? 0, harvest, 'nothing harvested');
 });
+
+test('D-T17e: Dilemma 3 B, 4 C and Event 3 C take a drone for 1, 0.5 and 1 Sol', async () => {
+  const { applyChoice } = await import('../src/campaign/story.js');
+  const { SOL } = await import('../src/campaign/data.js');
+  for (const [id, choice, sols] of [['d3', 'b', 1], ['d4', 'c', 0.5], ['e3', 'c', 1]]) {
+    const s = createCampaign();
+    command(s, { type: 'wakeDrone', drone: 'drone-01' });
+    s.res.water = 90;
+    const ev = [];
+    applyChoice(s, { kind: 'dilemma', id }, choice, (e) => ev.push(e), () => 0.5);
+    const d = s.drones[0];
+    assert.equal(d.task?.type, 'chore', `${id}${choice}: the drone is busy`);
+    assert.equal(command(s, { type: 'build', module: 'battery', drone: 'drone-01' }).ok, true, 'a build order waits in the queue');
+    assert.equal(d.queue.length, 1);
+    step(s, Math.round(sols * SOL) - 5);
+    assert.equal(d.task?.type, 'chore', `${id}${choice}: still busy just before ${sols} Sol`);
+    step(s, 10);
+    assert.equal(d.task?.type, 'build', `${id}${choice}: free after ${sols} Sol, the waiting build starts`);
+  }
+});
+
+test('D-T17e: with every drone busy, the chore waits first in a queue', async () => {
+  const { droneChore } = await import('../src/campaign/story.js');
+  const s = createCampaign();
+  command(s, { type: 'wakeDrone', drone: 'drone-01' });
+  command(s, { type: 'build', module: 'battery' });
+  droneChore(s, () => {}, 'leak', 'garage', 1);
+  assert.equal(s.drones[0].task.type, 'build');
+  assert.equal(s.drones[0].queue[0].type, 'chore');
+});

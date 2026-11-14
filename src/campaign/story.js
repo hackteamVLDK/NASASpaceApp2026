@@ -209,6 +209,20 @@ export function soilWashBlock(s) {
   return null;
 }
 /** Start washing the soil from the Lab: the same cost and result as Dilemma 3 choice B (Soil Beds after 2 Sols). */
+/**
+ * D-T17e: a story choice that needs a drone (SCENARIO 6: Dilemma 3 B and 4 C, Event 3 C). A free drone takes the
+ * job at once; when every awake drone is busy, the job goes first in the shortest queue. The engine frees the drone
+ * when the time is up (`chore` jobs in engine.js).
+ */
+export function droneChore(s, emit, id, module, sols) {
+  const job = { type: 'chore', id, module, sols };
+  const awake = s.drones.filter((d) => d.status === 'awake');
+  const free = awake.find((d) => !d.task);
+  if (free) { free.task = { ...job, until: s.minute + sols * SOL }; emit({ type: 'ordered', drone: free.id, job }); return; }
+  const d = awake.sort((a, b) => a.queue.length - b.queue.length)[0];
+  if (d) { d.queue.unshift(job); emit({ type: 'queued', drone: d.id, job }); }
+}
+
 export function startSoilWash(s, emit) {
   const why = soilWashBlock(s);
   if (why) return why;
@@ -216,6 +230,7 @@ export function startSoilWash(s, emit) {
   setRes(s, 'water', -20);
   s.flags.soilWashing = true;
   after(s, at(sol + 2, 8), 'd3b');
+  droneChore(s, emit, 'wash', 'greenhouse', 1); // the same job as Dilemma 3 B: 1 drone for 1 Sol
   emit({ type: 'soil-wash-started' });
   return null;
 }
@@ -268,6 +283,7 @@ export function applyChoice(s, pending, choice, emit, rand) {
     case 'd3b':
       setRes(s, 'water', -20);
       after(s, at(sol + 2, 8), 'd3b');
+      droneChore(s, emit, 'wash', 'greenhouse', 1); // 1 drone for 1 Sol
       break;
     case 'd3c':
       s.flags.washUnlocked = true;
@@ -285,6 +301,7 @@ export function applyChoice(s, pending, choice, emit, rand) {
       break;
     case 'd4c':
       addMod(s, 'd4c_food', 'food', -2, at(sol + 1, 6));
+      droneChore(s, emit, 'trays', 'kitchen', 0.5); // 1 drone for half a Sol
       setRes(s, 'morale', 5);
       follow('astra.d4.c');
       break;
@@ -310,7 +327,7 @@ export function applyChoice(s, pending, choice, emit, rand) {
     // ---- Event 3: airlock micro-leak
     case 'e3a': addTask(s, 'valve_balance', 'Hunt the leak.'); break;
     case 'e3b': setRes(s, 'sp', -1); s.mods = s.mods.filter((m) => m.id !== 'leak' && m.id !== 'leak_w'); after(s, at(sol + 3, 6), 'leak_returns'); follow('astra.e3.b'); break; // the tape stops the leak at once
-    case 'e3c': s.flags.noLaunchUntil = at(sol + 1, 6); follow('astra.e3.c'); break;
+    case 'e3c': s.flags.noLaunchUntil = at(sol + 1, 6); droneChore(s, emit, 'leak', 'garage', 1); follow('astra.e3.c'); break; // a drone fixes the leak (1 Sol)
     // ---- Event 4: nutrient drift
     case 'e4a': addTask(s, 'nutrient_match', 'Match the nutrients.'); s.mult.food = 0.6; s.flags.freshOff = true; break;
     case 'e4b': setRes(s, 'water', -10); s.mult.food = 0.6; after(s, at(sol + 1, 6), 'drift_fixed'); follow('astra.e4.b'); break;
