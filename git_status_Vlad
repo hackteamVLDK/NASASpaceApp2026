@@ -31,6 +31,15 @@
 - Readability pass changed ASTRA line texts (not IDs/numbers). tests/flow.test.mjs compares texts with SCENARIO.md.
 - "(fiction)" in Line cells is a writers' note: please strip it in the strings module.
 
+## NOTE FOR MYKHAILO (2026-11-14, two test failures on main)
+- PR #10 (light time) also switches npm test to plain `node --test` (the ** glob needs Node 21+).
+  Please review it; I won't merge it.
+- tests/campaign.test.mjs:266 "+2 Spare Parts per win": expected 64, got 62. Yours.
+- tests/campaign-run.test.mjs:23 fails on `radio.expice.00`. The game never shows radio.expice.*:
+  the Ice Run picks from the radio.run.* pool (radioPool in src/campaign/expeditions.js, SCENARIO 5.3),
+  and those strings exist. The test skips `run` but not `ice`; skipping every expedition with a
+  radioPool fixes it. No SCENARIO lines needed.
+
 ## NOTE FOR MYKHAILO
 - tests/flow.test.mjs (3 failures) checks the old pre-PR#1 scenario. Please update it to the new
   tutorial states in SCENARIO.md: TOUCHDOWN -> UNDERGROUND_PAN -> TUT_HP -> TUT_DRONE_CLICK ->
