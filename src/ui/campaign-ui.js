@@ -63,6 +63,7 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
   }
   let sig = '';
   let selected = null;
+  let revealPending = false;
   const selectedDrone = () => (selected?.startsWith('drone:') ? selected.slice(6) : undefined);
 
   function renderBase(body) {
@@ -355,6 +356,8 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
     launch: () => {},
     gauges: G,
     select(id) { selected = id; sig = ''; },
+    /** A21: after the next redraw, scroll the side list so the selected row is visible (no scrollIntoView: it would move the stage). */
+    revealSelected() { revealPending = true; },
     get selected() { return selected; },
     highlight(id) { for (const e of Object.values(G)) e.g.classList.toggle('pulse', e.d.id === id); },
     pushRadio(id) { radioLines.push(hasString(id) ? t(id) : id); if (radioLines.length > 6) radioLines.shift(); sig = ''; },
@@ -398,6 +401,11 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
         body.innerHTML = '';
         ({ base: renderBase, workshop: renderWorkshop, drones: renderDrones, tasks: renderTasks, logbook: renderLogbook })[tab](body);
         for (const b of tabBar.children) b.classList.toggle('on', b.dataset.tab === tab);
+        if (revealPending) {
+          revealPending = false;
+          const row = body.querySelector('.mod.sel');
+          if (row) body.scrollTop = Math.max(0, row.offsetTop - body.offsetTop - 12);
+        }
         tabBar.querySelector('[data-tab="tasks"]').textContent = s.tasks.length ? `Tasks (${s.tasks.length})` : 'Tasks';
       }
     },
