@@ -14,7 +14,7 @@
  *   Dilemma N           ui.dN.title · ui.dN.header · astra.dN.alert · ui.dN.<a|b|c>.label · astra.dN.<a|b|c>
  *   Event N             ui.eN.title · ui.eN.header · astra.eN.alert · astra.e1.watch (forecast)
  *                       ui.eN.<a|b|c>.label · astra.eN.<a|b|c> (Event 2 A: astra.e2.a.clean / .dusty)
- *   Mini-game 4.N       ui.mg.<id>.title · astra.mg.<id>      (<id> as in Section 7, e.g. valve_balance)
+ *   Mini-game 4.N       ui.mg.<id>.title · astra.mg.<id> · ui.mg.<id>.counter   (<id> as in Section 7, e.g. valve_balance)
  *   Expedition N        ui.expN.name · radio.expN.<pct> (0% -> "00") · astra.expN.return · astra.expN.at<pct>
  *   Scrap & Ice Run     ui.exp_run.name · radio.run.<pct>.<1..3>
  *   Modules (3.3)       ui.module.<slug>.name        Upgrades (5.4)  ui.upgrade.<slug>.name
@@ -121,6 +121,7 @@ export function extract(md) {
       }
       continue;
     }
+    if ((m = raw.match(/with a counter: "([^"]+)"/)) && ctx.mg) { add(`ui.mg.${ctx.mg}.counter`, m[1], n, true); continue; }
     if ((m = raw.match(/^\*\*ASTRA:\*\* (.*)$/)) && ctx.mg) { add(`astra.mg.${ctx.mg}`, m[1], n, true); continue; }
     if ((m = raw.match(/^ASTRA on return: (.*)$/)) && ctx.exp) { add(`astra.exp${ctx.exp}.return`, m[1], n, true); continue; }
     if ((m = raw.match(/^ASTRA at (\d+)%: (.*)$/)) && ctx.exp) { add(`astra.exp${ctx.exp}.at${m[1]}`, m[2], n, true); continue; }

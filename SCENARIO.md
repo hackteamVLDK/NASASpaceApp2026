@@ -260,7 +260,7 @@ State `INTRO_TEXT`, `0.0s – 19.0s`.
 | log.pathfinder.04 | Black box playback | Warning: dust storm approaching. Switching to sleep mo— (fiction) |
 | astra.act3.blackbox_react1 | After playback | A thump every 37 minutes, like a clock. NASA's InSight lander felt more than 1,300 marsquakes, but quakes don't usually keep a schedule. Something down there is repeating. |
 | astra.act3.blackbox_react2 | After playback | And methane! On Earth, a lot of methane comes from living things, like microbes, tiny life too small to see. But it can also come from water reacting with certain rocks. NASA's Curiosity rover has sniffed methane on Mars too, and scientists are still working out where it comes from. |
-| astra.act3.earth_reply | First Earth contact succeeds | Message from Earth, sent 14 minutes ago: "Ares-Kids, this is Mission Control. We heard Pathfinder-X's log. Go find that signal, and stay safe!" (fiction) |
+| astra.act3.earth_reply | First Earth contact succeeds | Message from Earth, sent {delay} ago: "Ares-Kids, this is Mission Control. We heard Pathfinder-X's log. Go find that signal, and stay safe!" (fiction) |
 | astra.act3.roof_built | Regolith Roof Layer built (Sol 16) | Regolith Roof Layer finished! Every room is now under thick soil, so it blocks most of the radiation. Scientists think a few meters of soil could protect real Mars bases. |
 | astra.act3.ls_t2 | Life Support Tier 2 (Sol 16) | Life Support upgraded! Mars air is mostly carbon dioxide, the gas we breathe out, and our new unit pulls oxygen from it. NASA's MOXIE made 122 grams of oxygen on Mars, about what a small dog breathes in 10 hours! And we melt ice to top up our water loop. |
 | astra.act3.deep_scan | Lab Tier 2 Deep Scan (Sol 19) | Deep Scan complete! The pulse comes from a pocket under the canyon floor. My readings say: salty liquid water. Salt helps water stay liquid even when it's very cold. (the canyon pocket is fiction) |
@@ -281,7 +281,7 @@ The Rover leaves off-screen. The radio log fills line by line; the screen shakes
 | astra.finale.methane | 85% | So where does the methane come from? Salty water reacting with rocks can make methane with no life at all. Or, long ago, tiny microbes might have made it. Only more clues can tell us which. |
 | radio.exp5.06 | 95% | RADIO: Samples sealed in tubes, just like Perseverance does. Heading home! |
 | astra.finale.home | Rover returns | Mission accomplished, Commander! You rebuilt a whole base and woke three drones. You found a salty spring next to what may be the oldest clues of life on Mars. |
-| astra.finale.earth | +1 minute | Message from Earth, sent 14 minutes ago: "Ares-Kids, the whole world is cheering for you. Bring those samples home!" |
+| astra.finale.earth | +1 minute | Message from Earth, sent {delay} ago: "Ares-Kids, the whole world is cheering for you. Bring those samples home!" |
 | astra.finale.closing | Credits start | Real scientists are asking these same questions right now. Maybe one day, you'll be the one who answers them. |
 | ui.finale.card | Ending card | THE JEZERO SIGNAL — MISSION COMPLETE |
 
@@ -462,7 +462,7 @@ as the one-line role summaries.
 `astra.finale.earth`, and future Earth-window messages). Her style: warm, calm, short. Her first message starts
 with "Ares-Kids, this is Mission Control"; later ones start with "Ares-Kids,". She never gives
 orders the player cannot follow. Every
-message reminds players of the light delay ("sent 14 minutes ago" is shown by ASTRA, not by Rosa).
+message reminds players of the light delay ("sent {delay} ago" is shown by ASTRA, not by Rosa).
 
 **The three drones.** Drones cannot talk; they "speak" in beeps (sound effects) and LED blinks.
 They share one body sprite; each has a coloured bumper stripe and its own beep pattern.
@@ -935,7 +935,7 @@ Nine mini-games, each 10–20 seconds, each tied to a real Mars problem. They op
 1. After a storm only: drag the bent dish edge back into shape (one swipe).
 1. Drag the sliders to point the dish's beam (a cone of light) at Earth.
 1. Keep 4 or more bars for 3 s while Earth drifts.
-1. On a win, a message icon flies toward Earth with a counter: "Arriving in 14 minutes..."
+1. On a win, a message icon flies toward Earth with a counter: "Arriving in {delay}..." ({delay} is the real Earth-Mars light time on the current Sol; the counter runs sped up)
 
 **Win / fail:** 4+ bars held for 3 s within 20 s. On fail, the window is missed: no Earth message and no Morale bonus until the next window.
 
