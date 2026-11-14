@@ -1,11 +1,10 @@
 # git_status_Vlad
 
 ## DOING NOW
-- Two PRs ready, merge in this order:
-  1. content/science-fact-check: science fact-check + wording fixes in SCENARIO.md.
-  2. content/scenario-open-items (based on 1): SCENARIO.md 3.10 Sol Plan, 3.11 Exercise & Fitness,
-     Section 8 Science Logbook (58 cards), Mission Report with Mission Rating (3 x 1-3 stars), 15 badges.
-- content/space-apps-submission: WIP submission drafts, parked until the end of the hackathon.
+- Autonomous run (decisions in content/DECISIONS.md). Stacked SCENARIO.md branches, merge in order:
+  1. content/science-fact-check  2. content/scenario-open-items  3. content/characters (done)
+  4. content/astra-voice (next)  5. content/readability (after 4)
+- content/space-apps-submission: parked until the end of the hackathon.
 
 ## FOR MYKHAILO (sim / flow / assets)
 - New in SCENARIO.md after PR 2: per-astronaut Sol Plans with presets (sim has one DEFAULT_SCHEDULE),
@@ -13,6 +12,9 @@
   M_fit (1.10 below Fitness 40, 1.25 at 15 or less, capped), new line-ID prefixes card.*, report.*, badge.*.
 - Logbook images: 26 prompts (20 core cards + 6 category images) in
   content/handoff/LOGBOOK_IMAGE_PROMPTS.md, for assets/manifests when you are ready. I did not touch assets/.
+- Characters (SCENARIO 2.5, branch content/characters): names/looks for crew.portraits (was awaiting-lore),
+  new overlays crew.heads and drone.bumpers; prompts in content/handoff/CHARACTER_PROMPTS.md.
+  Names keep your crew.js first names; Comms Officer (Noor) and Mission Control (Rosa) are new.
 
 ## NOTE FOR MYKHAILO
 - tests/flow.test.mjs (3 failures) checks the old pre-PR#1 scenario. Please update it to the new
