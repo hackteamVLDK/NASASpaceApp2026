@@ -76,6 +76,10 @@ export function drawCampaign(ctx, atlas, S) {
   atlas.cell(ctx, 'sky', 0, SOIL_X.x0, -250, SOIL_X.x1 - SOIL_X.x0, LAYOUT.groundY + 270);
   ctx.drawImage(S.soil, SOIL_X.x0, LAYOUT.groundY - 40, SOIL_X.x1 - SOIL_X.x0, S.soil.height / 0.5);
 
+  // ---- shaft down to the lowest floor
+  const bottom = LAYOUT.firstFloorY + LAYOUT.floors * LAYOUT.floorHeight;
+  for (let y = LAYOUT.groundY - 4; y < bottom; y += LAYOUT.floorHeight) atlas.cell(ctx, 'shaft', y === LAYOUT.groundY - 4 ? 1 : 0, LAYOUT.shaftX, y, LAYOUT.shaftWidth, Math.min(LAYOUT.floorHeight, bottom - y));
+
   // ---- surface
   const dusty = s.storm || s.tasks.some((t) => t.game === 'solar_wipe') || s.mult.solar < 0.95 || !s.flags.panelsCleaned;
   atlas.sprite(ctx, 'solar', dusty ? 0 : 2, SURFACE.solar.x, ground, { w: SURFACE.solar.w });
@@ -88,18 +92,18 @@ export function drawCampaign(ctx, atlas, S) {
   // ---- the lander in flight (cutscene)
   if (cut?.lander?.visible && !cut.lander.landed) {
     const L = cut.lander;
-    atlas.sprite(ctx, 'lander', 0, SURFACE.lander.x, L.y, { w: SURFACE.lander.w - 40 });
-    if (L.parachute === 'attached') atlas.sprite(ctx, 'parachute', 0, SURFACE.lander.x, L.y - 240, { w: 520 });
-    if (L.thrusters) for (let i = 0; i < 4; i++) atlas.sprite(ctx, 'parachute', 2 + (Math.floor(nowMs / 90) % 2), SURFACE.lander.x - 150 + i * 100, L.y + 6, { h: 180 });
+    atlas.sprite(ctx, 'lander', 0, SURFACE.lander.x, L.y, { w: SURFACE.lander.w - 20 });
+    if (L.parachute === 'attached') atlas.sprite(ctx, 'parachute', 0, SURFACE.lander.x, L.y - 150, { w: 340 });
+    if (L.thrusters) for (let i = 0; i < 4; i++) atlas.sprite(ctx, 'parachute', 2 + (Math.floor(nowMs / 90) % 2), SURFACE.lander.x - 78 + i * 52, L.y + 4, { h: 110 });
   }
   if (cut?.lander?.parachute === 'drifting-left') {
     const d = cut.parachuteDrift ?? 0;
-    atlas.sprite(ctx, 'parachute', 1, SURFACE.lander.x - 220 - d * 260, 780 + d * 150, { w: 480, alpha: 1 - d * 0.6 });
+    atlas.sprite(ctx, 'parachute', 1, SURFACE.lander.x - 220 - d * 260, 800 + d * 150, { w: 320, alpha: 1 - d * 0.6 });
   }
   if (cut?.dust) {
     const f = Math.min(5, Math.floor((cut.dust.age ?? 0) * 6));
-    atlas.sprite(ctx, 'dust', f, SURFACE.lander.x - 60, ground + 6, { w: 520 });
-    atlas.sprite(ctx, 'dust', f, SURFACE.lander.x + 80, ground + 6, { w: 420, flip: true });
+    atlas.sprite(ctx, 'dust', f, SURFACE.lander.x - 40, ground + 6, { w: 340 });
+    atlas.sprite(ctx, 'dust', f, SURFACE.lander.x + 60, ground + 6, { w: 280, flip: true });
   }
 
   // ---- weather and night over the surface
@@ -108,10 +112,6 @@ export function drawCampaign(ctx, atlas, S) {
   if (dusk > 0 && !s.storm) { ctx.fillStyle = `rgba(80,110,200,${dusk * 0.22})`; ctx.fillRect(sky.x, sky.y, sky.w, sky.h); } // the blue Martian sunset
   if (dark > 0) { ctx.fillStyle = `rgba(6,10,40,${dark * 0.62})`; ctx.fillRect(sky.x, sky.y, sky.w, sky.h); }
   if (s.flags.flare) { ctx.fillStyle = 'rgba(140,255,120,0.18)'; ctx.fillRect(sky.x, sky.y, sky.w, sky.h); }
-
-  // ---- shaft down to the lowest floor
-  const bottom = LAYOUT.firstFloorY + LAYOUT.floors * LAYOUT.floorHeight;
-  for (let y = LAYOUT.groundY + 50; y < bottom; y += LAYOUT.floorHeight) atlas.cell(ctx, 'shaft', y === LAYOUT.groundY + 50 ? 1 : 0, LAYOUT.shaftX, y, LAYOUT.shaftWidth, Math.min(LAYOUT.floorHeight, bottom - y));
 
   // ---- left wing (always built)
   for (const [id, pic] of Object.entries(LEFT_PIC)) {
@@ -150,7 +150,7 @@ export function drawCampaign(ctx, atlas, S) {
   if (s.modules.roof.status === 'online') { ctx.fillStyle = 'rgba(120,60,40,0.55)'; ctx.fillRect(LAYOUT.rightX, LAYOUT.firstFloorY - 36, LAYOUT.wingWidth, 36); }
 
   // ---- drones: idle ones rest in the Garage frame, builders stand in the room they build
-  const dh = 150;
+  const dh = 118;
   const union = atlas.unionBox('drone', [0, 6, 12, 18]);
   const slots = {};
   S.s.drones.forEach((d) => {
@@ -186,7 +186,9 @@ export function drawCampaign(ctx, atlas, S) {
       } else frame = 8 + (tick % 4);
       const tinted = atlas.tinted(sheet, CREW_COLORS.cmdr);
       const box = atlas.unionBox(sheet, [0, 1, 2, 3, 4, 5, 6, 7]);
-      atlas.sprite(ctx, sheet, frame, w.pos.x, w.pos.y, { h: 185, box, flip: Boolean(w.faceLeft), sheet: tinted });
+      // the generated sheet draws the sleeping figure smaller than the standing one: bring it to the same body size
+      const norm = !eva && (frame === 14 || frame === 15) ? 1.2 : 1;
+      atlas.sprite(ctx, sheet, frame, w.pos.x, w.pos.y, { h: 185 * norm, box, flip: Boolean(w.faceLeft), sheet: tinted });
       hits.push({ id: 'crew:cmdr', x: w.pos.x - 50, y: w.pos.y - 190, w: 100, h: 190 });
     }
   } else if (cut.astronaut?.visible) {

@@ -14,8 +14,10 @@ const SOIL = { x0: -800, x1: 2720, scale: 0.5 };
 
 /** Surface props: positions are proposals (docs/LEVELS.md), all on the ground line. */
 export const SURFACE = Object.freeze({
-  solar: { x: 340, w: 470 }, airlock: { x: 960, w: 560 }, antenna: { x: 1330, h: 330 },
-  lander: { x: 1560, w: 400 }, mound: [{ x: 1690, w: 300, flip: false }, { x: 1850, w: 260, flip: true }],
+  // One scale for everything: 100 world units = 1 m, an astronaut is about 185 units. The surface habitat is about
+  // 2.2 m tall, the lander only a little taller, the tower 3.6 m. The habitat is centred on the shaft (x 960).
+  solar: { x: 310, w: 330 }, airlock: { x: 960, w: 860 }, antenna: { x: 1470, h: 360 },
+  lander: { x: 1650, w: 240 }, mound: [{ x: 1830, w: 170, flip: false }, { x: 1790, w: 130, flip: true }],
 });
 
 /** Where a crew member stands for each place of the base graph (world units, feet). */
