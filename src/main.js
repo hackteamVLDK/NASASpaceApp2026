@@ -231,7 +231,12 @@ function updateTutorial() {
       if (!talking && tut.phase === 'talk') { tut.phase = 'game'; openMini('battery'); }
       break;
     case 'TUT_BUILD':
-      if (!talking && tut.phase === 'talk') { tut.phase = 'pick'; $('side').hidden = false; }
+      if (!talking && tut.phase === 'talk') {
+        tut.phase = 'pick';
+        $('side').hidden = false;
+        ui.setTab('base');
+        ui.select('module:battery'); // the Battery row, with its Build button, is scrolled into view (A29)
+      }
       break;
     default:
   }
@@ -311,7 +316,7 @@ canvas.addEventListener('pointerdown', (e) => {
       tut = { state: 'TUT_SOLAR_WIPE', phase: 'talk' };
       sayLine('astra.tut.drone01_click', 'curious');
       sayLine('astra.tut.solar_prompt', 'cheerful');
-    } else if (tut.state === 'TUT_BUILD' && tut.phase === 'pick' && id.startsWith('module:')) ui.select(id);
+    } else if (tut.state === 'TUT_BUILD' && tut.phase === 'pick' && id.startsWith('module:')) pickInWorld(id);
     return;
   }
   // a dormant drone: tap it to wake it (kit ready) or to be told what wakes it
@@ -536,7 +541,8 @@ function loop(now) {
     if (mode === 'play' && Math.floor(now / 1000) !== loop.lastSec) { loop.lastSec = Math.floor(now / 1000); checkAllBadges(); }
     if (s) updateLightTime();
     audio.director.tick({ s, mode });
-    if (extras) extras.update(mode === 'play');
+    // the Missions tracker appears when Drone #01 is repaired (the tutorial's build step) and stays for the whole game (A29)
+    if (extras) extras.update(mode === 'play' || (mode === 'tutorial' && tut?.state === 'TUT_BUILD'), mode === 'play');
     if (ui && (mode === 'tutorial' || mode === 'play')) { ui.update(); $('hud').hidden = false; if (mode === 'play') $('side').hidden = false; }
     astra.update(now);
     // the world clock: it stops with the time (paused, a card open, a mini-game), so people and drones stop too

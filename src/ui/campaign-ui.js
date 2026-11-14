@@ -64,6 +64,7 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
   let sig = '';
   let selected = null;
   let revealPending = false;
+  let shownTab = null; // the tab the side list was last drawn for: its scroll position is kept only inside the same tab
   const selectedDrone = () => (selected?.startsWith('drone:') ? selected.slice(6) : undefined);
 
   function renderBase(body) {
@@ -355,7 +356,8 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
   const ui = {
     launch: () => {},
     gauges: G,
-    select(id) { selected = id; sig = ''; },
+    /** Select something from code (a tap in the world, a mission's "Show me"): its row in the side list is scrolled into view. */
+    select(id) { selected = id; sig = ''; revealPending = true; },
     /** A21: after the next redraw, scroll the side list so the selected row is visible (no scrollIntoView: it would move the stage). */
     revealSelected() { revealPending = true; },
     get selected() { return selected; },
@@ -398,8 +400,11 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
       if (next !== sig) {
         sig = next;
         const body = $('tabBody');
+        const keepScroll = tab === shownTab ? body.scrollTop : 0; // a redraw (a build ticking on) must not throw the list back to the top
         body.innerHTML = '';
         ({ base: renderBase, workshop: renderWorkshop, drones: renderDrones, tasks: renderTasks, logbook: renderLogbook })[tab](body);
+        shownTab = tab;
+        body.scrollTop = keepScroll;
         for (const b of tabBar.children) b.classList.toggle('on', b.dataset.tab === tab);
         if (revealPending) {
           revealPending = false;
