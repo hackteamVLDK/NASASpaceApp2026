@@ -60,6 +60,24 @@ export const MODULES = Object.freeze({
   roof: { id: 'roof', nameId: 'ui.module.regolith_roof_layer.name', wing: 'right', cost: { sp: 10, items: { titanium_plate: 1 } }, t1: {} },
 });
 
+/**
+ * Recurring breakdowns: the "Trigger" lines of SCENARIO 4.1-4.4 and the rate of 2.1
+ * ("about 1 breakdown every 2 Sols, max 2 open at once"). Each lowers one system until its
+ * mini-game is won. All gameplay values.
+ */
+export const BREAKDOWNS = Object.freeze({
+  valve_balance: { every: 6, firstSol: 9, why: 'A scrubber valve is stuck. Oxygen output is down.' },
+  air_filter: { every: 4, firstSol: 11, why: 'Dust has clogged the air filter. Oxygen output is halved.' },
+  solar_wipe: { every: 5, firstSol: 12, why: 'Dust has settled on the solar panels again.' },
+  water_sort: { every: 6, firstSol: 14, why: 'The recycler filter has cracked. Water is being lost.' },
+});
+export const BREAKDOWN_RULES = Object.freeze({
+  minGapSols: 2, maxOpen: 2, // 2.1
+  solarLoss: 0.2, // 4.1: panels lose 20% output
+  filterOutput: 0.5, filterOutputAfterFail: 0.75, // 4.2: Oxygen output -50%; -25% after a failed try
+  valveOutput: 0.7, // 4.3: Oxygen output -30%
+});
+
 export const BUILD_SOLS = 2; // with one drone (3.1)
 export const UPGRADE_SOLS = 0.5;
 export const DRONE_BUILD_POWER = -5; // per Sol while a drone builds

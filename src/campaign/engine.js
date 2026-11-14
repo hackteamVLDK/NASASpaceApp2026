@@ -13,7 +13,7 @@
 import { seedFrom, nextRandom } from '../sim/rng.js';
 import {
   SOL, START_MINUTE, RES, START_RES, CAP, NEEDS, BASE_HEAT_LOSS, RECYCLER, HP, SHIELD, SLEEP_FROM, SLEEP_TO, MEALS,
-  MODULES, BUILD_SOLS, UPGRADE_SOLS, DRONE_BUILD_POWER, STORM, RECIPES, UPGRADES, MODULE_LINES, RULES,
+  MODULES, BUILD_SOLS, UPGRADE_SOLS, DRONE_BUILD_POWER, STORM, RECIPES, UPGRADES, MODULE_LINES, BREAKDOWN_RULES, RULES,
 } from './data.js';
 import { clockAt, isNight, online } from './util.js';
 import { storyMinute, onSol, applyChoice, choiceBlock, onModuleStart, onModuleBuilt, onKit, onMini, miniBlock, runTimer, onDroneAwake, onMove } from './story.js';
@@ -103,6 +103,8 @@ export function contributions(s) {
       if (id === 'solar' && k === 'power') v = v0 * s.mult.solar * (s.storm ? (s.modules.solar.tier === 2 ? STORM.solarT2 : STORM.solarT1) : 1);
       if (id === 'battery' && k === 'power' && s.storm) v = v0 * STORM.batteryPowerMult;
       if (id === 'greenhouse' && k === 'food') v = v0 * s.mult.food;
+      // a clogged air filter or a stuck valve lowers Life Support's Oxygen output until the mini-game is won (4.2, 4.3)
+      if (id === 'lifesupport' && k === 'oxygen') v = v0 * (s.flags.filterClog || 1) * (s.flags.valveStuck ? BREAKDOWN_RULES.valveOutput : 1);
       add(k, null, v, MODULES[id].nameId);
     }
   }

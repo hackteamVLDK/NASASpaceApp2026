@@ -4,7 +4,7 @@
  * line ID (strings.js); this file only decides WHEN something happens and WHAT it changes.
  * Delayed effects are timers with a name (`runTimer`), so the whole state stays plain data.
  */
-import { SOL, MODULE_LINES, RECYCLER } from './data.js';
+import { SOL, MODULE_LINES, RECYCLER, BREAKDOWNS, BREAKDOWN_RULES } from './data.js';
 import { clockAt, online, at, addMod, after, clampTo, powerCapOf } from './util.js';
 
 const say = (emit, lineId, mood = 'calm') => emit({ type: 'astra', lineId, mood });
@@ -27,6 +27,7 @@ export const STORM_TO = at(6, 23);
 export function storyMinute(s, emit, now) {
   const { sol, hour } = now;
   once(s, 'act1', () => true, () => emit({ type: 'act', act: 1, lineId: 'astra.act1.title' }));
+  if (now.minute === 0) scheduleBreakdown(s, emit, sol);
   once(s, 'sunset', () => sol === 1 && now.hourFloat >= 17.5, () => say(emit, 'astra.act1.first_sunset', 'curious'));
   once(s, 'dusk', () => sol === 1 && hour >= 18, () => say(emit, 'astra.act1.first_dusk', 'calm'));
   once(s, 'firstSleep', () => sol === 2 && hour >= 6, () => say(emit, 'astra.act1.first_sleep', 'cheerful'));
@@ -82,7 +83,7 @@ const EVENTS = [
 
 export function onSol(s, emit, now, rand) {
   const { sol } = now;
-  if (s.flags.filterDue === sol) addTask(s, 'air_filter', 'Dust rode in on the suit. Scrub the air filter.');
+  if (s.flags.filterDue === sol) { addTask(s, 'air_filter', 'Dust rode in on the suit. Scrub the air filter.'); s.flags.filterClog = BREAKDOWN_RULES.filterOutput; }
   if (sol === 7 && s.drones[1].status === 'awake') once(s, 'act2', () => true, () => emit({ type: 'act', act: 2, lineId: 'astra.act2.title' }));
   if (sol % 5 === 0 && sol > 20) say(emit, 'astra.sandbox.random_tip', 'curious');
   if (sol === 14 && !s.flags._radLesson) { s.flags._radLesson = true; say(emit, 'astra.act3.radiation_lesson', 'curious'); }
@@ -100,6 +101,31 @@ export function onSol(s, emit, now, rand) {
     after(s, at(sol, 10), `event:${ev.id}`);
     break;
   }
+}
+
+/**
+ * Recurring breakdowns (2.1, 4.1-4.4). At dawn, at most one system breaks, never sooner than
+ * two Sols after the last one, never with two already open, and never while the Commander
+ * is away (Base Autopilot). The system stays weaker until its mini-game is won.
+ */
+function scheduleBreakdown(s, emit, sol) {
+  // Checked every hour, not only at dawn: a Commander who is out with the Rover every dawn would
+  // otherwise never see a breakdown. It waits until he is home and the loot screen is done.
+  if (s.away || s.pending || s.minute - (s.flags.lastReturn ?? -1e9) < 90) return;
+  const b = (s.flags.breaks ??= { last: 0, due: Object.fromEntries(Object.entries(BREAKDOWNS).map(([k, v]) => [k, v.firstSol])) });
+  const open = s.tasks.filter((t) => Object.hasOwn(BREAKDOWNS, t.game)).length;
+  if (open >= BREAKDOWN_RULES.maxOpen || sol - b.last < BREAKDOWN_RULES.minGapSols) return;
+  const kind = Object.keys(BREAKDOWNS).filter((k) => b.due[k] <= sol && !s.tasks.some((t) => t.game === k)).sort((x, y) => b.due[x] - b.due[y])[0];
+  if (!kind) return;
+  b.last = sol;
+  b.due[kind] = sol + BREAKDOWNS[kind].every;
+  if (kind === 'solar_wipe') s.mult.solar = Math.max(0.2, s.mult.solar - BREAKDOWN_RULES.solarLoss);
+  if (kind === 'air_filter') s.flags.filterClog = BREAKDOWN_RULES.filterOutput;
+  if (kind === 'valve_balance') s.flags.valveStuck = true;
+  if (kind === 'water_sort') s.recycleEta = RECYCLER.cracked;
+  addTask(s, kind, BREAKDOWNS[kind].why);
+  emit({ type: 'breakdown', kind });
+  emit({ type: 'toast', text: BREAKDOWNS[kind].why });
 }
 
 // ------------------------------------------------------------------ hooks from the engine
@@ -350,13 +376,14 @@ export function onMini(s, { game, win }, emit) {
       dropTask(s, 'valve_balance');
       if (s.emergency.oxygen) { s.res.oxygen = Math.max(s.res.oxygen, 25); s.emergency.oxygen = false; }
       s.mods = s.mods.filter((m) => m.id !== 'leak' && m.id !== 'leak_w');
+      s.flags.valveStuck = false;
     }
   } else if (game === 'water_sort') {
     if (win) { dropTask(s, 'water_sort'); s.recycleEta = RECYCLER.ok; }
   } else if (game === 'nutrient_match') {
     if (win) { dropTask(s, 'nutrient_match'); s.mult.food = 1; s.flags.freshOff = false; }
   } else if (game === 'air_filter') {
-    if (win) dropTask(s, 'air_filter');
+    if (win) { dropTask(s, 'air_filter'); s.flags.filterClog = null; } else if (s.flags.filterClog) s.flags.filterClog = BREAKDOWN_RULES.filterOutputAfterFail; // 4.2: the cells already cleaned count
   } else if (game === 'antenna') {
     if (win) {
       dropTask(s, 'antenna');
