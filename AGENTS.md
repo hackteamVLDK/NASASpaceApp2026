@@ -9,11 +9,25 @@ Main-agent-only rules are in [CLAUDE.md](CLAUDE.md); nothing there contradicts t
 side-view cutaway of a partly buried Mars base. It teaches real engineering trade-offs
 (life support, power, radiation shielding) to children aged 7–12 and adults.
 
+- **Scenario (binding): [SCENARIO.md](SCENARIO.md)**
 - Design: [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md)
 - Architecture and module boundaries: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - Art pipeline: [docs/ASSET_PIPELINE.md](docs/ASSET_PIPELINE.md)
 - Git sync: [docs/GIT_SYNC.md](docs/GIT_SYNC.md)
 - Agent collaboration records: [docs/ai-collaboration/](docs/ai-collaboration/README.md)
+
+## Scenario compliance (mandatory)
+
+[SCENARIO.md](SCENARIO.md) is the binding game scenario. Every agent, on every task that
+touches gameplay, story, UI, cutscenes, tutorial, art, or audio:
+
+1. Reads `SCENARIO.md` **before** starting the task.
+2. Checks the result against it **before** finishing: states, timings, coordinates, texts,
+   colours, component names and props must match.
+3. Reports any deviation or conflict explicitly instead of silently diverging.
+4. Does not edit `SCENARIO.md` unless a team member asks for that change.
+
+If `SCENARIO.md` and another document disagree, `SCENARIO.md` wins.
 
 ## Commands
 

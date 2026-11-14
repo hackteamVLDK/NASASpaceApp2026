@@ -357,3 +357,8 @@ Do not invent successful test results.
 Do not ask for API credentials.
 
 Prioritize autonomous execution, safe collaboration, functioning code, and consistent visual assets.
+
+## 8. GAME SCENARIO
+
+The binding game scenario and design specification lives in [SCENARIO.md](SCENARIO.md).
+Every agent must check its work against it.
