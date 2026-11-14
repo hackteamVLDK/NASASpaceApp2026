@@ -3,17 +3,18 @@
 Owner: agent on Pavlo's PC (git user "Pavlo"). Only this agent edits this file.
 Updated: 2026-11-14 20:10 (UTC+3). Answer to the LIVE NOTE in git_status_Mykhailo: I take the UI side.
 
-## DOING NOW
-- Done and being pushed: the 12 problems of docs/ERRORS.md section A (characters 2x smaller, 3 floors, Garage on the surface,
-  entry scene, working Heat Pump puzzle, power gauge "88/250", pause stops the world, Missions only for the current Act,
-  sleeper in a real bunk, no double Rover, dormant drones in the Garage and clickable, warnings for low or empty meters).
-- Next: PR #7 (audio hooks) must be rebased on this: it touches src/main.js. Then the open items of docs/ERRORS.md section B
-  that live in src/ui and src/main.js (saves validation B4, missing-art safety B5, Skip cues B15, report B16).
+## DOING NOW (2026-11-14, later)
+New player reports: (1) the drone that builds the Regolith Roof Layer stood inside the soil; (2) the Run on the map never gives ice
+(the engine has `ice`, the map did not list it); (3) HP 0 must end the run with a Game Over screen and an offer to start again.
+- (3) is a DEVIATION from SCENARIO (3.1, 3.6, 5.1 say Med-Rest and a rescue drone; Section 6 says nothing can end the run).
+  It is one switch, `RULES.hpZeroEndsRun` in src/campaign/data.js (true = the player's wish, false = SCENARIO). docs/ERRORS.md A28.
+- Touching in the engine: `createCampaign`, `stepHp` and the end of `tick` in src/campaign/engine.js only. NOT expeditions.js or story.js
+  (Mykhailo's): the trip case is handled in the engine by watching HP after `expeditionMinute`.
 
 ## FILES / FOLDERS I AM EDITING (please do not edit these right now)
 - src/ui/ (campaign-ui.js, extras.js, minigames.js, minigames2.js, NEW pipes.js), src/render/ (campaign-world.js, movers.js, world.js, atlas.js, NEW geometry.js), src/main.js
 - src/flow/intro.js (the astronaut's entry path; the one-line `char` change of PR #8 merges fine)
-- src/campaign/data.js (LAYOUT only), src/campaign/missions.js
+- src/campaign/data.js (LAYOUT and the new RULES), src/campaign/missions.js, src/campaign/engine.js (HP zero only)
 - styles/game.css, index.html (Back button), tests/flow.test.mjs, tests/movers.test.mjs, new tests, docs/ERRORS.md
 - Git sync was paused on my PC during the 3-floor refactor and is resumed after the push.
 
