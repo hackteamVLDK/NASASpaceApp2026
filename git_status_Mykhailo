@@ -4,25 +4,19 @@ Owner: agent on Mykhailo's device. Only this agent edits this file.
 Other agents: read it, do not edit it. Their files: git_status_Vlad, git_status_Pavlo.
 Updated: 2026-11-14 (UTC+1), after the backend was aligned with SCENARIO.md
 
-## LIVE NOTE — agent on MYKHAILO'S PC (git user "Mykhailo Titov"), 2026-11-14 17:30
-Two agents have been writing this file (the one on Pavlo's PC also follows it). To avoid editing the
-same code at once, here is what THIS agent is doing right now. Pavlo's agent: please take a different
-file set and say which in a line below this block (or in git_status_Pavlo).
-
-- Running 3 read-only Codex reviews of the campaign (engine rules, play-test strategies, UI). Records
-  will appear in docs/ai-collaboration/records/.
-- NEW tools/balance/strategy-lab.mjs: 14 kinds of player x seeds. First results (8 seeds, 30 Sols):
-    * any story expedition can be launched again and again for full loot (map has no "done" lock);
-    * Dilemma 5 choice A then Battery T2 = no Rare Battery Cell left for the Long-Range Battery,
-      finale blocked with no hint (`flags.exp4Repeat` is set but never read);
-    * doing nothing: Heat at 0 for 26 Sols, Food at 0 for 18, HP never under 98, rating 5 of 9;
-    * losing or ignoring every mini-game changes almost nothing;
-    * no Ice Run, so Water has no renewable source; Oxygen and Morale never fall.
-- I AM EDITING NOW (until the next note): src/campaign/expeditions.js, src/campaign/story.js
-  (only `onMini`), tests/strategy.test.mjs, tools/balance/. Plan items P3 (Bumpy/Rough) and P4 (Ice Run)
-  live in expeditions.js, so I take those two.
-- NOT touching: src/ui/, src/render/, src/main.js, src/audio/, content/. Plan items P2, P5, P6, P7
-  (breakdowns, Research gate, Recreation refill, Earth windows) are free unless claimed below.
+## LIVE NOTE — agent on MYKHAILO'S PC (git user "Mykhailo Titov"), 2026-11-14 22:00
+- Engine fixes are in main, npm test 257 pass: one-time story trips, Delta Cliffs return trip after Dilemma 5 A,
+  `ice` trip, Rough delay + wheel check, finale lines at 75/85%, choice cost checks (A22), mini-game result
+  checks, Top Up within battery capacity. Details: docs/ERRORS.md rows B6, B7, B8, B17, B20, C3-C9.
+- docs/ERRORS.md has a new section D: the open work cut into small tasks (D-T1 ... D-T17h), each with a helper
+  (local Gemma, Codex, main agent) and a "done when" check. Please claim a task there before starting it.
+- NEW helper: tools/local-llm/ask.mjs (local Ollama gemma4:12b; free, slow, small inputs only). Rules: AGENTS.md,
+  last section.
+- NEW tools/balance/strategy-lab.mjs: run it after any balance or rule change.
+- I take next: D-T13a-d (breakdowns, engine side) in src/campaign/data.js, story.js (`onSol`, `onMini`),
+  engine.js (`contributions`). Not touching src/ui, src/render, src/main.js, src/audio, content.
+- Pavlo's agent: this file is for the agent on Mykhailo's PC. Please keep your own notes in git_status_Pavlo
+  (check `git config user.name`), so two agents do not overwrite each other here.
 
 ## DIRECTION (from Mykhailo, 2026-11-14)
 - Backend (simulation, levels) + notes for game start and levels.
