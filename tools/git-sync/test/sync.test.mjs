@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildCommitMessage } from '../sync.mjs';
+import { buildCommitMessage, parseStatus } from '../sync.mjs';
 
 const SYNC = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'sync.mjs');
 
@@ -80,7 +80,7 @@ test('local change is committed and pushed; the other clone receives it', (t) =>
   assert.equal(read(w.bob, 'src/game.js'), 'export const a = 1;\n');
 });
 
-test('both sides changed different files: rebased, pushed, nothing lost', (t) => {
+test('both sides changed different files: merged, pushed, nothing lost', (t) => {
   const w = makeWorld(t);
   write(w.alice, 'a.txt', 'from alice\n');
   write(w.bob, 'b.txt', 'from bob\n');
@@ -95,8 +95,7 @@ test('both sides changed different files: rebased, pushed, nothing lost', (t) =>
     assert.equal(read(repo, 'b.txt'), 'from bob\n');
   }
   assert.equal(git(w.alice, 'rev-parse', 'HEAD'), git(w.bob, 'rev-parse', 'HEAD'));
-  // Linear history: no merge commits were created.
-  assert.equal(git(w.bob, 'rev-list', '--merges', '--count', 'HEAD'), '0');
+  assert.equal(git(w.bob, 'status', '--porcelain'), '');
 });
 
 test('conflicting edits: nothing is overwritten, local work is backed up, exit code 2', (t) => {
@@ -109,10 +108,10 @@ test('conflicting edits: nothing is overwritten, local work is backed up, exit c
   assert.equal(b.code, 2, b.out);
   assert.match(b.out, /CONFLICT/);
 
-  // Bob's work is intact and committed locally; no rebase is left half-finished.
+  // Bob's work is intact and committed locally; no Git operation is left half-finished.
   assert.equal(read(w.bob, 'README.md'), '# bob version\n');
   assert.equal(git(w.bob, 'status', '--porcelain'), '');
-  assert.ok(!exists(w.bob, '.git/rebase-merge') && !exists(w.bob, '.git/rebase-apply'));
+  assert.ok(!exists(w.bob, '.git/rebase-merge') && !exists(w.bob, '.git/rebase-apply') && !exists(w.bob, '.git/MERGE_HEAD'));
   // Alice's pushed version is still what the remote main holds.
   assert.equal(git(w.remote, 'show', 'main:README.md'), '# alice version');
   // Bob's commit was backed up to a sync-conflict/* branch on the remote.
@@ -206,6 +205,144 @@ test('deletions and renames propagate', (t) => {
   assert.ok(exists(w.bob, 'new.txt'));
   assert.ok(!exists(w.bob, 'old.txt'));
   assert.ok(!exists(w.bob, 'README.md'));
+});
+
+// ---------------------------------------------------------------- regression tests for review findings
+// (docs/ai-collaboration/records/20261114-105947-review-git-sync-service-for-data-loss-risks.md)
+
+const raw = (cwd, ...args) => spawnSync('git', args, { cwd, encoding: 'utf8', windowsHide: true });
+const stateDir = (repo) => path.join(repo, '.git', 'colony-sync');
+
+test('edits to the same file on different lines are merged automatically', (t) => {
+  const w = makeWorld(t);
+  write(w.alice, 'doc.md', 'line 1\nline 2\nline 3\nline 4\nline 5\n');
+  assert.equal(sync(w.alice, '--once').code, 0);
+  assert.equal(sync(w.bob, '--once').code, 0);
+
+  write(w.alice, 'doc.md', 'line 1 (alice)\nline 2\nline 3\nline 4\nline 5\n');
+  write(w.bob, 'doc.md', 'line 1\nline 2\nline 3\nline 4\nline 5 (bob)\n');
+  assert.equal(sync(w.alice, '--once').code, 0);
+  const b = sync(w.bob, '--once');
+  assert.equal(b.code, 0, b.out);
+  assert.equal(sync(w.alice, '--once').code, 0);
+  for (const repo of [w.alice, w.bob]) assert.equal(read(repo, 'doc.md'), 'line 1 (alice)\nline 2\nline 3\nline 4\nline 5 (bob)\n');
+});
+
+test('a conflict the user resolves by hand lets sync continue', (t) => {
+  const w = makeWorld(t);
+  write(w.alice, 'README.md', '# alice version\n');
+  write(w.bob, 'README.md', '# bob version\n');
+  assert.equal(sync(w.alice, '--once').code, 0);
+  assert.equal(sync(w.bob, '--once').code, 2);
+
+  raw(w.bob, 'pull', '--no-rebase', 'origin', 'main'); // stops with a conflict, as expected
+  write(w.bob, 'README.md', '# alice and bob version\n');
+  git(w.bob, 'add', 'README.md');
+  git(w.bob, 'commit', '-q', '-m', 'resolve README conflict');
+
+  const b = sync(w.bob, '--once');
+  assert.equal(b.code, 0, b.out);
+  assert.equal(sync(w.alice, '--once').code, 0);
+  assert.equal(read(w.alice, 'README.md'), '# alice and bob version\n');
+});
+
+test('an ignored local file is never overwritten by an incoming file of the same name', (t) => {
+  const w = makeWorld(t);
+  fs.appendFileSync(path.join(w.bob, '.git', 'info', 'exclude'), 'local-notes.txt\n');
+  write(w.bob, 'local-notes.txt', 'bob private notes\n');
+  write(w.alice, 'local-notes.txt', 'tracked by alice\n');
+  assert.equal(sync(w.alice, '--once').code, 0);
+
+  const b = sync(w.bob, '--once');
+  assert.equal(b.code, 2, b.out);
+  assert.match(b.out, /BLOCKED/);
+  assert.equal(read(w.bob, 'local-notes.txt'), 'bob private notes\n');
+});
+
+test('a pause issued from a subdirectory stops the sync at the repository root', (t) => {
+  const w = makeWorld(t);
+  write(w.alice, 'deep/dir/file.txt', 'x\n');
+  assert.equal(sync(path.join(w.alice, 'deep', 'dir'), 'pause', '--owner', 'sub').code, 0);
+  assert.ok(exists(w.alice, '.git/colony-sync/pause.d/sub.json'));
+  assert.equal(sync(w.alice, '--once').code, 3);
+});
+
+test('a force-staged secret is not committed, and a hand-committed secret is not pushed', (t) => {
+  const w = makeWorld(t);
+  write(w.alice, '.env', 'TOKEN=abc\n');
+  write(w.alice, 'ok.txt', 'fine\n');
+  git(w.alice, 'add', '-f', '.env');
+  const a = sync(w.alice, '--once');
+  assert.equal(a.code, 0, a.out);
+  assert.ok(remoteFiles(w).includes('ok.txt'));
+  assert.ok(!remoteFiles(w).includes('.env'));
+
+  write(w.alice, 'server.pem', '-----BEGIN-----\n');
+  git(w.alice, 'add', '-f', 'server.pem');
+  git(w.alice, 'commit', '-q', '-m', 'oops');
+  const blocked = sync(w.alice, '--once');
+  assert.equal(blocked.code, 2, blocked.out);
+  assert.match(blocked.out, /BLOCKED/);
+  assert.ok(!remoteFiles(w).includes('server.pem'));
+});
+
+test('partially staged files mean manual Git work: sync stands back and keeps the index', (t) => {
+  const w = makeWorld(t);
+  write(w.alice, 'README.md', '# staged version\n');
+  git(w.alice, 'add', 'README.md');
+  write(w.alice, 'README.md', '# newer working copy\n');
+
+  const r = sync(w.alice, '--once');
+  assert.equal(r.code, 3, r.out);
+  assert.match(r.out, /BUSY/);
+  assert.equal(git(w.alice, 'show', ':README.md'), '# staged version');
+  assert.equal(read(w.alice, 'README.md'), '# newer working copy\n');
+});
+
+test('pause waits for a running cycle; cycles do not overlap; stale locks are recovered', (t) => {
+  const w = makeWorld(t);
+  sync(w.alice, 'status'); // creates the state directory
+  const lock = path.join(stateDir(w.alice), 'cycle.lock');
+
+  // A live process (this test runner) holds the cycle lock.
+  fs.writeFileSync(lock, JSON.stringify({ pid: process.pid, at: new Date().toISOString() }));
+  const p = sync(w.alice, 'pause', '--owner', 'agent', '--wait', '1');
+  assert.equal(p.code, 3, p.out);
+  assert.match(p.out, /still running/);
+  sync(w.alice, 'resume', '--owner', 'agent');
+  write(w.alice, 'a.txt', 'a\n');
+  const overlapping = sync(w.alice, '--once');
+  assert.equal(overlapping.code, 3, overlapping.out);
+  assert.equal(git(w.alice, 'status', '--porcelain'), '?? a.txt');
+
+  // The holder is gone: the lock is stale and is replaced.
+  const dead = spawnSync(process.execPath, ['-e', ''], { windowsHide: true });
+  fs.writeFileSync(lock, JSON.stringify({ pid: dead.pid, at: new Date().toISOString() }));
+  const ok = sync(w.alice, '--once');
+  assert.equal(ok.code, 0, ok.out);
+  assert.ok(!fs.existsSync(lock), 'the cycle lock is released after the cycle');
+  const settled = sync(w.alice, 'pause', '--owner', 'agent', '--wait', '1');
+  assert.equal(settled.code, 0, settled.out);
+});
+
+test('file names with spaces and non-ASCII characters sync correctly', (t) => {
+  const w = makeWorld(t);
+  write(w.alice, 'docs/план миссии.md', 'привет\n');
+  write(w.alice, 'art/rover final v2.txt', 'x\n');
+  assert.equal(sync(w.alice, '--once').code, 0);
+  assert.equal(sync(w.bob, '--once').code, 0);
+  assert.equal(read(w.bob, 'docs/план миссии.md'), 'привет\n');
+  assert.ok(exists(w.bob, 'art/rover final v2.txt'));
+});
+
+test('status parsing handles renames and copies in either column', () => {
+  const z = ['R  new name.txt', 'old name.txt', ' M plain.txt', ' R wt-new.txt', 'wt-old.txt', 'C  copy.txt', 'source.txt', '?? файл.txt', ''].join('\0');
+  const entries = parseStatus(z);
+  assert.deepEqual(entries.map((e) => e.path), ['new name.txt', 'plain.txt', 'wt-new.txt', 'copy.txt', 'файл.txt']);
+  assert.equal(entries[0].orig, 'old name.txt');
+  assert.equal(entries[2].orig, 'wt-old.txt');
+  assert.equal(entries[3].orig, 'source.txt');
+  assert.equal(entries[4].untracked, true);
 });
 
 test('commit messages describe what changed', () => {

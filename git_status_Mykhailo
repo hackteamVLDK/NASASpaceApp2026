@@ -2,29 +2,45 @@
 
 Owner: agent on Mykhailo's device. Only this agent edits this file.
 Other agents: read it, do not edit it. Their files: git_status_Vlad, git_status_Pavlo.
-Updated: 2026-11-14 11:25 (UTC+1)
+Updated: 2026-11-14 12:10 (UTC+1)
+
+## DIRECTION (from Mykhailo, 2026-11-14)
+- NOW: game BACKEND (simulation core, levels) + notes for game start and levels.
+- LATER: Mykhailo sends the lore and the planned story progression; it gets wired into the levels.
+- ART: this agent only writes the asset list with full prompts. Method: generate ONE style
+  anchor image first, then every other asset "in the same style as the anchor".
+  The team generates the images and hands them back; nothing is generated here.
 
 ## DOING NOW
-- Building and testing the two-way Git sync service (tools/git-sync/): commit + push + pull every 15 s.
-- Next in this session: shared agent docs (AGENTS.md, CLAUDE.md, docs/), Codex delegation tool,
-  then the first playable Mars colony scene (src/, index.html).
+- Simulation backend in src/sim/ (pure JS, no browser needed): time, crew, schedules, O2 / water /
+  food / power, radiation + shielding, solar storms from real NASA DONKI data, shelter order,
+  projects, objectives, scoring, save/load, data-driven levels (src/data/levels.js).
+- Tests in tests/ (node --test).
 
 ## DONE
-- Cloned the repo, checked remote/branch (main), tools: git, node 24, npm, python, gh, Codex CLI 0.169.
-- Verified Codex CLI works through the ChatGPT login (no API key) with a read-only test task.
-- Added .gitignore, .gitattributes, package.json.
+- Repo cloned and inspected; tools verified (git, node 24, gh, Codex CLI 0.169 via ChatGPT login).
+- tools/git-sync/: two-way sync, 15 s cycle, pause locks, conflict backup branches. 10/10 tests pass.
+  Start it with:  npm run sync      (docs/GIT_SYNC.md is coming)
+- tools/codex/delegate.mjs: sends review tasks to the local Codex CLI, read-only by default,
+  records in docs/ai-collaboration/.
+- AGENTS.md (rules for all agents) and CLAUDE.md.
+- Real NASA dataset: src/data/nasa/donki-sep-2024.js (119 solar particle detections, 2024).
 
 ## NEXT
-- Game vertical slice: side-view base, crew, time, O2/water/food/power, radiation, solar storm,
-  shelter evacuation, scoring, NASA data, save/load.
-- Asset prompts + manifest (assets/prompts/, assets/manifests/).
+- docs/GAME_DESIGN.md, docs/LEVELS.md (game start + levels notes, lore slots marked TBD).
+- docs/ARCHITECTURE.md, docs/GIT_SYNC.md, docs/ASSET_PIPELINE.md.
+- assets/prompts/: style anchor prompt + list of all needed assets (draft until the lore arrives).
+- Text-only prototype page to play-test the backend before art exists.
 
 ## FILES / FOLDERS I AM EDITING (please do not edit these right now)
-- tools/            (git-sync, codex delegation, dev server)
-- src/, tests/, index.html, styles/   (game code — being created)
-- docs/, AGENTS.md, CLAUDE.md, package.json, .gitignore
+- src/sim/, src/data/, tests/
+- tools/
+- docs/, AGENTS.md, CLAUDE.md, package.json, .gitignore, .gitattributes
 - assets/prompts/, assets/manifests/
+- index.html, styles/, src/main.js, src/ui/ (prototype page)
 
 ## FREE FOR OTHERS
-- Anything not listed above. If you need a file from my list, write it in your own
-  git_status_<Name> file and I will pick it up on the next sync.
+- Lore / story text: put it in docs/lore/ (new folder, yours).
+- Generated images: put them in assets/incoming/ (new folder, yours) — I integrate from there.
+- Anything else not listed above. If you need a file from my list, say so in your own
+  git_status_<Name> file and I will see it on the next sync.
