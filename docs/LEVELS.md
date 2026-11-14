@@ -1,122 +1,94 @@
 # Game start and levels — working notes
 
 Notes for the team on how the game opens and how the levels are built. The backend for all
-of this exists and is tested; the story layer is empty on purpose and waits for the lore.
+of this exists and is tested. **[SCENARIO.md](../SCENARIO.md) is binding**: where this file
+and the scenario disagree, the scenario wins.
 
-- Level data: [src/data/levels.js](../src/data/levels.js)
+- Scenario: [SCENARIO.md](../SCENARIO.md)
+- Opening logic (intro, cutscene, ASTRA, drone mini-game rules): [src/flow/](../src/flow/)
+- Level data: [src/data/levels.js](../src/data/levels.js); world and modules: [src/data/base-layout.js](../src/data/base-layout.js)
 - Mechanics behind the numbers: [GAME_DESIGN.md](GAME_DESIGN.md)
-- Try a level without a browser: `node tools/balance/run-level.mjs L2-storm-season --policy smart`
+- Try a level without a browser: `node tools/balance/run-level.mjs L1-wake-the-station --policy smart`
 
-## Waiting for lore
+## The story so far (from the scenario and the team)
 
-When the lore and the planned course of events arrive, these are the places it plugs in.
-Nothing else needs to change.
+2042, mission ARES-KIDS, base Ares-1 in Jezero Crater. Builder **drones** were sent ahead
+and built half of an underground base. A dust storm put them to sleep. **People then arrive
+by lander** and carry on, with the station AI **ASTRA 6.7** as their guide. In the backend:
+the crew do the building (job "Build"); every drone that is woken makes building faster by
+daylight.
 
-| Slot | Where | Today |
+## Game start, as the scenario specifies it
+
+Timings are in `src/flow/intro.js`; `tests/flow.test.mjs` keeps them equal to SCENARIO.md.
+
+| Time | State | What happens |
 |---|---|---|
-| Opening story (why are we here, who sent us) | `lore.intro` of level 1 | placeholder, marked `loreTbd` |
-| Text between levels | `lore.intro` / `lore.outro` of each level | placeholders |
-| Crew names, personalities, suit colours | [src/data/crew.js](../src/data/crew.js) | Amara, Kenji, Sofia, Leo — stand-ins |
-| Level titles and taglines | `title`, `tagline` | working titles |
-| Who speaks the tips (mission control? an AI? the commander?) | `hints[].text` | neutral narrator |
-| Order and number of levels | `LEVELS` array, `unlocks` | 3 levels, linear |
-| Name of the base and the mission | UI text | none yet |
+| 0.0–10.0 s | `INTRO_TEXT` | Among Us-style text on black: five lines, typewriter blips, bass boom on the last. `Skip >>` top right. |
+| 10.0–14.0 s | `DESCENT` | Camera on the sky (Y 400). Lander on a red-and-white parachute, Y −150 → 650. Parachute detaches at 13.2 s. |
+| 14.0–17.5 s | `TOUCHDOWN` | 4 thrusters at 14.0 s; touchdown at 16.0 s on Y 1050 with camera shake (±4 px, 0.3 s) and a dust burst. |
+| 17.5–24.0 s | `UNDERGROUND_PAN` | Camera pans Y 850 → 2100 (ease-in-out). 20.0 s astronaut exits the airlock into the left wing, removes helmet. 22.0 s Drone #01 blinks red at 1 Hz. |
+| 24.0 s + | `TUTORIAL_HANDOFF` | ASTRA slides in from the left with a chime. Everything is dimmed except Drone #01, which has a pulsing yellow wrench. The player clicks the drone → `DroneRepairMiniGame` (wipe dust, reconnect 2 wires). |
 
-Questions the lore should answer, because they change the levels:
+After the mini-game the screen sends `{ type: 'wakeDrone', drone: 'drone-01' }`, ASTRA
+suggests Battery & Heating first, and the player takes control of level 1.
 
-1. Is the base **already built** when the crew arrives (pre-deployed cargo, as in NASA's
-   reference mission designs), or do they build it? Today: already built.
-2. Is there **one crew** for the whole game, or do people arrive and leave?
-3. Is there a **resupply ship**, and can it be late? (A natural level 4.)
-4. How long is the whole story: weeks, or a full 500-sol surface stay?
-5. Does anything **go wrong on purpose** in the story (equipment failure, a crew member hurt)?
-6. Tone for the youngest players: is anyone ever in real danger on screen?
+## What the backend gives the story and the UI
 
-## Game start
-
-What happens from opening the page to having control. Steps 1–3 need art and lore; steps
-4–7 already run on the backend.
-
-| # | Step | Needs | Backend |
-|---|---|---|---|
-| 1 | Title screen: New game / Continue / Levels | art: title illustration, logo | campaign profile says what "Continue" and "Levels" show |
-| 2 | Opening story, 2–4 cards | lore; art: 2–4 event illustrations | `lore.intro` |
-| 3 | Meet the crew: four cards | lore; art: portraits | `CREW` |
-| 4 | Level 1 loads, 06:00 on sol 1, crew asleep in quarters, **nobody has a job** | — | `createGame('L1-first-sols')` |
-| 5 | Tip: "Nobody has a job yet. Give each astronaut one…" The game waits. | — | hint `welcome` at sol 1 06:00 |
-| 6 | Player assigns four jobs; crew wake, eat, walk to work | — | `applyCommand({ type: 'assign' })` |
-| 7 | Tips appear when their moment comes, never twice | — | hint triggers |
-
-**The first five minutes, as designed** (at normal speed one sol is about two minutes):
-
-- *Minute 0.* Four sleepers, four gauges, one tip. The only thing to do is hand out jobs.
-  This is the game's main control, so it is the first thing taught.
-- *Minute 1.* Noon. Everyone walks to the galley. Tip about the daily rhythm. The player
-  sees that people are not machines: they stop to eat.
-- *Minutes 2–5.* Gauges drift. Whichever runs low first triggers its tip: water ("send
-  someone to explore"), the oxygen generator ("maintain life support"), dust ("clean the
-  panels"). The player learns by reacting, in the order their own choices produced.
-- *Minute 7.* Sol 4, 07:30: the space-weather alert. The game should pause here and show a
-  full card. One big button: shelter order. Storm at 10:00, over by 16:00.
-- *Minute 8.* Storm over. The mission log compares doses. The lesson lands on its own: the
-  engineer underground got almost nothing.
-- *Minute 10.* End of sol 5: results, stars, level 2 unlocked.
-
-Recommended UI behaviour, not in the backend because it is presentation: **pause
-automatically** on `storm-warning`, on `emergency`, and on the first `hint` of a level.
-
-## What a level is
-
-A level is one object of data. The simulation reads all of it; there is no per-level code.
-
-| Field | Meaning |
+| Need | Where |
 |---|---|
-| `lengthSols`, `startHour` | how long it runs; levels start at 06:00 |
-| `crew` | who is here and their starting job |
-| `jobs`, `projects` | what is unlocked |
-| `start.resources`, `start.systems` | tanks and hardware condition at the start |
-| `doseBudgetMsv` | radiation budget per astronaut |
-| `warningLeadMinutes` | how early storm warnings come |
-| `spaceWeather.donki` | take storm dates from real NASA data, starting at this UTC date |
-| `spaceWeather.scripted` | extra storms placed by hand (sol + hour, or a UTC time) |
-| `dustStorms`, `dustDevilChance` | weather |
-| `objectives` | primary and bonus goals |
-| `hints` | tips and what triggers each |
-| `teaches` | the learning goals, for our own reference |
-| `unlocks` | next level |
+| Exact lines, pauses, colours of the text intro | `INTRO_TEXT` |
+| "What does second 15.3 look like?" | `openingFrameAt(t)` and the functions it uses |
+| Sound cues with times (`type-blip`, `bass-boom`, `retro-rocket-roar` …) | `cuesBetween(t0, t1)` |
+| ASTRA's tutorial speech, mood values, panel props | `TUTORIAL_STEP_1`, `src/flow/astra.js` |
+| ASTRA's line for any game event (module built, storm, emergency …) | `astraLineFor(event)` |
+| Rules of the drone repair | `src/flow/drone-repair.js` |
+| Crew names | [src/data/crew.js](../src/data/crew.js) — placeholders |
 
-## Level 1 — First Sols *(playable)*
+## Open points in the scenario
 
-**Purpose:** learn the controls and the four gauges without being punished.
-**Length:** 5 sols. **Budget:** 4 mSv. **Unlocked:** all jobs except building.
+SCENARIO.md does not say these. The code uses the marked default (comments say `PROPOSAL`)
+until the team decides. **Answers wanted from the team.**
 
-Starts short of everything on purpose, so every gauge moves visibly within a few minutes:
-oxygen for 3.5 sols, food for under 6, generator at 80%.
-
-| When | What | Why it is there |
+| # | Question | Default in code |
 |---|---|---|
-| Sol 1 06:00 | Tip: hand out jobs | first control |
-| Sol 1 12:00 | Tip: daily rhythm | explains why work stops |
-| when water < 75 L | Tip: explore for ice | usually sol 2–3 |
-| when generator < 70% | Tip: maintain life support | usually sol 1–2 |
-| when panels < 82% | Tip: clean the panels | usually sol 3–4 |
-| Sol 4 07:30 | Storm warning (2.5 h ahead) | the one scripted threat |
-| Sol 4 10:00–16:00 | Minor storm, 1.5 mSv unshielded | training scenario — **game value, not a real event** |
+| 1 | Is the Dining Room usable at the start? Section 4 puts it in the operational wing; ASTRA says only Water, Air and Sleeping Quarters are online. | Yes, usable. |
+| 2 | Where does power come from before Battery & Heating is built? | A small emergency battery (90 kWh). |
+| 3 | Food: there is no greenhouse in the scenario. | Packaged food only. A Hydroponics bay exists as a proposal for levels 2–3, not in level 1. |
+| 4 | Room positions inside the wings; pixel scale. | 4 floors of 270 units; 5 world units per art pixel (every number in the scenario divides by 5). |
+| 5 | How are the 2 buried drones woken: same mini-game, or dig them out first? | Same mini-game. |
+| 6 | Do woken drones help build? | Yes, faster by daylight. |
+| 7 | How many people arrive, and who are they? The cutscene shows one astronaut leaving the lander. | Four placeholders: Amara, Kenji, Sofia, Leo. |
+| 8 | ASTRA says "deadly space radiation", but in the game radiation builds up a dose and never kills. Suggest "harmful". | Text kept exactly as in the scenario; only the team can change it. |
+| 9 | Values of the ASTRA `mood` prop. | `cheerful`, `calm`, `curious`, `alert`. |
+| 10 | Wire colours and how much dust to wipe in the mini-game. | Orange and cyan; 95% clean. A wrong plug just doesn't stick, nothing can be failed. |
+| 11 | Do later levels exist, and what are they? | Levels 2 and 3 are proposals (`beyondScenario: true`). |
 
-Objectives — primary: everyone healthy; no shortages; 30 science. Bonus: 10 kg of food left;
-everyone below ground for the storm.
+## Level 1 — Wake the Station *(playable)*
 
-Balance, from headless runs:
+**Purpose:** learn that underground is shielded, wake and use drones, hand out jobs, see
+power follow the sun. Begins exactly where the cutscene ends.
+**Length:** 6 sols. **Budget:** 4 mSv. **Start:** left wing online (Airlock dome, Bedroom,
+Dining Room, Water & Air Life Support); right wing unfinished (Battery & Heating, Workshop,
+Research & Comms Lab, Rover Garage). Drone #01 inside, Drones #02 and #03 buried at the surface.
+
+Objectives — primary: crew healthy for 6 sols; wake Drone #01; finish Battery & Heating.
+Bonus: finish the whole right wing; solar panels 80% clean; everyone below ground for the storm.
+
+One scripted minor storm on sol 5 at 10:00 (game value, not a real event) shows what the
+soil roof is for.
+
+Balance, from headless runs (`run-level.mjs`, seed 1):
 
 | How it is played | Result |
 |---|---|
-| Touch nothing | completes, 1 star, 739 points — the base limps but nobody is hurt |
-| Sensible jobs + shelter order | 3 stars, about 1,290 points |
+| Touch nothing (`idle`) | completes, 1 star, 194 points: the crew lives on stores but builds nothing |
+| Wake drones, build in order, shelter on warning (`smart`) | 3 stars, 1,547 points; whole right wing finished; no emergencies |
 
-Open question: 3 stars may be too easy for adults. If so, raise the science goal from 30 to
-45 rather than making the base more fragile.
+Open question: 3 stars may be easy for adults. Candidate fix: make the right wing cost more
+work-hours rather than making the base more fragile.
 
-## Level 2 — Storm Season *(playable)*
+## Level 2 — Storm Season *(playable, beyond the scenario)*
 
 **Purpose:** radiation as a budget; shielding thickness, material and depth; the cost of
 being caught outside. **Length:** 14 sols. **Budget:** 12 mSv.
@@ -160,12 +132,12 @@ Balance:
 | Touch nothing | 1 star; three of four astronauts grounded (13–15 mSv); only the engineer underground is fine (2.7 mSv) |
 | Shelter order every time, nothing else | 1 star; doses fine (4.4 mSv) but 80 science of 90 — the explorer lost too many days |
 | Shelter + move the scientist to the deep lab when storms threaten | 2 stars, about 2,530 points |
-| All that + build the berm | 3 stars (not yet confirmed by an automated run) |
+| `smart` (wakes drones, builds modules and upgrades, shelters, moves the scientist) | 3 stars, 2,850 points, highest dose 2.55 mSv |
 
 The level's point shows in those rows: hiding is not enough, you have to **reorganise the
 work** around the weather.
 
-## Level 3 — Dust and Darkness *(draft)*
+## Level 3 — Dust and Darkness *(draft, beyond the scenario)*
 
 **Purpose:** energy budget, battery as a buffer, what to switch off first.
 **Length:** 16 sols. **Calendar:** 1–17 September 2024 (three minor and two moderate real
@@ -179,18 +151,15 @@ During the storm the base sheds load by itself: lab, then greenhouse, then recyc
 oxygen generator. With the recycler off, water is lost at about 16 L per sol, and the level
 starts with only 110 L. So the real problem of this level is **water**, caused by **power**.
 
-Balance — **not good yet**:
+Balance (`run-level.mjs`, seed 1):
 
 | How it is played | Result |
 |---|---|
-| Touch nothing | completes, 1 star: water ran out (1 emergency), lowest health 74, 103 science of 110 |
-| Shelter order only | completes, 1 star |
-| Simple automatic player | completes, 1 star: 166 science and 23 kg grown, but two blackouts |
+| Touch nothing | completes, 1 star, 1,496 points: one water emergency, lowest health 73, 106 science of 110 |
+| `smart` (builds the extra solar array before the dust, shelters, farms) | 3 stars, 2,966 points, no emergencies, 176 science, 27 kg food |
 
-No automated run reaches 2 stars yet: the blackouts on sols 9–10 need the extra solar array
-built before the dust arrives, which the simple automatic player does not do. To do before
-calling the level playable: confirm a human can reach 2 and 3 stars; consider a tip that says
-plainly "build the extra array and stock up on water before the dust arrives".
+Whether a human reaches 3 stars is untested. Consider a tip on sol 4 that says plainly
+"build the extra array and stock up on water before the dust arrives".
 
 ## Ideas for later levels
 

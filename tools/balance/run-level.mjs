@@ -36,10 +36,19 @@ while (game.status === 'running') {
     const s = game.systems;
     const r = game.resources;
     const storm = game.shelterOrder || game.storms.some((x) => x.status === 'warned' || x.status === 'active');
-    const buildable = Object.keys(game.projects).find((id) => game.projects[id].status !== 'done');
-    if (buildable && !Object.values(game.projects).some((p) => p.status === 'active')) applyCommand(game, { type: 'startProject', project: buildable });
-    const building = Object.values(game.projects).some((p) => p.status === 'active');
-    applyCommand(game, { type: 'assign', crew: 'bot', job: 'farm' });
+    // Wake every sleeping drone (in the game the player wins DroneRepairMiniGame for each).
+    for (const d of game.drones) if (d.status !== 'awake') applyCommand(game, { type: 'wakeDrone', drone: d.id });
+    // Finish unfinished modules in scenario order (power first), then the level's upgrades.
+    if (!game.construction) {
+      const order = ['power', 'workshop', 'lab', 'garage', 'hydroponics'];
+      const module = order.find((id) => game.modules[id] && game.modules[id].status !== 'online');
+      const project = Object.keys(game.projects).find((id) => game.projects[id].status !== 'done');
+      if (module) applyCommand(game, { type: 'buildModule', module });
+      else if (project) applyCommand(game, { type: 'startProject', project });
+    }
+    const building = Boolean(game.construction);
+    const canFarm = game.modules.hydroponics ? game.modules.hydroponics.status === 'online' : true;
+    applyCommand(game, { type: 'assign', crew: 'bot', job: building && game.levelId.startsWith('L1') ? 'build' : canFarm ? 'farm' : 'rest' });
     // The scientist explores in quiet weather and moves to the deep lab when a storm is about.
     applyCommand(game, { type: 'assign', crew: 'sci', job: storm ? 'research' : 'explore' });
     applyCommand(game, { type: 'assign', crew: 'eng', job: Math.min(s.o2GenEff, s.recyclerEff) < 0.75 ? 'lifesupport' : building ? 'build' : s.solarClean < 0.85 ? 'solar' : 'lifesupport' });

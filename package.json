@@ -18,6 +18,8 @@
     "sync:resume": "node tools/git-sync/sync.mjs resume",
     "sync:status": "node tools/git-sync/sync.mjs status",
     "codex": "node tools/codex/delegate.mjs",
+    "assets:prompts": "node tools/assets/build-prompts.mjs",
+    "assets:check": "node tools/assets/build-prompts.mjs --check",
     "screenshot": "node tools/screenshot.mjs"
   }
 }

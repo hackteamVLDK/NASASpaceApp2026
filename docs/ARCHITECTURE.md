@@ -3,25 +3,28 @@
 No build step, no dependencies. Plain ES modules that run both in the browser and in Node.
 
 ```
-index.html, styles/        prototype page (text only, no art yet)
 src/
   sim/                     THE GAME. Pure simulation, no DOM, deterministic.
-  data/                    Levels, base layout, crew roster, NASA reference values and datasets.
-  ui/                      Browser-only: storage, the prototype dashboard. Later: HUD.
-  render/                  (not built yet) canvas renderer that draws the state with real assets.
-  main.js                  Browser entry point: game loop, wires sim to ui.
-tests/                     node --test, simulation only.
+  flow/                    The opening of the game from SCENARIO.md as pure logic: intro.js (text
+                           intro, landing cutscene, tutorial hand-off as functions of time),
+                           astra.js (ASTRA 6.7: guide queue, lines for game events),
+                           drone-repair.js (rules of DroneRepairMiniGame). No rendering.
+  data/                    Levels, base layout (world, modules, drones), crew roster, NASA data.
+  ui/, render/, main.js    NOT BUILT YET: HUD, canvas renderer, browser entry point. They read
+                           state from sim/ and flow/ and send commands; they never change state.
+tests/                     node --test: simulation, flow (kept equal to SCENARIO.md), assets.
 tools/
   git-sync/                Two-way Git sync service.
   codex/                   Delegation to the local Codex CLI.
   balance/                 Headless level runner for tuning.
+  assets/                  build-prompts.mjs: assets/prompts/ from the asset manifest.
   data/                    Scripts that build files in src/data from raw NASA downloads.
-  dev-server.mjs           Static file server for local play.
 assets/
-  prompts/                 One prompt file per asset + the style guide.
+  prompts/                 One prompt file per asset + the style guide (generated).
   manifests/               asset-manifest.json: every asset and its honest status.
-  incoming/                Where teammates drop generated images.
+  incoming/                Where teammates drop generated images (created on first use).
 docs/                      Design, levels, architecture, sync, assets, AI collaboration records.
+SCENARIO.md                The binding game scenario.
 git_status_<Name>          One status file per device's agent (see AGENTS.md).
 ```
 
@@ -70,7 +73,7 @@ localStorage.setItem('save', serialize(game));
 **Events** (returned by `step`, described for players in `src/sim/messages.js`):
 `sol-start`, `storm-warning`, `storm-start`, `storm-end`, `all-clear`, `dust-storm-start`,
 `dust-storm-end`, `dust-devil`, `emergency`, `emergency-over`, `dose-warning`,
-`crew-grounded`, `project-done`, `achievement`, `hint`, `level-complete`, `level-failed`.
+`crew-grounded`, `construction-started`, `module-built`, `drone-awake`, `project-done`, `achievement`, `hint`, `level-complete`, `level-failed`.
 
 ## Inside the simulation
 
@@ -78,10 +81,11 @@ localStorage.setItem('save', serialize(game));
 |---|---|
 | `sim.js` | `createGame`, the one-minute step, commands, storm lifecycle, hints, log |
 | `crew.js` | what each astronaut does: schedule, walking, work, meals, sleep, dose, mood, health |
-| `resources.js` | power and load shedding, oxygen, water, greenhouse, wear, emergencies |
+| `resources.js` | power (emergency cell, then Battery & Heating) and load shedding, oxygen, water, hydroponics, wear, emergencies |
 | `radiation.js` | shielding layers → transmission → dose rate |
 | `space-weather.js` | storm shapes; turning the NASA DONKI catalogue into game storms |
 | `objectives.js` | objectives, score, stars, achievements |
+| `construction.js` | finishing unfinished modules and upgrades: crew work, daylight help from awake drones |
 | `pathfinding.js` | shortest routes through the room graph |
 | `save.js` | save text and campaign profile, with validation |
 | `messages.js` | every player-facing sentence about an event |

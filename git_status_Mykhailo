@@ -2,7 +2,7 @@
 
 Owner: agent on Mykhailo's device. Only this agent edits this file.
 Other agents: read it, do not edit it. Their files: git_status_Vlad, git_status_Pavlo.
-Updated: 2026-11-14 13:05 (UTC+1)
+Updated: 2026-11-14 (UTC+1), after the backend was aligned with SCENARIO.md
 
 ## DIRECTION (from Mykhailo, 2026-11-14)
 - Backend (simulation, levels) + notes for game start and levels.
@@ -10,19 +10,8 @@ Updated: 2026-11-14 13:05 (UTC+1)
 - ART: I only write the asset list with full prompts (one style anchor first, everything else
   "in the same style"). The team generates images and drops them in assets/incoming/.
 
-## DOING NOW — aligning the backend with SCENARIO.md
-- src/data/base-layout.js: world 1920x3200, ground line Y=1050, modules from SCENARIO section 4:
-  surface = Airlock dome; left wing online = Bedroom, Dining Room, Water & Air Life Support;
-  right wing unfinished = Workshop, Research & Comms Lab, Battery & Heating, Rover Garage.
-- Drones (Drone #01 + 2 buried) that must be woken and that build the unfinished modules.
-- NEW src/flow/ — LOGIC ONLY, no rendering, so whoever builds the screens can just read it:
-    intro.js        exact timeline and state machine from SCENARIO sections 3-5
-                    (INTRO_TEXT -> DESCENT -> TOUCHDOWN -> UNDERGROUND_PAN -> TUTORIAL_HANDOFF),
-                    camera Y, lander Y, SFX cues, typewriter progress — all testable numbers
-    astra.js        ASTRA 6.7 guide: message queue, the props { isOpen, message, mood, onClose },
-                    the tutorial dialogue word for word, mapping of game events to ASTRA lines
-    drone-repair.js rules of DroneRepairMiniGame (wipe dust + reconnect 2 wires)
-- Level 1 reworked to start exactly where the cutscene ends.
+## DOING NOW
+- Nothing in progress. Backend is aligned with SCENARIO.md; waiting for the team's answers (see QUESTIONS) and for the next scenario parts.
 
 ## I AM NOT BUILDING (free for others)
 - The screens themselves: intro text screen, landing cutscene rendering, AstraGuidePanel
@@ -32,31 +21,36 @@ Updated: 2026-11-14 13:05 (UTC+1)
 
 ## DONE
 - tools/git-sync/: two-way sync every 15 s. Start with: npm run sync   (docs/GIT_SYNC.md)
-  Verified live: Vlad's SCENARIO commit was pulled and merged automatically.
-- tools/codex/delegate.mjs: review tasks to the local Codex CLI (read-only), records in docs/ai-collaboration/.
-  Two reviews done (sync service, simulation); 22 findings, all checked, fixes + regression tests in.
-- src/sim/: simulation backend — time, crew, schedule, O2/water/food/power with load shedding,
-  radiation + shielding by depth and material, solar storms (dates from NASA DONKI 2024 records),
-  shelter order, objectives, score, stars, achievements, save/load. 65 tests pass.
-- docs/: GAME_DESIGN, LEVELS, ARCHITECTURE, GIT_SYNC.  AGENTS.md, CLAUDE.md.
+- tools/codex/delegate.mjs: read-only review tasks to the local Codex CLI; records in docs/ai-collaboration/.
+- src/sim/: simulation backend. Now includes unfinished modules, builder drones, crew-built construction
+  helped by awake drones, an emergency battery until Battery & Heating exists.
+- src/flow/: intro (text intro, landing cutscene, tutorial hand-off as functions of time), ASTRA 6.7,
+  DroneRepairMiniGame rules. tests/flow.test.mjs keeps it equal to SCENARIO.md (parses the file).
+- Level 1 "Wake the Station" starts exactly where the cutscene ends. Headless run: idle = 1 star,
+  smart = 3 stars (tools/balance/run-level.mjs now wakes drones and builds).
+- docs/: GAME_DESIGN, LEVELS (incl. "Open points in the scenario"), ARCHITECTURE updated to the scenario;
+  NEW docs/ASSET_PIPELINE.md.
+- Assets: manifest rebuilt for the scenario world (384x640 art px, 5 units per pixel, 25 visual assets +
+  8 sounds); NEW tools/assets/build-prompts.mjs -> assets/prompts/ (npm run assets:prompts / assets:check);
+  NEW tests/assets.test.mjs. Nothing is generated yet; every asset is awaiting-generation / awaiting-lore.
+- npm test: 107 tests, all pass.
 
-## QUESTIONS FOR THE TEAM (SCENARIO.md does not say; I use a marked default until you decide)
-1. How many astronauts? The cutscene shows ONE. Default: level 1 = the Commander alone + drones.
-2. Is the Dining Room usable at the start? Section 4 puts it in the operational wing, but ASTRA
-   says "only Water, Air, and Sleeping Quarters are online". Default: usable.
-3. Where does power come from before "Battery & Heating" is built? Default: a small emergency cell.
-4. Food: no greenhouse/farm module in the scenario. Default: packaged food only; I keep a
-   "Hydroponics bay" as a PROPOSAL slot (left wing, 4th floor), not present at the start.
-5. Room positions inside each wing and the pixel scale are not given. Default: 4 floors of 270
-   units centred on camera Y=2100; 5 world units per art pixel (every number in SCENARIO.md
-   divides by 5). See src/data/base-layout.js.
-6. How are the 2 buried drones woken — same mini-game, or dig them out first? Default: same mini-game.
+## QUESTIONS FOR THE TEAM (SCENARIO.md does not say; marked defaults in code) — full table: docs/LEVELS.md
+1. Dining Room usable at the start? (section 4 yes, ASTRA's line no)  Default: yes.
+2. Power before Battery & Heating?  Default: 90 kWh emergency cell.
+3. Food: no greenhouse in the scenario.  Default: stored food; Hydroponics is a proposal for levels 2-3.
+4. Room positions inside the wings; pixel scale.  Default: 4 floors of 270 units; 5 units per art pixel.
+5. Buried drones #02/#03: same mini-game?  Default: yes.
+6. Do woken drones help build?  Default: yes, by daylight.
+7. How many people arrive, who are they? The cutscene shows one.  Default: 4 placeholders.
+8. ASTRA says "deadly space radiation"; radiation never kills in the game. Suggest "harmful" (team edits SCENARIO.md).
+9. Further levels beyond the scenario (2 and 3 are proposals).
 
 ## FILES / FOLDERS I AM EDITING (please do not edit these right now)
 - src/sim/, src/data/, src/flow/, tests/
 - tools/
 - docs/ (except docs/lore/), package.json
-- assets/prompts/, assets/manifests/
+- assets/prompts/ (generated), assets/manifests/
 - I do NOT edit SCENARIO.md.
 
 ## FREE FOR OTHERS
