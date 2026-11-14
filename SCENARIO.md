@@ -146,7 +146,7 @@ State `INTRO_TEXT`, `0.0s – 19.0s`.
 | astra.intro.landing | Lander touches down | Touchdown confirmed! Welcome to Ares-1, our station in Jezero Crater. I'm ASTRA 6.7, your station AI. Gravity here is only 38% of Earth's, so try not to bounce into the ceiling! |
 | astra.intro.why_underground | Camera pans into base | Our base is built underground, under a thick blanket of Martian soil. Mars has very thin air and no magnetic shield around the whole planet, so space radiation reaches the ground. The soil above us blocks most of it. |
 | astra.intro.status | Tutorial hand-off, camera shows both wings | Good news: the Bedroom, Kitchen and Life Support work. Bad news: everything on the right is just steel frames, and our solar panels are buried in dust. |
-| astra.tut.hp_intro | HP bar highlights | This green bar is your HP, your health and energy. Radiation and hard work lower it. Sleep and fresh food bring it back. |
+| astra.tut.hp_intro | HP bar highlights | This green bar is your HP, your health and energy. Hard work and radiation lower it. Sleep and fresh food restore your energy. Real radiation adds up over time, so astronauts limit their time outside. |
 | astra.tut.drone01_click | Drone #01 clicked | That's Drone #01, fast asleep. Its battery is empty, and our solar panels are buried in dust. Let's clean them first! |
 | astra.tut.solar_prompt | Solar Wipe opens | First job: clean the solar panels. Tap the sparkly clumps to zap the static, then wipe! |
 | astra.tut.solar_done | Solar Wipe won | Sunlight is flowing! Mars gets less than half the sunlight Earth does, so every clean panel matters. |
@@ -169,7 +169,7 @@ State `INTRO_TEXT`, `0.0s – 19.0s`.
 | astra.act1.first_sunset | Sol 1, dusk, before first_dusk (optional). The sunset sky turns bluish | Look, a blue sunset! On Mars, fine dust scatters the light so sunsets glow blue, the opposite of Earth. |
 | astra.act1.first_dusk | Sol 1, dusk | The Sun is setting. Tonight it can drop to about minus 80 degrees Celsius outside. Keep an eye on the Heat bar! |
 | astra.act1.heat_warning | Heat below 40 at dusk | Brrr! The base is losing heat. Let's reroute the warm pipes before it gets colder. |
-| astra.act1.first_sleep | Sol 1 night ends | Good morning! Sleeping in the Bedroom gave you back 10 HP. Rest is a real part of every space mission. |
+| astra.act1.first_sleep | Sol 1 night ends | Good morning! Sleeping in the Bedroom gave you back 12 HP. Rest is a real part of every space mission. |
 | astra.act1.battery_built | Battery & Heating built (Sol 3) | Heating core online! Out on the surface tonight it will drop to about minus 80 degrees Celsius. Our trick: every machine makes a bit of leftover heat, so now we catch it and send it to your rooms. NASA's Perseverance rover stays warm the same way, using spare heat from its power generator. |
 | astra.act1.workshop_start | Workshop build starts | Next up: the Workshop. If something breaks on Mars, we can't call a repair shop. We make the parts ourselves. |
 | astra.act1.storm_alert | Sol 3, end of day | See Dilemma 1 (Section 6). |
@@ -192,7 +192,7 @@ State `INTRO_TEXT`, `0.0s – 19.0s`.
 | astra.act2.garage_built | Garage & Rover built (Sol 9) | The Rover is ready to roll! Drive carefully: Mars rocks are sharp. NASA's Curiosity rover got holes and cracks in its metal wheels from them. Clean wheels, careful driving! |
 | astra.act2.first_harvest | First Greenhouse harvest (Sol 10) | First harvest: fresh lettuce! In 2015, astronauts on the space station ate lettuce they grew in space. Fresh food now gives you extra HP every Sol. |
 | astra.act2.map_intro | Holographic map first opened | This is the holographic crater map. Tap a glowing spot to send the Rover. It drives off-screen, and I'll keep you posted by radio. |
-| astra.act2.surface_warning | First expedition launch | Heads up! Outside, there's no soil above you, so radiation reaches you. Your HP will drop while you're out there. Don't worry, rest and fresh food bring it back. |
+| astra.act2.surface_warning | First expedition launch | Heads up! Outside, there's no soil above you, so radiation reaches you. Your HP will drop while you're out there. Rest brings your energy back, but real radiation adds up over time, so keep trips short. |
 | astra.act2.exp1_arrive | Expedition 1 arrives | See Section 5, Expedition 1. |
 | astra.act2.reboot_kit | Reboot Kit crafted (Sol 12) | Reboot Kit ready! We built it with the power core from that old weather probe. On Mars, nothing goes to waste. |
 | astra.act2.pathfinder_found | Expedition 2 arrives (Sol 12) | Commander, look! That's Pathfinder-X! It's been waiting here since 2038. Grab its black box, it recorded everything before the storm. And its big antenna could fix our Comms Lab! (fiction) |
@@ -211,15 +211,15 @@ State `INTRO_TEXT`, `0.0s – 19.0s`.
 | astra.act3.rec_built | Recreation & Storage built (Sol 15) | Recreation room open! In NASA's CHAPEA test, four volunteers lived for 378 days inside a 3D-printed pretend Mars home in Texas. Games, music and spare supplies helped them stay strong. Now we have them too! |
 | astra.act3.blackbox_decode_start | Sol 16 morning | Decoding the black box... Old code, new tricks. Got it! Playing Pathfinder-X's last log. |
 | log.pathfinder.01 | Black box playback | PATHFINDER-X LOG. SOL 1,247. (fiction) |
-| log.pathfinder.02 | Black box playback | Seismic pulse detected. Interval: 37 minutes. Repeating. |
-| log.pathfinder.03 | Black box playback | Methane spike: 40 parts per billion. Source: canyon floor, 18 kilometers west. |
-| log.pathfinder.04 | Black box playback | Warning: dust storm approaching. Switching to sleep mo— |
+| log.pathfinder.02 | Black box playback | Seismic pulse detected. Interval: 37 minutes. Repeating. (fiction) |
+| log.pathfinder.03 | Black box playback | Methane spike: 40 parts per billion. Source: canyon floor, 18 kilometers west. (fiction) |
+| log.pathfinder.04 | Black box playback | Warning: dust storm approaching. Switching to sleep mo— (fiction) |
 | astra.act3.blackbox_react1 | After playback | A thump every 37 minutes, like a clock. NASA's InSight lander felt more than 1,300 marsquakes, but quakes don't usually keep a schedule. Something down there is repeating. |
-| astra.act3.blackbox_react2 | After playback | And methane! On Earth, most methane comes from living things, like microbes. But it can also come from water reacting with certain rocks. NASA's Curiosity rover has sniffed methane on Mars too, and scientists are still working out where it comes from. |
+| astra.act3.blackbox_react2 | After playback | And methane! On Earth, a lot of methane comes from living things, like microbes. But it can also come from water reacting with certain rocks. NASA's Curiosity rover has sniffed methane on Mars too, and scientists are still working out where it comes from. |
 | astra.act3.earth_reply | First Earth contact succeeds | Message from Earth, sent 14 minutes ago: "Ares-Kids, this is Mission Control. We heard Pathfinder-X's log. Go find that signal, and stay safe!" (fiction) |
-| astra.act3.roof_built | Regolith Roof Layer built (Sol 16) | Regolith Roof Layer finished! Every room is now under thick soil, so almost all the radiation stays outside. Scientists think a few meters of soil could protect real Mars bases. |
+| astra.act3.roof_built | Regolith Roof Layer built (Sol 16) | Regolith Roof Layer finished! Every room is now under thick soil, so it blocks most of the radiation. Scientists think a few meters of soil could protect real Mars bases. |
 | astra.act3.ls_t2 | Life Support Tier 2 (Sol 16) | Life Support upgraded! Mars air is mostly carbon dioxide, and our new unit pulls oxygen out of it. NASA's MOXIE did this on Mars and made 122 grams of oxygen, about what a small dog breathes in 10 hours! And we melt ice to top up our water loop. |
-| astra.act3.deep_scan | Lab Tier 2 Deep Scan (Sol 19) | Deep Scan complete! The pulse comes from a pocket under the canyon floor. My readings say: salty liquid water. Salt keeps water from freezing, even in the Martian cold. (the canyon pocket is fiction) |
+| astra.act3.deep_scan | Lab Tier 2 Deep Scan (Sol 19) | Deep Scan complete! The pulse comes from a pocket under the canyon floor. My readings say: salty liquid water. Salt helps water stay liquid even when it's very cold. (the canyon pocket is fiction) |
 | astra.act3.final_prep | Expedition 5 unlocked | This is it, Commander. The Rover is charged, your suit is sealed, and Earth is listening. Let's go find the Jezero Signal. |
 
 ### Finale: the Canyon Anomaly (Sol 20)
@@ -257,14 +257,14 @@ Sandbox rules: random events (Section 6) keep firing, the repeatable runs stay o
 |---|---|---|
 | astra.hp.surface_70 | HP below 70 on an expedition | Your HP is dropping out here. Radiation adds up, so don't stay longer than you need. |
 | astra.hp.50 | HP below 50 | HP is at half. Time to head home soon, or take a rest in the Bedroom. |
-| astra.hp.25 | HP below 25 | HP is low! Let's get you somewhere safe. Rest and fresh food will help you recover. |
+| astra.hp.25 | HP below 25 | HP is low! Let's get you somewhere safe. Rest and fresh food will restore your energy. |
 | astra.hp.zero_base | HP hits 0 in the base | You're worn out. Into Med-Rest Mode for 1 Sol. The drones and I will keep things running. See you tomorrow! |
 | astra.hp.zero_expedition | HP hits 0 on an expedition | Your HP hit zero, so I'm sending a rescue drone. It will bring you and some of the loot home safely. |
 | astra.hp.medrest_end | Med-Rest ends | Good morning! You're rested and back at 50 HP. Eat something fresh to get stronger. |
 | astra.hp.full | HP reaches 100 (max once per Sol) | HP back to 100! You're ready for anything. |
 | astra.rad.partial_room | Astronaut enters a room without the Roof Layer | This room's roof isn't finished yet, so a little radiation gets in. Don't hang around here too long! |
 | astra.rad.suit_liner | Suit Radiation Liner crafted | New suit liner! Materials full of hydrogen, like water and some plastics, are great at blocking space radiation. |
-| astra.rad.rover_shield | Rover Radiation Shielding crafted | We packed Martian soil bricks around the Rover cabin. Mars soil makes a great shield, and there's plenty of it! |
+| astra.rad.rover_shield | Rover Radiation Shielding crafted | We packed Martian soil bricks around the Rover cabin. Mars soil cuts the radiation a lot, and there's plenty of it! |
 
 ### System lines: resources & emergencies
 
@@ -410,7 +410,7 @@ A solo Commander finishes all six modules by Sol 15, all Tier 2 upgrades by Sol 
 | Recreation & Storage | Lab build started | 10 SP | −4 Power, +4 Morale, emergency refill once per 5 Sols | −4 Power, +6 Morale, refill once per 3 Sols |
 | Regolith Roof Layer (base upgrade) | Lab build started | 10 SP + 1 Titanium Plate | Right-wing rooms become fully shielded | — |
 
-Extra power rules: each drone actively building uses −5 Power per Sol. During a dust storm, Solar ×0.3 (Tier 2: ×0.5) and Battery & Heating uses ×4 power, because the heaters work overtime.
+Extra power rules: each drone actively building uses −5 Power per Sol. During a dust storm, Solar ×0.3 (Tier 2: ×0.5) and Battery & Heating uses ×4 power, because it also runs the base's dust-filter fans, which work overtime in a storm (gameplay value). Real dust storms make Mars days cooler and nights warmer.
 
 Tier 2 recipes are in Section 5.4.
 
@@ -642,7 +642,7 @@ Nine mini-games, each 10–20 seconds, each tied to a real Mars problem. They op
 
 ### 4.6 Hydroponic LED & Nutrient Match
 
-**Trigger & real cause:** The Hydroponic Nutrient Drift event (Section 6), and Dilemma 4. Without soil, the water must carry every nutrient, and its mix drifts over time. Food output −40%, fresh-crop HP bonus off.
+**Trigger & real cause:** The Hydroponic Nutrient Drift event (Section 6), and Dilemma 4. Without soil, the water must carry all the minerals the roots need, and its mix drifts over time. Food output −40%, fresh-crop HP bonus off.
 
 **UI & interaction:** 3 plant trays (lettuce, potatoes, tomatoes), each with a droopy plant, a drip line and a small color tag. 3 nutrient bottles at the top (green, yellow, purple). An LED switch on the wall.
 1. Drag the bottle that matches each tray's tag onto its drip line.
@@ -652,7 +652,7 @@ Nine mini-games, each 10–20 seconds, each tied to a real Mars problem. They op
 
 **Role modifiers:** Botanist: tags glow, and one tray is auto-matched. Engineer (Not a Gardener): tags are hidden; tap "Ask Botanist" to show them for 3 s (if a Botanist is in the game), otherwise get 2 tries per tray. Pilot, Comms: standard.
 
-**ASTRA:** "Plants mostly use red and blue light, so our LEDs shine those colors and the Greenhouse glows purple. Without soil, the water must carry every nutrient the plants need, so we check it often."
+**ASTRA:** "Plants mostly use red and blue light, so our LEDs shine those colors and the Greenhouse glows purple. Without soil, the water must carry all the minerals their roots need, so we check it often."
 
 ### 4.7 Rover Wheel Pebble Vacuum
 
@@ -733,7 +733,7 @@ Rescue rule. If a crew member's HP hits 0 on the trip, a rescue drone flies out.
 |---|---|---|---|---|---|---|---|---|
 | 1 | Crashed Weather Probe Breeze-7, 3 km east (fiction) | 10 | 1 Sol | Crater floor (1.0) | Garage & Airlock | Low | 17 | 15 SP, Probe Power Core, Circuit Board ×3, Titanium Scrap ×2, Weather Sensor |
 | 2 | Pathfinder-X Wreck, 8 km north (fiction) | 12 | 1 Sol | Crater floor (1.0) | Titanium Wheels | Medium | 17 | 20 SP, Black Box, Dish Antenna, Solar Cell ×3, Titanium Plate ×3, Circuit Board ×2 |
-| 3 | Crater Rim Ice, 12 km northwest | 14 | 1 Sol | Crater rim (1.25) | Deep Ice Drill | Medium | 21 | 20 SP, Ice Core ×3, Water Filter Membrane, Titanium Plate ×2, Circuit Board |
+| 3 | Crater Rim Ice, 12 km northwest (fiction) | 14 | 1 Sol | Crater rim (1.25) | Deep Ice Drill | Medium | 21 | 20 SP, Ice Core ×3, Water Filter Membrane, Titanium Plate ×2, Circuit Board |
 | 4 | Ancient Delta Cliffs, 20 km west | 17–18 | 2 Sols | Delta (1.25) | Regolith Radiation Shielding (+ Suit Liner recommended) | High | 19 (27 without Liner) | 25 SP, Rare Battery Cell ×3, Lab Sensor Kit, Mineral Sample ×3, Titanium Plate, Circuit Board ×2 |
 | 5 | Canyon Anomaly, 18 km beyond the delta (fiction) | 20 | 1 Sol (2 without Long-Range) | Canyon (1.5) | All 4 Rover upgrades + Lab T2 Deep Scan | Scripted success | 12 | Canyon Samples, Brine Sample, 30 SP |
 | R | Scrap & Ice Run (repeatable) | Scrap from 10, Ice from 14 | 1 Sol | Crater floor (1.0) | Garage (Ice mode: Deep Ice Drill) | Low | 17 (8 with Shield + Liner) | Scrap mode: 15 SP + 1 random Circuit Board, Titanium Plate or Solar Cell. Ice mode: Ice Core ×2 |
@@ -776,7 +776,7 @@ ASTRA on arrival (at 50%): astra.act2.pathfinder_found (Section 1).
 | 85 | Radio decision: There's more ice deeper down. (A) Drill one more core: +1 Ice Core, +0.25 Sol, −4 HP. (B) Head home now. |
 | 100 | Bringing home enough water for weeks! |
 
-ASTRA on return: "Mars has lots of frozen water, mostly underground and near the poles. Our scan found a small buried patch hiding in this cold shadow. Every Ice Core is 25 units of fresh water!"
+ASTRA on return: "Mars has lots of frozen water, mostly underground and near the poles. Our scan found a small buried patch hiding in this cold shadow. (fiction) Real ice this close to the equator would be a lucky find! Every Ice Core is 25 units of fresh water!"
 
 #### Expedition 4: Ancient Delta Cliffs (2 Sols)
 
@@ -858,7 +858,7 @@ Five scripted dilemmas teach cause and effect at key story moments; four repeata
 
 ### Dilemma 1: The Dust Storm (Sol 3)
 
-ASTRA 6.7 // WEATHER ALERT: A giant dust storm is rolling across Jezero Crater! For 3 Sols, dust will block about 70% of the sunlight on our solar panels, and the heaters will have to work extra hard. If we do nothing, our batteries could run dry. How should we get ready?
+ASTRA 6.7 // WEATHER ALERT: A giant dust storm is rolling across Jezero Crater! For 3 Sols, dust will block about 70% of the sunlight on our solar panels, and our dust-filter fans will have to work extra hard. Fun fact: dust storms make Mars days cooler and nights warmer. If we do nothing, our batteries could run dry. How should we get ready?
 
 | Choice | Immediate | Delayed | ASTRA follow-up |
 |---|---|---|---|
@@ -883,7 +883,7 @@ ASTRA 6.7 // CREW IDEA: New idea from the crew: "Why not grow potatoes in Martia
 | Choice | Immediate | Delayed | ASTRA follow-up |
 |---|---|---|---|
 | A. Plant straight in Martian soil | −10 Water. A potato bed appears | Sol 13: potatoes grow, but ASTRA's scan finds perchlorates before anyone eats them. Harvest composted. Morale −3. Choice B unlocks in the Lab menu | "The plants grew, but they soaked up perchlorates, salty chemicals that are bad for people. Good experiment: now we know! Scientists test things before they eat them." |
-| B. Wash the soil first (−20 Water, 1 drone for 1 Sol) | Water dips (tight until Expedition 3) | Sol 13: Soil Beds unlock. Greenhouse +3 Food per Sol and fresh crops +1 HP, for good. +5 Research | "Perchlorates dissolve in water, so we rinsed them away. Scientists are studying ideas like this for real Mars farms!" |
+| B. Wash the soil first (−20 Water, 1 drone for 1 Sol) | Water dips (tight until Expedition 3) | Sol 13: Soil Beds unlock. Greenhouse +3 Food per Sol and fresh crops +1 HP, for good. +5 Research | "Perchlorates dissolve in water, so rinsing washes a lot of them out. Real scientists found some always stays behind, so they're still testing ways to make Mars soil safe for farms." |
 | C. Stick with hydroponics | No cost | No bonus. Choice B stays available from the Lab menu | "Safe choice! When you're not sure something is safe, testing first is what real scientists do." |
 
 ### Dilemma 4: Cold Plants or Call Home? (Sol 16)
@@ -892,13 +892,13 @@ ASTRA 6.7 // POWER ALERT: A very cold night is coming, and the Greenhouse heater
 
 | Choice | Immediate | Delayed | ASTRA follow-up |
 |---|---|---|---|
-| A. Keep the plants warm | Greenhouse safe. Earth window missed. Morale −5 | Next Earth window on Sol 19 | "Our plants are safe and cozy. Earth will still be there in 3 Sols. Mars and Earth keep moving, so we wait for the next good window." |
+| A. Keep the plants warm | Greenhouse safe. Earth window missed. Morale −5 | Next Earth window on Sol 19 | "Our plants are safe and cozy. Earth will still be there. Our next radio slot is in 3 Sols." |
 | B. Call Earth | Antenna Alignment mini-game. On success: Morale +10, Research +10, astra.act3.earth_reply plays | Greenhouse gets cold: Food output −50% and no fresh-crop HP for 2 Sols; Nutrient Match triggers | "Hearing from home made everyone smile! The plants got chilly, though. Most vegetables stop growing when it gets close to freezing." |
 | C. Move the trays into the warm Kitchen (1 drone for half a Sol) | Food output −20% for 1 Sol. Lab has enough power for a text-only message: Morale +5 | No further cost | "Clever! We used heat that was already there. When two things need the same power, sometimes there's a third way." |
 
 ### Dilemma 5: Space Weather Warning (Sol 18, radio decision on Expedition 4)
 
-ASTRA 6.7 // SPACE WEATHER ALERT: The Sun just shot out a burst of super-fast particles, a solar storm! It will reach Mars in about 2 hours. The base is safe under the soil, but the Rover crew is out at the Delta Cliffs. What should they do?
+ASTRA 6.7 // SPACE WEATHER ALERT: The Sun just shot out a burst of super-fast particles, a solar storm! The fastest particles can reach Mars in less than an hour, so we must decide fast! The base is safe under the soil, but the Rover crew is out at the Delta Cliffs. What should they do?
 
 | Choice | Immediate | Delayed | ASTRA follow-up |
 |---|---|---|---|
@@ -908,7 +908,7 @@ ASTRA 6.7 // SPACE WEATHER ALERT: The Sun just shot out a burst of super-fast pa
 
 ### Random Martian events (repeatable)
 
-| Event | First possible | Chance per Sol | Cooldown | Early warning |
+| Event | First possible | Chance per Sol | Cooldown | Early warning (forecast) |
 |---|---|---|---|---|
 | Solar Flare Radiation Spike | Sol 8 | 10% | 6 Sols | 1 Sol with Lab T2 or Comms Officer (2 with both) |
 | Electrostatic Dust Devil | Sol 5 | 15% (daytime) | 4 Sols | None |
@@ -919,13 +919,19 @@ At most 1 random event per Sol, never on a story-dilemma Sol, and never while th
 
 #### Event 1: Solar Flare Radiation Spike
 
-ASTRA 6.7 // SPACE WEATHER ALERT: Solar flare detected! A burst of fast particles from the Sun will hit Mars in about 2 hours. Our underground rooms are safe, but anyone outside or in an unfinished room will get a big dose. What's the plan?
+Early warning (only with Lab T2 or the Comms Officer's Storm Watch), shown 1 Sol before the flare:
+
+ASTRA 6.7 // SPACE WEATHER WATCH: The Sun has a stormy spot facing Mars. A flare could come soon.
+
+The warning is a **forecast, not a detection**: real forecasters watch active regions on the Sun, but cannot predict the exact time of a flare.
+
+ASTRA 6.7 // SPACE WEATHER ALERT: Solar flare! Its fastest particles can reach Mars in less than an hour. Our underground rooms are safe, but anyone outside or in an unfinished room will get a big dose. What's the plan?
 
 | Choice | Immediate | Delayed | ASTRA follow-up |
 |---|---|---|---|
 | A. Everyone to the Storm Shelter (Bedroom for half a Sol) | Almost no HP loss (−1 in the shelter). Workshop and Greenhouse tasks pause: −3 SP, −5 Food | None | "Safe and sound! In May 2024, a solar storm hit Mars so hard that NASA said an astronaut next to the Curiosity rover would have got a dose like 30 chest X-rays at once." |
-| B. Keep working | Anyone in an unfinished right-wing room: HP −9 (half a Sol at −18). Anyone in a finished room: HP −2. Anyone on the surface: flare ×3 formula | None. HP recovers with sleep | "We kept working, but some of us took a hit. Next time, let's hide first and work later. HP comes back, but it's better not to lose it." |
-| C. Planned shelter (only with an early warning) | Crew shelters at the right moment; drones keep working. Only the tiny shelter dose (−1 HP) | None | "That's what early warnings are for! Robots don't mind radiation as much as people, so the drones kept building while we stayed safe." |
+| B. Keep working | Anyone in an unfinished right-wing room: HP −9 (half a Sol at −18). Anyone in a finished room: HP −2. Anyone on the surface: flare ×3 formula | None. HP recovers with sleep | "We kept working, but some of us took a hit. Next time, let's hide first and work later. Rest brings your energy back, but real radiation adds up over time, so it's better to avoid it." |
+| C. Planned shelter (only with an early warning) | Crew shelters at the right moment; drones keep working. Only the tiny shelter dose (−1 HP) | None | "That's what early warnings are for! Our drones are built to handle radiation better than people, but even robots can glitch in a big storm. In 2024, one hit knocked a Mars orbiter's star camera offline for an hour!" |
 
 #### Event 2: Electrostatic Dust Devil
 
@@ -934,8 +940,8 @@ ASTRA 6.7 // WEATHER ALERT: A dust devil, a spinning tornado of dust, is heading
 | Choice | Immediate | Delayed | ASTRA follow-up |
 |---|---|---|---|
 | A. Let it pass | Coin flip: 50% panels blown clean (Power +20% for 3 Sols); 50% panels dusted (Power −30% until Static Wipe) | Effect lasts as stated | Clean: "Lucky! Dust devils sometimes cleaned the panels of NASA's Spirit and Opportunity rovers for free." Dusty: "Not so lucky this time. Time to wipe!" |
-| B. Tilt the panels flat to stow | Power −50% for the rest of the Sol. No risk | None | "Playing it safe. Stowed panels make less power, but they don't get buried." |
-| C. Watch from outside, then wipe | Commander (or 1 astronaut) HP −5. Panels guaranteed clean; Power +10% for 3 Sols | None | "Hands-on cleaning works every time! A little time outside means a little radiation, so keep it short." |
+| B. Tilt the panels flat to stow | Power −50% for the rest of the Sol. No risk | None | "Playing it safe. Stowed panels make less power, but they're safer from the dust." |
+| C. Watch from outside, then wipe | Commander (or 1 astronaut) HP −5. Panels guaranteed clean; Power +10% for 3 Sols | None | "Hands-on cleaning did the trick! A little time outside means a little radiation, so keep it short." |
 
 #### Event 3: Airlock Micro-Leak
 
@@ -943,7 +949,7 @@ ASTRA 6.7 // MAINTENANCE ALERT: I hear a tiny hiss. There's a small air leak som
 
 | Choice | Immediate | Delayed | ASTRA follow-up |
 |---|---|---|---|
-| A. Hunt the leak now | Seal Check variant: find the puff on the airlock wall and clamp it. Leak fixed | None | "Found it! In 2020, astronauts on the space station found a tiny leak by watching a floating tea leaf drift toward the hole!" |
+| A. Hunt the leak now | Seal Check variant: find the puff on the airlock wall and clamp it. Leak fixed | None | "Found it! In 2020, the space station crew found a tiny leak by watching a floating tea leaf drift toward the hole!" |
 | B. Quick tape patch | Leak stops now. −1 SP | Leak returns after 3 Sols at half strength (Oxygen −2, Water −1 per Sol) | "Tape is a great quick fix, but it doesn't last forever. We'll need a proper repair soon." |
 | C. Seal the airlock | No expeditions for 1 Sol. A drone fixes the leak (1 Sol of drone time) | Airlock reopens next Sol | "Closing the door stops the leak while the drone works. Sometimes waiting is the safest move." |
 
@@ -955,9 +961,9 @@ ASTRA 6.7 // GREENHOUSE ALERT: The plants look droopy! The nutrient mix in their
 
 | Choice | Immediate | Delayed | ASTRA follow-up |
 |---|---|---|---|
-| A. Fix it now | LED & Nutrient Match mini-game. On win, Greenhouse back to normal | None | "Happy plants! In 2016, astronaut Scott Kelly rescued sick zinnia flowers on the space station by changing how he watered them, and they bloomed!" |
+| A. Fix it now | LED & Nutrient Match mini-game. On win, Greenhouse back to normal | None | "Happy plants! In 2016, astronaut Scott Kelly rescued moldy zinnia flowers on the space station by cleaning them and nursing them back to health, and they bloomed!" |
 | B. Flush and refill the tank | Water −10. Auto-fixed at the start of next Sol | Food −40% until then | "Fresh water, fresh start. It cost some water, but the plants will bounce back by tomorrow." |
-| C. Wait and see | Food output −40%, no fresh-crop HP | After 2 Sols: plants wilt, Food −10, and the mini-game opens automatically | "Waiting made it worse. Plants without soil depend on us for every nutrient, so it's best to fix problems early." |
+| C. Wait and see | Food output −40%, no fresh-crop HP | After 2 Sols: plants wilt, Food −10, and the mini-game opens automatically | "Waiting made it worse. Plants without soil depend on us for all the minerals their roots need, so it's best to fix problems early." |
 
 ## Section 7: Developer-ready JSON schemas
 
@@ -1150,7 +1156,7 @@ The Engineer's Heavy Toolkit HP penalty is stored as surfaceRadiationMultiplier:
       "severity": "urgent",
       "text": {
         "header": "SPACE WEATHER ALERT",
-        "astraAlert": { "id": "astra.d5.alert", "en": "The Sun just shot out a burst of super-fast particles, a solar storm! It will reach Mars in about 2 hours. The base is safe under the soil, but the Rover crew is out at the Delta Cliffs. What should they do?" }
+        "astraAlert": { "id": "astra.d5.alert", "en": "The Sun just shot out a burst of super-fast particles, a solar storm! The fastest particles can reach Mars in less than an hour, so we must decide fast! The base is safe under the soil, but the Rover crew is out at the Delta Cliffs. What should they do?" }
       },
       "choices": [
         {

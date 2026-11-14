@@ -9,7 +9,10 @@ Method: for each claim a NASA page, a peer-reviewed paper, or a major science or
 page was **opened** (not just a search snippet). Where a PDF was the source, its text was
 extracted and the quoted sentence was found in it. Line numbers refer to `SCENARIO.md`.
 
-**Result: 61 claims checked. 52 correct, 9 need a fix, 0 unverifiable.**
+**Result: 75 claims checked. 59 correct, 16 needed a fix (all fixed on this branch), 0 unverifiable.**
+Rows F10–F16 and the six rows marked "added after Codex review" came from the independent Codex review. The team's decisions on the
+9 fixes are in [Decisions](#decisions-2026-11-14); an independent Codex review is in
+[content/ai-collaboration/records/20261114-science-fact-check-review.md](../ai-collaboration/records/20261114-science-fact-check-review.md).
 This file does not change `SCENARIO.md`; fixes need a team decision first.
 
 Verdicts: **correct** (matches the source, at kid-friendly precision) · **needs fix**
@@ -87,16 +90,30 @@ Data label: the label the claim should carry in `src/data/*.js` and in docs:
 | Dilemma 5 alert, astra.d5.alert | Solar storm particles reach Mars in about 2 hours | **needs fix** (NASA: "tens of minutes" in May 2024) | https://www.nasa.gov/solar-system/planets/mars/nasa-watches-mars-light-up-during-epic-solar-storm/ | approximation | F2 |
 | Dilemma 5, B follow-up | Thick rock blocks radiation like soil | correct (cliffsides or lava tubes give extra shielding) | https://www.jpl.nasa.gov/news/nasa-watches-mars-light-up-during-epic-solar-storm/ | approximation | — |
 | Event 1 alert | Particles hit Mars in about 2 hours | **needs fix** (same as F2) | https://www.nasa.gov/solar-system/planets/mars/nasa-watches-mars-light-up-during-epic-solar-storm/ | approximation | F3 |
+| Event 1 early warning (Lab T2 / Storm Watch) | A flare warning 1 Sol ahead, framed as a forecast: "The Sun has a stormy spot facing Mars. A flare could come soon." | correct as a forecast (flares come from active regions; forecasters give probabilities, not exact times) | https://swpc-drupal.woc.noaa.gov/phenomena/solar-flares-radio-blackouts | approximation | — (added with the F3 decision) |
 | Event 1, A follow-up | May 2024: astronaut next to Curiosity would get a dose like 30 chest X-rays | correct (8,100 micrograys) | https://www.jpl.nasa.gov/news/nasa-watches-mars-light-up-during-epic-solar-storm/ | nasa_measurement | — |
 | Event 1, C follow-up | Robots don't mind radiation as much as people | **needs fix** (Odyssey's camera was knocked offline by the same storm) | https://www.jpl.nasa.gov/news/nasa-watches-mars-light-up-during-epic-solar-storm/ | approximation | F8 |
 | Event 2, A follow-up | Dust devils sometimes cleaned Spirit's and Opportunity's panels | correct (Spirit: 60% → 93% power, March 2005) | https://science.nasa.gov/mission/mer-spirit/ | nasa_measurement | — |
-| Event 3, A follow-up | In 2020, ISS astronauts found a leak with a floating tea leaf | **needs fix** (it was cosmonaut Ivanishin) | https://www.universetoday.com/148443/the-crew-of-the-iss-has-found-the-source-of-the-stations-air-leak | approximation | F6 |
+| Event 3, A follow-up | In 2020, ISS astronauts found a leak with a floating tea leaf | **needs fix** (it was cosmonaut Ivanishin) | https://www.universetoday.com/148443/the-crew-of-the-iss-has-found-the-source-of-the-stations-air-leak (space news, reporting Roscosmos) · https://www.nasa.gov/blogs/spacestation/2020/10/19/crews-change-command-on-tuesday-leak-temporarily-sealed/ (NASA: Russian crew sealed the leak; no tea-leaf detail) | approximation | F6 |
 | Event 4, A follow-up | In 2016 Scott Kelly rescued sick zinnias by changing the watering | **needs fix** (he cleaned off mold and nursed them) | https://www.nasa.gov/exploration-research-and-technology/growing-plants-in-space/ · https://www.nasa.gov/humans-in-space/zinnias-from-space-nasa-studies-the-multiple-benefits-of-gardening/ | nasa_measurement | F7 |
 | Expedition 1 radio, 30% | Mars wind shapes sand ripples, like dunes on Earth | correct | https://science.nasa.gov/photojournal/ripples-or-dunes/ | approximation | — |
 | Expedition 3, ASTRA on return | Mars has lots of frozen water, mostly underground and near the poles | correct | https://science.nasa.gov/mars/facts/ · https://www.jpl.nasa.gov/news/nasa-is-locating-ice-on-mars-with-this-new-map/ | approximation | — |
 | Expedition 3, ASTRA on return; 5.2 row 3 | A small buried ice patch sits in the shadow of Jezero's rim | **needs fix** (not expected at 18°N; must be tagged fiction) | https://www.jpl.nasa.gov/news/nasa-is-locating-ice-on-mars-with-this-new-map/ | gameplay | F4 |
 | Expedition 4, ASTRA at 20% | Ingenuity was the first helicopter on another planet, in 2021, and made 72 flights | correct | https://www.nasa.gov/news-release/after-three-years-on-mars-nasas-ingenuity-helicopter-mission-ends/ | nasa_measurement | — |
 | Expedition 4, ASTRA at 35% | Billions of years ago a river flowed into a lake in Jezero; the delta's mud is a good place to look for ancient life | correct ("billions of years ago"; delta base rocks were "once mud on the bottom of Lake Jezero") | https://www.nasa.gov/solar-system/nasas-perseverance-rover-arrives-at-delta-for-new-science-campaign/ | approximation | — |
+| astra.tut.hp_intro, astra.act2.surface_warning, astra.hp.25, Event 1 B follow-up | Rest and fresh food "bring back" HP lost to radiation | **needs fix** (radiation dose is cumulative over a career, which is why NASA caps it; rest restores energy, not radiation damage) | https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-020-radiation-protection.pdf | approximation | F10 |
+| astra.act3.roof_built, astra.rad.rover_shield | Soil keeps "almost all" radiation outside; soil makes "a great shield" | **needs fix** (regolith gives large, depth- and composition-dependent reductions, not near-total blocking) | https://doi.org/10.1029/2019JE006246 | approximation | F11 |
+| astra.act3.deep_scan | Salt keeps water from freezing in the Martian cold | **needs fix** (salt lowers the freezing temperature; very cold brine still freezes) | https://www.jpl.nasa.gov/news/nasa-mars-rovers-weather-data-bolster-case-for-brine/ | approximation | F12 |
+| Dilemma 4, A follow-up | The 3-Sol wait for Earth contact is because Mars and Earth keep moving | **needs fix** (the 3-Sol window is a game schedule, not planetary motion) | — | gameplay | F13 |
+| Event 2, B and C follow-ups | Stowed panels "don't get buried"; hands-on cleaning "works every time" | **needs fix** (guarantees, not engineering facts) | — | gameplay | F14 |
+| Dilemma 1 alert; 3.3 extra power rules | In a dust storm the heaters must work extra hard | **needs fix** (dust storms make Mars days cooler but nights warmer) | https://www.nasa.gov/missions/how-a-tiny-curiosity-motor-identified-a-massive-martian-dust-storm/ | approximation | F15 |
+| 4.6 trigger and ASTRA; Event 4 C follow-up | Without soil, the water must carry "every nutrient" | **needs fix** (plants also take carbon from CO₂ in the air; the water carries the minerals) | https://ntrs.nasa.gov/citations/20170011105 | approximation | F16 |
+| astra.act1.first_sleep | Rest is a real part of every space mission | correct (strict sleep schedules; sleep loss causes fatigue-induced errors) | https://www.nasa.gov/missions/station/seven-ways-astronauts-improve-sleep-may-help-you-snooze-better-on-earth/ | approximation | — (added after Codex review) |
+| astra.act2.greenhouse_start | Plants make oxygen | correct (photosynthesis generates oxygen and removes CO₂) | https://ntrs.nasa.gov/citations/20170011105 | approximation | — (added after Codex review) |
+| astra.act3.lab_built | Radio travels at the speed of light, the fastest thing there is | correct (communications are bound by the speed of light) | https://www.nasa.gov/missions/tech-demonstration/space-communications-7-things-you-need-to-know/ | approximation | — (added after Codex review) |
+| astra.t2.greenhouse | Stacking trays grows more food in the same small room | correct (vertical farms grow more crops in a much smaller area) | https://spinoff.nasa.gov/indoor-farming | approximation | — (added after Codex review) |
+| 4.2 ASTRA | Dust rides in on spacesuits; clean filters keep it out of lungs | correct (suits collect fine dust; fine particles can reach deep into the lungs) | https://www.nasa.gov/missions/mars-2020-perseverance/nasas-perseverance-offers-clues-to-protect-crews-from-mars-dust/ | approximation | — (added after Codex review) |
+| Expedition 1, ASTRA on return | Weather probes measure wind, dust and temperature | correct (MEDA measures temperature, wind, pressure, humidity and dust) | https://www.jpl.nasa.gov/news/mars-is-getting-a-new-robotic-meteorologist/ | approximation | — (added after Codex review) |
 
 ## Other observations (outside the science scope)
 
@@ -105,3 +122,39 @@ Data label: the label the claim should carry in `src/data/*.js` and in docs:
 - Section 4.6 and the Greenhouse use hydroponics. NASA's Veggie uses clay "pillows" with
   fertilizer, not pure water. That is fine for our design, but ASTRA should not say Veggie is
   hydroponic.
+
+## Decisions (2026-11-14)
+
+All nine fixes were accepted and applied to `SCENARIO.md` on branch `content/science-fact-check`
+(final wording below, where the team changed it).
+
+| # | Decision | Final wording in SCENARIO.md |
+|---|---|---|
+| F1 | accepted, team wording; Soil Beds bonus kept (partial cleaning still helps) | "Perchlorates dissolve in water, so rinsing washes a lot of them out. Real scientists found some always stays behind, so they're still testing ways to make Mars soil safe for farms." |
+| F2 | accepted, team wording; also in the Section 7 JSON | "...a solar storm! The fastest particles can reach Mars in less than an hour, so we must decide fast!" |
+| F3 | accepted, team wording; early warning reframed as a forecast (row added above) | "Solar flare! Its fastest particles can reach Mars in less than an hour." · watch line: "The Sun has a stormy spot facing Mars. A flare could come soon." |
+| F4 | accepted | Site tagged (fiction) in the 5.2 table and the Expedition 3 line; added "Real ice this close to the equator would be a lucky find!" |
+| F5 | accepted | "On Earth, a lot of methane comes from living things, like microbes." |
+| F6 | accepted | "In 2020, the space station crew found a tiny leak..." |
+| F7 | accepted | "...rescued moldy zinnia flowers on the space station by cleaning them and nursing them back to health, and they bloomed!" |
+| F8 | accepted, team wording | "Our drones are built to handle radiation better than people, but even robots can glitch in a big storm. In 2024, one hit knocked a Mars orbiter's star camera offline for an hour!" |
+| F9 | accepted | log.pathfinder.02–04 tagged (fiction) |
+
+Also from the "other observations": `astra.act1.first_sleep` now says 12 HP (Section 3.6 is the source
+of truth). `SCENARIO.md` never names NASA's Veggie, so no change was needed; rule for future text:
+describe Veggie as "plant pillows with clay and fertilizer", never as hydroponic.
+
+### Codex review findings (decided 2026-11-14)
+
+| # | Fix | Decision | Final wording in SCENARIO.md |
+|---|---|---|---|
+| F10 | C1 | accepted: HP is health and energy; rest restores energy; real radiation adds up, so astronauts limit time outside | hp_intro: "...Sleep and fresh food restore your energy. Real radiation adds up over time, so astronauts limit their time outside." · surface_warning: "Rest brings your energy back, but real radiation adds up over time, so keep trips short." · hp.25: "Rest and fresh food will restore your energy." · Event 1 B: "Rest brings your energy back, but real radiation adds up over time, so it's better to avoid it." |
+| F11 | C6 | accepted | "...so it blocks most of the radiation." · "Mars soil cuts the radiation a lot, and there's plenty of it!" |
+| F12 | C7 | accepted | "Salt helps water stay liquid even when it's very cold." |
+| F13 | C8 | accepted, team wording | "Earth will still be there. Our next radio slot is in 3 Sols." |
+| F14 | C9 | accepted | "...but they're safer from the dust." · "Hands-on cleaning did the trick!" |
+| F15 | C10 | accepted: same ×4 storm power draw, now blamed on the dust-filter fans; fact added | Dilemma 1: "...our dust-filter fans will have to work extra hard. Fun fact: dust storms make Mars days cooler and nights warmer." · 3.3: Battery & Heating ×4 "because it also runs the base's dust-filter fans, which work overtime in a storm (gameplay value)." |
+| F16 | C11 | accepted | "all the minerals their roots need" (4.6 twice, Event 4 C) |
+| — | C12 | accepted | six rows added above |
+| — | C2, C3, C4, C5, C13 | not applied (see the Codex record for reasons) | — |
+
