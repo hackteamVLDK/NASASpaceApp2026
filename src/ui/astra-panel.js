@@ -48,13 +48,16 @@ export function createAstraPanel(guide, atlas, { onDismiss = () => {} } = {}) {
         typedCount = 0;
       }
       const msg = currentMessage(guide);
+      // B15 (SCENARIO script conventions): in a cutscene, when the next line is already due, the current line
+      // finishes typing at once and then holds 1.5 s, instead of making every later line arrive late
+      if (auto && guide.queue.length && startedAt > -1e9 && nowMs - startedAt < (msg.length / CPS) * 1000) startedAt = -1e9;
       const shown = Math.min(msg.length, Math.floor(((nowMs - startedAt) / 1000) * CPS));
       if (text.textContent !== msg.slice(0, shown)) text.textContent = msg.slice(0, shown);
       if (shown > typedCount) { director.typed(msg[shown - 1]); typedCount = shown; } // blips are rate-capped in the engine
       const typing = shown < msg.length;
       if (!typing && !finishedAt) finishedAt = nowMs;
       btn.textContent = typing ? ASTRA.buttons.next : guide.queue.length ? ASTRA.buttons.next : guide.current.button;
-      if (auto && !typing && nowMs - finishedAt > 1500 + Math.min(2500, msg.length * 8)) advance();
+      if (auto && !typing && nowMs - finishedAt > (guide.queue.length ? 1500 : 1500 + Math.min(2500, msg.length * 8))) advance();
       // avatar: calm idle / speaking, or the mood frame
       const mood = props.mood;
       let frame = typing ? 2 + (Math.floor(nowMs / 160) % 2) : Math.floor(nowMs / 600) % 2;

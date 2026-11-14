@@ -5,7 +5,7 @@
  * All player-facing text comes from line IDs (strings.js); a few short button labels are literal.
  */
 import { MODULES, RECIPES, UPGRADES, LAYOUT, RULES } from '../campaign/data.js';
-import { moduleInfo, clockAt, online } from '../campaign/engine.js';
+import { moduleInfo, clockAt, online, recipeCost, soilWashBlock } from '../campaign/engine.js';
 import { EXPEDITIONS, hpCost, durationMinutes, awayProgress, expectedLoot } from '../campaign/expeditions.js';
 import { t, hasString } from '../flow/strings.js';
 import { ICON } from '../render/atlas.js';
@@ -22,6 +22,18 @@ const costText = (c = {}) => [c.sp ? `${c.sp} SP` : null, c.water ? `${c.water} 
 const MINI_NAME = { solar_wipe: 'ui.mg.solar_wipe.title', heat_pump: 'ui.mg.heat_pump_reroute.title', valve_balance: 'ui.mg.valve_balance.title', water_sort: 'ui.mg.water_sort.title', nutrient_match: 'ui.mg.nutrient_match.title', air_filter: 'ui.mg.air_filter_scrub.title', antenna: 'ui.mg.dish_antenna_alignment.title', wheel_vacuum: 'ui.mg.wheel_pebble_vacuum.title', suit_seal: 'ui.mg.suit_seal_check.title' };
 /** A18: one hint row per missing component, saying where to find it. */
 const whereRows = (s, cost) => missingItems(s, cost).map(({ item, need, have }) => el('div', 'why where', `${need}× ${itemName(item)} (you have ${have}): ${whereText(s, item, name)}.`));
+/**
+ * B16: a picture for every Logbook card until the card art exists: the closest icon by topic
+ * (handoff LOGBOOK_IMAGE_PROMPTS has the real art; when it lands, swap this for the image).
+ */
+const CARD_TOPICS = [
+  [/storm|devil|hitchhik|dust/, 'storm'], [/flare|particle|xray|dose|radiation|shield|badge|blanket|wet_soil|hydrogen|forecast|under_the/, 'radiation'],
+  [/plant|garden|salad|farm|flower|green|soak|perchlorate|soil/, 'farm'], [/water|ice|brine|loop|shower|lake/, 'water'],
+  [/air|co2|moxie|oxygen|thin/, 'lungs'], [/rover|rock|ingenuity|sharp|wind|marathon|look/, 'explore'], [/sleep|rested/, 'sleep'],
+  [/cold|heat/, 'heat'], [/sun|solar|panel|sweeper/, 'solar'], [/grav|strong|body|stay|chapea/, 'exercise'], [/wrench/, 'wrench'],
+  [/message|contact|weather|tea/, 'alert'], [/quake|methane|leopard|bio|sample|scientist|pages/, 'research'],
+];
+const cardIcon = (id) => ICON[CARD_TOPICS.find(([re]) => re.test(id))?.[1] ?? 'star'];
 export const miniTitle = (g) => (hasString(MINI_NAME[g]) ? t(MINI_NAME[g]) : g.replaceAll('_', ' '));
 
 export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }) {
@@ -92,6 +104,16 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
         row.append(el('div', 'why', `${name(info.upgrade.nameId)}: ${costText(info.upgrade)}`));
         row.append(...whereRows(s, info.upgrade));
       }
+      if (id === 'lab' && s.flags.washUnlocked && !s.flags.soilBeds) { // B11: wash the Martian soil (Dilemma 3 choice B, later)
+        const washing = Boolean(s.flags.soilWashing);
+        const why = washing ? null : soilWashBlock(s);
+        const b = el('button', '', washing ? 'Washing soil...' : 'Wash the soil (20 Water)');
+        b.disabled = washing || Boolean(why);
+        b.title = why ?? 'Rinse the perchlorates out of Martian soil. Soil Beds: +3 Food per Sol for good.';
+        b.addEventListener('click', () => send({ type: 'washSoil' }));
+        row.append(el('div', 'why', washing ? 'Rinsing out the perchlorates: Soil Beds are ready in 2 Sols.' : (why ?? 'Perchlorates dissolve in water: wash them out to grow food in Martian soil.')));
+        row.append(b);
+      }
       row.prepend(actions);
       row.addEventListener('click', (e) => { if (e.target.tagName !== 'BUTTON') { selected = `module:${id}`; sig = ''; } });
       body.append(row);
@@ -104,13 +126,14 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
     for (const [id, r] of Object.entries(RECIPES)) {
       if (r.kind !== 'kit' && s.upgrades[id]) { body.append(el('div', 'mod done', `<div><b>${name(r.nameId)}</b><br><small>Crafted</small></div>`)); continue; }
       const row = el('div', 'mod');
-      row.innerHTML = `<div><b>${name(r.nameId)}</b><br><small>${costText(r)}</small></div>`;
+      const cost = recipeCost(s, id); // C9: a re-craft can be cheaper than the first craft
+      row.innerHTML = `<div><b>${name(r.nameId)}</b><br><small>${costText(cost)}</small></div>`;
       const b = el('button', '', 'Craft');
       b.dataset.craft = id;
       b.disabled = Boolean(s.crafting);
       b.addEventListener('click', () => send({ type: 'craft', recipe: id }));
       row.prepend(b);
-      row.append(...whereRows(s, r));
+      row.append(...whereRows(s, cost));
       body.append(row);
     }
     const inv = Object.entries(s.items).filter(([, n]) => n > 0);
@@ -166,6 +189,7 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
     for (const c of CARDS) {
       const got = s.logbook.includes(c.id);
       const b = el('button', `cardbtn ${c.tier} ${got ? '' : 'locked'}`, got ? t(`card.${c.id}.title`) : t('ui.logbook.locked'));
+      if (got) b.prepend(icon(cardIcon(c.id), 20)); // B16: the card's picture in the list too
       b.dataset.card = c.id;
       b.disabled = !got;
       b.addEventListener('click', () => showCard(c));
@@ -180,8 +204,11 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
   function showCard(c) {
     modalKey = `card:${c.id}`;
     modalRoot.hidden = false;
-    modalRoot.innerHTML = `<div class="card"><div class="hd">${c.tier === 'core' ? 'CORE CARD' : 'BONUS CARD'} \u00b7 ${c.org}</div><h2>${t(`card.${c.id}.title`)}</h2><p>${t(`card.${c.id}.text`)}</p><p><a href="${c.url}" target="_blank" rel="noopener">${t('ui.logbook.how_we_know')}</a> <small>(${c.org})</small></p><button class="choice" id="cardOk">Close</button></div>`;
+    modalRoot.innerHTML = `<div class="card logcard"><div class="hd">${c.tier === 'core' ? 'CORE CARD' : 'BONUS CARD'} \u00b7 ${c.org}</div><canvas class="cardpic" width="96" height="96"></canvas><h2>${t(`card.${c.id}.title`)}</h2><p>${t(`card.${c.id}.text`)}</p><p><a href="${c.url}" target="_blank" rel="noopener">${t('ui.logbook.how_we_know')}</a> <small>(${c.org})</small></p><button class="choice" id="cardOk">Close</button></div>`;
     $('cardOk').addEventListener('click', closeModal);
+    const pic = modalRoot.querySelector('.cardpic').getContext('2d');
+    pic.imageSmoothingEnabled = false;
+    atlas.cell(pic, 'icons', cardIcon(c.id), 8, 8, 80, 80); // B16: a picture on every card
   }
 
   function showReport() {
@@ -196,9 +223,9 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
       <div class="grid2">
         <div><h3>${t('report.crew')}</h3><p>HP ${Math.round(r.hp)} \u00b7 lowest ${Math.round(r.lowestHp)} \u00b7 Med-Rest ${r.medRests}\u00d7 \u00b7 ${t('report.outside_hours')}: ${r.outsideHours}</p>
         <h3>${t('report.base')}</h3><p>O\u2082 ${Math.round(r.meters.oxygen)} \u00b7 Water ${Math.round(r.meters.water)} \u00b7 Food ${Math.round(r.meters.food)} \u00b7 Power ${Math.round(r.meters.power)} \u00b7 Heat ${Math.round(r.meters.heat)} \u00b7 Morale ${Math.round(r.meters.morale)} \u00b7 Emergencies ${r.emergencies}</p>
-        <h3>${t('report.space_weather')}</h3><p>${r.flares ? `Solar flares faced: ${r.flares}` : 'No solar flares yet.'}</p>
+        <h3>${t('report.space_weather')}</h3><p>${r.flares ? `Solar flares faced: ${r.flares} \u00b7 most HP lost in one: ${Math.round(r.flareMaxLoss)}${r.flareMaxLoss <= 1 ? ' (sheltered in time!)' : ''}` : 'No solar flares yet.'}</p>
         <h3>${t('report.modules')}</h3><p>${r.modulesBuilt} of 6 modules \u00b7 ${r.tier2} Tier 2 \u00b7 roof ${r.roof ? 'yes' : 'no'} \u00b7 drones awake ${r.dronesAwake} of 3</p></div>
-        <div><h3>${t('report.expeditions')}</h3><p>Trips: ${r.expeditions} \u00b7 Ice Cores melted: ${r.melted}</p>
+        <div><h3>${t('report.expeditions')}</h3><p>Trips: ${r.expeditions} \u00b7 Ice Cores melted: ${r.melted}</p><p>Story finds: ${r.storyFinds.length ? r.storyFinds.map(itemName).join(', ') : 'none yet'}</p>
         <h3>${t('report.choices')}</h3><ul>${choiceLines || '<li>No big choices yet.</li>'}</ul>
         <h3>${t('report.science')}</h3><p>${t('report.cards').replace('{unlocked}', r.cards).replace('{total}', r.totalCards)}</p>
         <h3>${t('report.badges')}</h3><p>${r.badges.length ? r.badges.map((b) => t(`badge.${b}.name`)).join(', ') : 'None yet.'}</p></div>

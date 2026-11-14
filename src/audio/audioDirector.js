@@ -118,6 +118,7 @@ export function createAudioDirector({ sfx = defaultSfx, now = () => (globalThis.
   let victoryFrom = null;
   let sandboxFrom = null;
   let musicOn = false;
+  const INTRO_FLAGS = Object.freeze({ victory: false, storm: false, emergency: false, canyon: false, expedition: false, night: true });
   const lastOneShot = new Map();
 
   const call = (name, ...args) => {
@@ -232,6 +233,12 @@ export function createAudioDirector({ sfx = defaultSfx, now = () => (globalThis.
      */
     tick({ s = null, mode = 'play' } = {}) {
       const t = now();
+      if (mode === 'intro') {
+        // the text crawl and the landing get the soft night tune, so the game is not silent for its first half minute
+        if (!musicOn || lastFlags !== INTRO_FLAGS) { sfx.updateMusic?.(INTRO_FLAGS); musicOn = true; lastFlags = INTRO_FLAGS; }
+        wasNight = null;
+        return null;
+      }
       if (mode !== 'tutorial' && mode !== 'play') {
         if (musicOn) { sfx.stopMusic?.(); musicOn = false; lastFlags = null; }
         wasNight = null;

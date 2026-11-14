@@ -77,10 +77,12 @@ test('music: flags from state, updateMusic only on change, victory falls back af
   const s = createCampaign({ seed: 1 });
   s.minute = at(3, 12);
   d.tick({ s, mode: 'intro' });
-  assert.equal(sfx.music.length, 0, 'no music during the intro');
+  d.tick({ s, mode: 'intro' });
+  assert.equal(sfx.music.length, 1, 'the intro starts the soft night tune once');
+  assert.equal(sfx.music[0].night, true);
   d.tick({ s, mode: 'play' });
   d.tick({ s, mode: 'play' });
-  assert.equal(sfx.music.length, 1, 'unchanged flags do not restart the music');
+  assert.equal(sfx.music.length, 2, 'the game switches the music once; unchanged flags do not restart it');
   s.storm = { until: at(6) };
   d.tick({ s, mode: 'play' });
   assert.equal(sfx.music.at(-1).storm, true);

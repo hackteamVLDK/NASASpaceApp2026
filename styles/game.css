@@ -140,3 +140,18 @@ button:hover { background:#1a4668; } button:disabled { opacity:.45; cursor:defau
 
 /* the mini-game window is opaque, so the base and the side panel do not show through it */
 #mgWrap { background: #070c18; }
+
+/* A17: each meter's number sits right next to its bar (it was right-aligned in a wide box, far from the bar) */
+#hud .gauge .val { text-align: left; min-width: 0; } #g-power .val { min-width: 0; }
+#hud .gauge { gap: 6px; }
+
+/* B18: at big interface sizes or on small screens, windows never run off the screen: cards scroll inside,
+   and the mini-game window stops growing before it is taller than the screen (its canvas keeps its pixels). */
+.modal .card { max-height: calc(1040px / (var(--ui) * 0.85)); overflow: auto; }
+#mgWrap { zoom: min(calc(var(--ui) * 0.85), 1.3); }
+
+/* B16: Logbook card picture */
+.logcard .cardpic { float: right; width: 96px; height: 96px; margin: 4px 0 8px 16px; image-rendering: pixelated; background: radial-gradient(#173248, #0a1622); border: 2px solid var(--line); border-radius: 14px; }
+.cardbtn canvas { vertical-align: middle; margin-right: 6px; }
+.logcard .cardpic { margin-top: 44px; } /* below the round close button */
+.card a { color: var(--cyan); } .card a:visited { color: #9fd8ff; } /* links readable on the dark cards */

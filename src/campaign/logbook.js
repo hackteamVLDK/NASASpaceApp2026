@@ -105,6 +105,9 @@ export function checkBadges(s) {
 }
 
 /** The Mission Report of 8.2: panels and the Mission Rating (1 to 3 stars per category, never zero). */
+/** Story items and the trip that brings each one home (SCENARIO 5.5). */
+const STORY_FINDS = [['probe_power_core', 1], ['weather_sensor', 1], ['black_box', 2], ['dish_antenna', 2], ['water_filter_membrane', 3], ['lab_sensor_kit', 4]];
+
 export function buildReport(s) {
   const samples = Math.max(1, s.stats.samples);
   const crewCare = (s.stats.hpSum / samples + s.stats.moraleSum / samples) / 2;
@@ -118,7 +121,9 @@ export function buildReport(s) {
   return {
     crewCare, builder, science, rating, total: rating.crew + rating.base + rating.science,
     hp: s.hp, lowestHp: s.stats.lowestHp, medRests: s.stats.medRests, outsideHours: Math.round(s.stats.outsideMin / 60),
-    meters: { ...s.res }, emergencies: s.stats.emergencies, flares: s.stats.flares,
+    meters: { ...s.res }, emergencies: s.stats.emergencies, flares: s.stats.flares, flareMaxLoss: s.stats.flareMaxLoss ?? 0,
+    // B16: the story finds the player brought home (they are used up later, so the flags of the trips count too)
+    storyFinds: STORY_FINDS.filter(([item, trip]) => (s.items?.[item] ?? 0) > 0 || Boolean(s.flags?.done?.[trip])).map(([item]) => item),
     modulesBuilt, tier2, roof, dronesAwake: s.drones.filter((d) => d.status === 'awake').length,
     expeditions: s.stats.expeditions, melted: s.stats.melted, choices: [...s.choices],
     cards: s.logbook.length, totalCards: CARDS.length, badges: [...s.badges],
