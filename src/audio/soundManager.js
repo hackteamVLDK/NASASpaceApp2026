@@ -555,6 +555,16 @@ export class SoundManager {
     this._playSfxNote(392, 'sine', 0.05, 0.14, 523.25, 0, 950, false);
   }
 
+  // A23: a soft, low "uh-uh" when a command is refused (queue full, Workshop busy...).
+  // Two gentle falling notes, never harsh; at most one every 0.35 s so repeated taps don't stack.
+  actionDenied() {
+    const t = Date.now();
+    if (t - (this._lastDenied ?? 0) < 350) return;
+    this._lastDenied = t;
+    this._playSfxNote(392.00, 'triangle', 0.10, 0.16, null, 0.00, 700, false);
+    this._playSfxNote(329.63, 'triangle', 0.16, 0.16, 293.66, 0.11, 650, false);
+  }
+
   dilemmaChoice() {
     this._playSfxNote(523.25, 'triangle', 0.10, 0.20, null, 0.00, 900, true);
     this._playSfxNote(659.25, 'triangle', 0.18, 0.20, null, 0.08, 950, true);
