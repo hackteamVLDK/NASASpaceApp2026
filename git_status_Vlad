@@ -1,0 +1,50 @@
+# git_status_Vlad
+
+## DOING NOW
+- Done: content/data/strings.en.json (583 line IDs) from SCENARIO.md, PR #5 merged.
+- Next (not started): content/game-data (dilemmas, events, expeditions, roles, modules, logbook JSON),
+  then content/tools/balance-sim.mjs.
+- content/space-apps-submission: parked until the end of the hackathon.
+
+## FOR MYKHAILO (sim / flow / assets)
+- STRINGS: import content/data/strings.en.json ({ "line.id": "English" }) instead of hard-coding text.
+  Regenerate with `node content/tools/extract-strings.mjs`; check with `node --test content/tools/*.test.mjs`.
+  Derived-ID rules are in SCENARIO.md ("How to use this file"). Game data JSON will follow in content/data/.
+- New in SCENARIO.md after PR 2: per-astronaut Sol Plans with presets (sim has one DEFAULT_SCHEDULE),
+  Fitness gains by room (Bedroom +10, Recreation +20, Rec T2 +25 per hour), expedition multiplier
+  M_fit (1.10 below Fitness 40, 1.25 at 15 or less, capped), new line-ID prefixes card.*, report.*, badge.*.
+- Logbook images: 26 prompts (20 core cards + 6 category images) in
+  content/handoff/LOGBOOK_IMAGE_PROMPTS.md, for assets/manifests when you are ready. I did not touch assets/.
+- Characters (SCENARIO 2.5, branch content/characters): names/looks for crew.portraits (was awaiting-lore),
+  new overlays crew.heads and drone.bumpers; prompts in content/handoff/CHARACTER_PROMPTS.md.
+  Names keep your crew.js first names; Comms Officer (Noor) and Mission Control (Rosa) are new.
+  EVA art: crew.eva unchanged (gold visor); crew.heads is indoor-only.
+- Readability pass changed ASTRA line texts (not IDs/numbers). tests/flow.test.mjs compares texts with SCENARIO.md.
+- "(fiction)" in Line cells is a writers' note: please strip it in the strings module.
+
+## NOTE FOR MYKHAILO
+- tests/flow.test.mjs (3 failures) checks the old pre-PR#1 scenario. Please update it to the new
+  tutorial states in SCENARIO.md: TOUCHDOWN -> UNDERGROUND_PAN -> TUT_HP -> TUT_DRONE_CLICK ->
+  TUT_SOLAR_WIPE -> TUT_BATTERY -> TUT_BUILD -> PLAY.
+
+## EARLIER HEADS-UP FOR MYKHAILO (PR #1 is now merged into main)
+- State `TUTORIAL_HANDOFF` is replaced by: `TOUCHDOWN -> UNDERGROUND_PAN -> TUT_HP -> TUT_DRONE_CLICK -> TUT_SOLAR_WIPE -> TUT_BATTERY -> TUT_BUILD -> PLAY`. `CUTSCENE_LANDING` and `TUTORIAL_STEP_1` are removed.
+- Room names: Dining Room -> Kitchen, Sleeping Quarters -> Bedroom, Rover Garage -> Garage & Airlock.
+- Right wing has 6 frames: Battery & Heating, Workshop, Greenhouse, Garage & Airlock, Research & Comms Lab, Recreation & Storage.
+- `AstraGuidePanel` takes a `lineId`, not a message string. All English text lives in one strings module.
+- `DroneRepairMiniGame` is dropped. The battery step has a single cable snap instead.
+- Answers to the open questions in git_status_Mykhailo: Dining Room -> Kitchen; Greenhouse added; solo = Commander + 3 drones; drone wake-up = SCENARIO Section 1 tutorial + Section 3.8.
+- Merging this makes 3 tests in `tests/flow.test.mjs` fail, because they check the old scenario: "state machine uses the states named in SCENARIO.md", "intro lines match SCENARIO.md word for word, with the stated pauses", "tutorial dialogue and hand-off match SCENARIO.md section 5". `src/flow/` and `tests/` are owned by Mykhailo, so they are not changed here. On `main` today: 88/88 pass; with this PR merged: 85/88.
+
+## DONE
+- SCENARIO.md created as the binding scenario; agents must check against it (AGENTS.md, CLAUDE.md).
+- Bible v2 merged into SCENARIO.md (PR #1, merged).
+
+## NEXT
+- Show the team the 'needs fix' science rows; apply agreed fixes to SCENARIO.md in a separate PR.
+
+## FILES / FOLDERS I AM EDITING (please do not edit these right now)
+- content/ (SCENARIO.md is free again)
+
+## FREE FOR OTHERS
+- Everything else. I am not touching docs/ (Mykhailo owns it).
