@@ -98,7 +98,7 @@ pointer is pressed (the scaffold checks this).
 
 | Game | Actions → sound |
 |---|---|
-| `solar_wipe` | `zap` → staticZap, `move`/`wipe` → brushWipe |
+| `solar_wipe` | `move`/`wipe` → brushWipe, `clump` → staticZap (a small spark when a sticky clump comes off; no tapping since SCENARIO 4.1 A16 change) |
 | `battery` | `insert`, `cable` → suitClampSnap |
 | `air_filter` | `pull` → uiClick, `move` → brushWipe, `lock` → suitClampSnap |
 | `valve_balance` | `down`/`move` → waterValveTurn |

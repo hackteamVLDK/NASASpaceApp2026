@@ -5,7 +5,7 @@ when it is fixed. [SCENARIO.md](../SCENARIO.md) stays the reference: a fix never
 written down here instead.
 
 - **Status:** `FIXED` (with the commit or batch), `OPEN` (nobody is on it), `CLAIMED <who>`, `DECISION` (needs
-  the team: SCENARIO is silent or says something else).
+  the team: SCENARIO is silent or says something else), `DECIDED` (the team decided; see the Fix column).
 - **Source:** `PLAYER` (reported by someone who played), `CODEX <record>` (a read-only review by the Codex
   helper, see [ai-collaboration/](ai-collaboration/README.md); the record has the long answer),
   `OWN` (found by the main agent), `BROWSER` (seen in a real browser run).
@@ -48,10 +48,10 @@ lander that do not exist but light up as clickable → A11. If one of them still
 | A13 | The engine fire of the landing is higher than it should be. | Not checked yet. | Anchor the flame to the lander's engine nozzle. | PLAYER | OPEN |
 | A14 | The scroll bar for reading text looks ugly; it should be more transparent and in the colour of the icons. | Not checked yet (looks like the browser's default scroll bar). | A thin, semi-transparent scroll bar in the icon accent colour (`scrollbar-color`, `::-webkit-scrollbar`) on every scrolling text box. | PLAYER | OPEN |
 | A15 | The selection of objects looks too crude; a soft glow would be better than a white frame. | The hovered or selected object gets a white rectangle. | A soft glow around the sprite's outline instead of the frame. | PLAYER | OPEN |
-| A16 | Remove the static from the solar panels. | SCENARIO 4.1 is "Solar Panel Static Wipe": zapping the static is step 1, and `astra.tut.solar_prompt` says it. | Needs a team decision first; SCENARIO is not edited from here. | PLAYER | DECISION |
+| A16 | Remove the static from the solar panels. | SCENARIO 4.1 is "Solar Panel Static Wipe": zapping the static is step 1, and `astra.tut.solar_prompt` says it. | Team decision: no zapping. The player only swipes; sticky clumps keep small sparks as a hint and need 1–2 extra swipes; static stays as the explanation. Engineer: wiper 2× wider; Pilot: clumps outlined. See [SCENARIO 4.1](../SCENARIO.md#41-solar-panel-static-wipe). Code change: mini-game owner. | PLAYER | DECIDED |
 | A17 | The label on the button is in the wrong place, and the battery icon itself needs fixing. | Not checked yet. | Centre the label and redraw the battery icon. | PLAYER | OPEN |
 | A18 | Solar Array mission: where do I get 3 Solar Cells? | The mission shows the cost but not where the parts come from. SCENARIO 5.5: Expedition 2 brings 3 Solar Cells, and Scrap Runs can drop them. | Show where each missing component comes from in the mission and upgrade cards. | PLAYER | OPEN |
-| A19 | Why can't I stop building a module and send the workers to another module? | SCENARIO does not say whether a build can be stopped or switched. | Needs a team decision: pause or cancel a build, and whether spent parts come back. | PLAYER | DECISION |
+| A19 | Why can't I stop building a module and send the workers to another module? | SCENARIO does not say whether a build can be stopped or switched. | Team decision: no change; a started build cannot be stopped or switched. | PLAYER | DECIDED: won't do |
 | A20 | The top bar is not fixed; it can move. | Not checked yet. | Pin the top bar in place, so it never moves with the page. | PLAYER | OPEN |
 | A21 | Clicking objects does nothing. | Not checked yet (see also A11). | Every object that lights up opens its info or action; anything else does not light up. | PLAYER | OPEN |
 | A22 | In the cracked-filter event I could pick the water option before the Garage was built. | Not checked yet; probably a Dilemma 2 choice that needs the Garage is not locked (`story.js`, Mykhailo's file). | Grey out a choice whose building is missing and say why. | PLAYER | OPEN (Mykhailo's file) |

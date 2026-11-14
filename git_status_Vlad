@@ -32,6 +32,10 @@
 - "(fiction)" in Line cells is a writers' note: please strip it in the strings module.
 
 ## NOTE FOR PAVLO (2026-11-14)
+- A16 decided (ERRORS.md, SCENARIO 4.1): Solar Wipe has no tapping/zapping any more. Please change
+  src/ui/minigames.js startSolarWipe: swipe only; sparks on clumps are a hint; a clump needs 1-2 extra swipes
+  and plays staticZap when it comes off; Engineer wiper 2x wider, Pilot clumps outlined; drop the tap hand and
+  the hint 'Tap the sparkly clumps...' in src/main.js. A19: won't do.
 - I appended the second player report to docs/ERRORS.md (rows A13-A25 and a duplicates note after A12).
   No existing row was changed, so your unpushed edits should merge cleanly.
 
