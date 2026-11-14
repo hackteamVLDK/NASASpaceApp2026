@@ -208,7 +208,7 @@ function nutrientMatch() {
   let drag = null, led = false;
   return {
     down(p) {
-      if (inR(p, 960, 480, 100, 90)) { led = trays.every((t) => t.filled); director.minigame('nutrient_match', 'led'); return; }
+      if (inR(p, 500, 520, 100, 90)) { led = trays.every((t) => t.filled); director.minigame('nutrient_match', 'led'); return; }
       drag = bottles.find((b) => Math.hypot(p.x - b.x, p.y - b.y) < 50 && !b.used) ?? null;
     },
     move(p) { if (drag) { drag.x = p.x; drag.y = p.y; } },
@@ -227,7 +227,7 @@ function nutrientMatch() {
         c.fillStyle = yellow ? '#e5d34a' : wilt ? '#7a8a3a' : '#43e060'; c.fillRect(t.x - 8, wilt ? 380 : 340, 16, wilt ? 90 : 130); c.beginPath(); c.arc(t.x, wilt ? 380 : 340, wilt ? 30 : 46, 0, Math.PI * 2); c.fill();
       });
       bottles.forEach((b) => { if (b.used) return; c.fillStyle = b.c; rr(c, b.x - 28, b.y - 50, 56, 100, 10); c.fill(); c.fillStyle = '#fff'; c.fillRect(b.x - 12, b.y - 62, 24, 14); });
-      c.fillStyle = led ? '#ff4de1' : '#555'; rr(c, 960, 480, 100, 90, 14); c.fill(); label(c, 'LED', 1010, 535, 26, '#000');
+      c.fillStyle = led ? '#ff4de1' : '#555'; rr(c, 500, 520, 100, 90, 14); c.fill(); label(c, 'LED', 550, 575, 26, '#000'); // below the trays, not on top of one
       this._ok = led && trays.every((t) => t.filled);
     },
     done() { return Boolean(this._ok); },
@@ -310,7 +310,8 @@ function antenna({ delaySeconds = 840 } = {}) {
 
 // ------------------------------------------------------------------ 4.7 Rover Wheel Pebble Vacuum
 function wheelVacuum() {
-  const wheels = Array.from({ length: 6 }, (_, i) => ({ x: 170 + (i % 3) * 330, y: 220 + Math.floor(i / 3) * 210, dust: 1 }));
+  // side view: six wheels in one row under the Rover's body, standing on the ground (they used to float in two rows)
+  const wheels = Array.from({ length: 6 }, (_, i) => ({ x: 140 + i * 164, y: 330, dust: 1 }));
   const pebbles = [{ w: 1, ox: 30, oy: -20, out: false }, { w: 4, ox: -30, oy: 10, out: false }];
   let nozzle = null;
   let pressed = false;
@@ -321,7 +322,8 @@ function wheelVacuum() {
     _tap(p) { pebbles.forEach((q) => { const w = wheels[q.w]; if (!q.out && Math.hypot(p.x - (w.x + q.ox), p.y - (w.y + q.oy)) < 30) { q.out = true; director.minigame('wheel_vacuum', 'pebble'); } }); },
     draw(c, now) {
       label(c, 'Vacuum every wheel, then pop the 2 sparkling pebbles', W / 2, 60, 26, '#ffb000');
-      c.fillStyle = '#c9b9a0'; rr(c, 60, 140, 980, 140, 20); c.fill(); c.fillRect(60, 300, 980, 6);
+      c.fillStyle = '#c9b9a0'; rr(c, 60, 150, 980, 150, 20); c.fill();
+      c.fillStyle = '#7a5a40'; c.fillRect(30, 400, 1040, 8); // the ground the wheels stand on
       wheels.forEach((w) => { c.fillStyle = '#222'; c.beginPath(); c.arc(w.x, w.y, 70, 0, Math.PI * 2); c.fill(); c.fillStyle = `rgb(${90 + w.dust * 110},${80 + w.dust * 20},${70})`; c.beginPath(); c.arc(w.x, w.y, 56, 0, Math.PI * 2); c.fill(); c.fillStyle = '#ddd'; c.beginPath(); c.arc(w.x, w.y, 16, 0, Math.PI * 2); c.fill(); });
       pebbles.forEach((q) => { if (q.out) return; const w = wheels[q.w]; c.fillStyle = Math.floor(now / 200) % 2 ? '#fff' : '#ffd600'; c.beginPath(); c.arc(w.x + q.ox, w.y + q.oy, 12, 0, Math.PI * 2); c.fill(); });
       if (nozzle) { c.fillStyle = '#4db8ff'; c.beginPath(); c.arc(nozzle.x, nozzle.y, 26, 0, Math.PI * 2); c.fill(); }
