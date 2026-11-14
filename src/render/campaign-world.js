@@ -113,6 +113,7 @@ export function drawCampaign(ctx, atlas, S) {
   if (dark > 0) { ctx.fillStyle = `rgba(6,10,40,${dark * 0.62})`; ctx.fillRect(sky.x, sky.y, sky.w, sky.h); }
   if (s.flags.flare) { ctx.fillStyle = 'rgba(140,255,120,0.18)'; ctx.fillRect(sky.x, sky.y, sky.w, sky.h); }
 
+  hits.push({ id: 'surface', x: 130, y: LAYOUT.groundY - 330, w: 1700, h: 330 });
   // ---- left wing (always built)
   for (const [id, pic] of Object.entries(LEFT_PIC)) {
     const r = roomRect(id);
@@ -235,7 +236,7 @@ export function drawCampaign(ctx, atlas, S) {
   }
   for (const [id, color, w] of [[S.highlight, `rgba(255,214,0,${0.6 + Math.sin(nowMs / 200) * 0.35})`, 8], [S.hover, 'rgba(255,255,255,0.7)', 5]]) {
     const h = id && hits.find((x) => x.id === id);
-    if (h && (h.id.startsWith('module:') || h.id.startsWith('drone:'))) { ctx.strokeStyle = color; ctx.lineWidth = w; ctx.strokeRect(h.x + 3, h.y + 3, h.w - 6, h.h - 6); }
+    if (h && (h.id.startsWith('module:') || h.id.startsWith('drone:') || h.id.startsWith('crew:'))) { ctx.strokeStyle = color; ctx.lineWidth = w; ctx.strokeRect(h.x + 3, h.y + 3, h.w - 6, h.h - 6); }
   }
   ctx.restore();
   void MODULES;

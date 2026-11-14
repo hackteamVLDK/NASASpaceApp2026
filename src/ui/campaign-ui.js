@@ -59,6 +59,7 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
   }
   let sig = '';
   let selected = null;
+  const selectedDrone = () => (selected?.startsWith('drone:') ? selected.slice(6) : undefined);
 
   function renderBase(body) {
     for (const id of ['solar', 'bedroom', 'kitchen', 'lifesupport', 'battery', 'workshop', 'greenhouse', 'garage', 'lab', 'recreation', 'roof']) {
@@ -72,14 +73,14 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
         b.title = info.reason ?? costText(info.cost);
         b.disabled = Boolean(info.reason);
         b.dataset.build = id;
-        b.addEventListener('click', () => send({ type: 'build', module: id }));
+        b.addEventListener('click', () => send({ type: 'build', module: id, drone: selectedDrone() }));
         actions.append(b);
         if (info.reason) row.append(el('div', 'why', info.reason)); else row.append(el('div', 'why', `Cost: ${costText(info.cost)}`));
       } else if (info.status === 'online' && info.upgrade && info.tier === 1 && !info.upgrading) {
         const b = el('button', '', 'Upgrade');
         b.title = `${name(info.upgrade.nameId)}: ${costText(info.upgrade)}`;
         b.dataset.upgrade = id;
-        b.addEventListener('click', () => send({ type: 'upgrade', module: id }));
+        b.addEventListener('click', () => send({ type: 'upgrade', module: id, drone: selectedDrone() }));
         actions.append(b);
         row.append(el('div', 'why', `${name(info.upgrade.nameId)}: ${costText(info.upgrade)}`));
       }
@@ -115,17 +116,23 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
 
   function renderDrones(body) {
     const nick = { 'drone-01': 'Pip', 'drone-02': 'Bumble', 'drone-03': 'Zip' };
+    body.append(el('p', 'why', 'Tap a drone, then tap a room frame in the base to send it there. Each drone can keep 2 jobs waiting.'));
     for (const d of s.drones) {
-      const row = el('div', 'mod');
-      const what = d.status !== 'awake' ? 'Asleep' : d.task ? `${d.task.type === 'upgrade' ? 'Upgrading' : 'Building'} ${name(MODULES[d.task.module].nameId)}` : 'Idle: salvaging parts';
-      row.innerHTML = `<div><b>${nick[d.id]}</b> <small>(${d.id.replace('drone-', 'Drone #')})</small><br><small>${what}</small></div>`;
+      const row = el('div', `mod ${selected === `drone:${d.id}` ? 'sel' : ''}`);
+      const jobText = (j) => `${j.type === 'upgrade' ? 'Upgrade' : 'Build'} ${name(MODULES[j.module].nameId)}`;
+      const what = d.status !== 'awake' ? 'Asleep' : d.task ? `Now: ${jobText(d.task)}` : 'Idle: salvaging parts';
+      row.innerHTML = `<div><b>${nick[d.id]}</b> <small>(${d.id.replace('drone-', 'Drone #')})</small><br><small>${what}</small>${(d.queue ?? []).map((j, i) => `<br><small>Next ${i + 1}: ${jobText(j)} <a href="#" data-unq="${d.id}:${i}">remove</a></small>`).join('')}</div>`;
       const kit = { 'drone-02': 'repair_kit', 'drone-03': 'reboot_kit' }[d.id];
       if (d.status !== 'awake' && kit && (s.kits[kit] ?? 0) > 0) {
         const b = el('button', '', 'Use kit');
         b.dataset.kit = d.id;
-        b.addEventListener('click', () => send({ type: 'useKit', kit, drone: d.id }));
+        b.addEventListener('click', (e) => { e.stopPropagation(); send({ type: 'useKit', kit, drone: d.id }); });
         row.prepend(b);
       } else if (d.status !== 'awake' && kit) row.append(el('div', 'why', `Craft a ${name(RECIPES[kit].nameId)} in the Workshop.`));
+      row.addEventListener('click', (e) => {
+        if (e.target.dataset?.unq) { e.preventDefault(); const [id, i] = e.target.dataset.unq.split(':'); send({ type: 'unqueue', drone: id, index: Number(i) }); return; }
+        if (d.status === 'awake') { selected = `drone:${d.id}`; sig = ''; }
+      });
       body.append(row);
     }
   }
@@ -327,7 +334,7 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
         if ($('radioLines').innerHTML !== html) $('radioLines').innerHTML = html;
       } else radioLines.length = 0;
       $('mapBtn').disabled = !online(s, 'garage');
-      const next = `${tab}|${selected}|${JSON.stringify([s.logbook.length, s.badges.length, s.res.sp | 0, s.items, s.kits, s.upgrades, s.tasks.length, s.crafting?.recipe, s.away?.id, s.drones.map((d) => d.status + (d.task?.module ?? '')), Object.values(s.modules).map((m) => m.status + m.tier + (m.upgrading ? 'u' : '') + Math.floor(m.progress * 10))])}`;
+      const next = `${tab}|${selected}|${JSON.stringify([s.drones.map((d) => (d.queue ?? []).length), s.logbook.length, s.badges.length, s.res.sp | 0, s.items, s.kits, s.upgrades, s.tasks.length, s.crafting?.recipe, s.away?.id, s.drones.map((d) => d.status + (d.task?.module ?? '')), Object.values(s.modules).map((m) => m.status + m.tier + (m.upgrading ? 'u' : '') + Math.floor(m.progress * 10))])}`;
       if (next !== sig) {
         sig = next;
         const body = $('tabBody');

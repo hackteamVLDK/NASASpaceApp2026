@@ -1,6 +1,7 @@
 # Gameplay plan: a crew you command, missions, jobs, resources, disasters
 
-Status: **proposal for the team**. Nothing here is implemented yet. [SCENARIO.md](../SCENARIO.md) stays
+Status: steps 1, 2, 3 and 5 below are **implemented for the solo Commander and the drones** (see section 5);
+step 6 (a crew of four) waits for the team's decision in section 2. [SCENARIO.md](../SCENARIO.md) stays
 binding and is not edited by this file. Where this plan differs from it, the difference is marked
 **DEVIATION** and needs a team decision (section 2) before code is written.
 
@@ -301,15 +302,15 @@ command four people and still finish, and a determinism test.
 
 ## 5. Order of work (smallest useful steps first)
 
-| Step | What | Why first | Size |
-|---|---|---|---|
-| 1 | Missions panel + tracker (main and side lists above) | the player always knows what to do; no engine change | small |
-| 2 | Resources screen with net-per-Sol breakdown and "runs out in about X Sols" | answers "where do resources come from"; one engine function | small |
-| 3 | Threats strip + hazard overlays + radiation view | shows disasters; reads existing state | medium |
-| 4 | Fill the partial items P1-P8 (queue, breakdowns, risk outcomes, Ice Run, research gate, refill, HP lines) | closes gaps to the scenario | medium |
-| 5 | Select-and-order UI for the Commander and the drones (menu, queue) | the control model, tested on one person first | medium |
-| 6 | **Crew of four** (people array, roles, N-scaling, portrait strip, Sol Plan, Fitness) | the big change; needs the team's yes (section 2) | large |
-| 7 | Portraits, heads, Logbook images, per-drone sounds | art and audio (generation limit permitting) | art |
+| Step | What | State |
+|---|---|---|
+| 1 | Missions panel + tracker (19 main + 8 optional missions) | **done**: `src/campaign/missions.js`, `src/ui/extras.js`, tests |
+| 2 | Resources screen with sources, sinks, net per Sol and "runs out in about X Sols" | **done**: `contributions()` in the engine, `meterReport` |
+| 3 | Threats strip, hazard markers in the world, radiation view | **done**: `src/campaign/hazards.js` |
+| 4 | Fill the partial items P1-P8 | **partly**: P1 Drone Link queue and P8 HP lines done; P2 breakdowns, P3 risk delay, P4 Ice Run, P5 research gate, P6 refill, P7 Earth windows still open |
+| 5 | Select-and-order UI | **done for drones and the Commander**: tap a drone, tap a room frame (build, upgrade, or queue); tap the Commander, then a room or the surface (he goes there; a waiting job opens). A job menu with several choices comes with step 6 |
+| 6 | **Crew of four** (people array, roles, N-scaling, portrait strip, Sol Plan, Fitness) | waits for the team's yes (section 2) |
+| 7 | Portraits, heads, Logbook images, per-drone sounds | art and audio (generation limit permitting) |
 
 Steps 1-5 improve Solo and do not depend on the decision. Step 6 follows once Vlad confirms section 2.
 

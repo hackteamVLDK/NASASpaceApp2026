@@ -305,3 +305,61 @@ test('no meter ever goes NaN or negative over 30 idle Sols; the clock is right',
   assert.equal(clockAt(1440 * 3 + 60 * 5 + 2).sol, 4);
   assert.equal(moduleInfo(s, 'battery').status, 'unbuilt');
 });
+
+test('Drone Link: a busy drone keeps up to 2 jobs waiting and starts them by itself', () => {
+  const s = createCampaign();
+  wake(s);
+  assert.equal(command(s, { type: 'build', module: 'battery', drone: 'drone-01' }).ok, true);
+  const q = command(s, { type: 'build', module: 'workshop', drone: 'drone-01' });
+  assert.equal(q.ok, true);
+  assert.deepEqual(s.drones[0].queue, [{ type: 'build', module: 'workshop' }]);
+  assert.equal(command(s, { type: 'build', module: 'workshop', drone: 'drone-01' }).ok, false, 'the same job cannot wait twice');
+  assert.equal(command(s, { type: 'unqueue', drone: 'drone-01', index: 0 }).ok, true);
+  assert.equal(s.drones[0].queue.length, 0);
+  command(s, { type: 'build', module: 'workshop', drone: 'drone-01' });
+  step(s, 1440 * 2 + 10);
+  assert.equal(s.modules.battery.status, 'online');
+  assert.equal(s.modules.workshop.status, 'building', 'the queued Workshop started by itself');
+  assert.equal(s.drones[0].queue.length, 0);
+});
+
+test('a queued job that cannot start (not enough parts) is dropped with a note, not stuck', () => {
+  const s = createCampaign();
+  wake(s);
+  command(s, { type: 'build', module: 'battery', drone: 'drone-01' });
+  command(s, { type: 'build', module: 'workshop', drone: 'drone-01' });
+  s.res.sp = 0;
+  const ev = step(s, 1440 * 2 + 10);
+  assert.ok(ev.some((e) => e.type === 'toast' && /dropped/.test(e.text)));
+  assert.equal(s.drones[0].task, null);
+  assert.equal(s.drones[0].queue.length, 0);
+});
+
+test('an order sends the Commander to a finished room for a while; unfinished rooms are refused', () => {
+  const s = createCampaign();
+  assert.equal(command(s, { type: 'order', place: 'workshop' }).ok, false);
+  assert.equal(command(s, { type: 'order', place: 'nowhere' }).ok, false);
+  s.modules.workshop.status = 'online';
+  assert.equal(command(s, { type: 'order', place: 'workshop' }).ok, true);
+  step(s, 5);
+  assert.equal(s.where, 'workshop');
+  step(s, 200);
+  assert.notEqual(s.order && s.minute < s.order.until, true, 'the order expires after 3 hours');
+});
+
+test('ASTRA warns about HP once per drop and celebrates a full recovery', () => {
+  const s = createCampaign();
+  const lines = [];
+  s.hp = 48;
+  lines.push(...step(s, 3).filter((e) => e.type === 'astra').map((e) => e.lineId));
+  s.hp = 20;
+  lines.push(...step(s, 3).filter((e) => e.type === 'astra').map((e) => e.lineId));
+  assert.ok(lines.includes('astra.hp.50') && lines.includes('astra.hp.25'));
+  assert.equal(lines.filter((l) => l === 'astra.hp.50').length, 1, 'only once');
+  s.hp = 99.99;
+  const rec = [];
+  for (let i = 0; i < 60; i++) { s.hp = Math.max(s.hp, 85); rec.push(...step(s, 1)); }
+  s.hp = 100;
+  rec.push(...step(s, 2));
+  assert.ok(rec.some((e) => e.type === 'astra' && e.lineId === 'astra.hp.full'));
+});

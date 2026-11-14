@@ -243,6 +243,24 @@ canvas.addEventListener('pointerdown', (e) => {
     } else if (tut.state === 'TUT_BUILD' && tut.phase === 'pick' && id.startsWith('module:')) ui.select(id);
     return;
   }
+  // orders: a selected drone sent to a room frame, or the selected Commander sent to a place
+  const sel = ui.selected;
+  if (sel?.startsWith('drone:') && id.startsWith('module:')) {
+    const mod = id.slice(7);
+    const m = s.modules[mod];
+    if (!m) { ui.select(id); return; }
+    send({ type: m.status === 'unbuilt' ? 'build' : 'upgrade', module: mod, drone: sel.slice(6) });
+    return;
+  }
+  if (sel === 'crew:cmdr' && (id.startsWith('module:') || id === 'surface')) {
+    const place = id === 'surface' ? 'outside' : id.slice(7);
+    const res = send({ type: 'order', place });
+    if (res.ok) {
+      const game = { outside: 'solar_wipe', lifesupport: 'valve_balance', battery: 'heat_pump', greenhouse: 'nutrient_match' }[place];
+      if (game && s.tasks.some((t2) => t2.game === game)) setTimeout(() => openMini(game), 600);
+    }
+    return;
+  }
   ui.select(id);
 });
 
@@ -397,6 +415,8 @@ async function boot() {
     cont.addEventListener('click', () => {
       audio.unlock();
       Object.assign(s, saved); // the UI and the renderer hold this same object
+      for (const d of s.drones) d.queue ??= []; // saves made before Drone Link have no queue
+      s.order ??= null;
       $('loading').hidden = true;
       mode = 'play';
     });

@@ -38,7 +38,8 @@ export function createCampaign({ seed = 1 } = {}) {
     hpMax: HP.commanderMax,
     research: 0,
     modules,
-    drones: ['drone-01', 'drone-02', 'drone-03'].map((id) => ({ id, status: 'dormant', task: null })),
+    drones: ['drone-01', 'drone-02', 'drone-03'].map((id) => ({ id, status: 'dormant', task: null, queue: [] })), // queue: up to 2 waiting jobs (Drone Link)
+    order: null, // a place the Commander was sent to { place, until }
     items: {},
     kits: {},
     upgrades: {}, // rover_shielding, suit_liner, titanium_wheels, deep_ice_drill: true
@@ -120,6 +121,7 @@ export function rates(s) {
 export function locationAt(s) {
   if (s.away) return 'away';
   if (s.medRest || s.flags.shelter) return 'bedroom';
+  if (s.order && s.minute < s.order.until) return s.order.place;
   const { hourFloat, hour } = clockAt(s.minute);
   if (isNight(hourFloat)) return 'bedroom';
   if (MEALS.includes(hour)) return 'kitchen';
@@ -161,6 +163,7 @@ function tick(s, emit) {
   s.mods = s.mods.filter((m) => m.untilMinute == null || s.minute < m.untilMinute);
 
   // the Commander
+  if (s.order && s.minute >= s.order.until) { s.order = null; s.flags.outside = false; }
   s.where = locationAt(s);
   stepHp(s, emit, now);
   trackStats(s, dt, now);
@@ -232,11 +235,23 @@ function stepHp(s, emit, now) {
   if (s.res.morale >= HP.moraleThreshold) d += HP.highMorale * dt;
   for (const m of s.mods) if (m.res === 'hp') d += m.perSol * dt;
   s.hp = clamp(s.hp + d, 0, s.hpMax);
+  hpLines(s, emit);
   if (s.hp <= 0 && !s.away) {
     s.medRest = { until: s.minute + SOL };
     s.stats.medRests += 1;
     emit({ type: 'astra', lineId: 'astra.hp.zero_base', mood: 'calm' });
   }
+}
+
+/** ASTRA's HP lines (SCENARIO 3.x system lines): each fires once when HP crosses its limit, again after HP recovers. */
+function hpLines(s, emit) {
+  const rules = [['hp70', 70, 'astra.hp.surface_70', () => Boolean(s.away)], ['hp50', 50, 'astra.hp.50', () => true], ['hp25', 25, 'astra.hp.25', () => true]];
+  for (const [key, limit, line, applies] of rules) {
+    if (s.hp < limit && !s.low[key] && applies()) { s.low[key] = true; emit({ type: 'astra', lineId: line, mood: 'alert' }); }
+    if (s.hp >= limit + 10) s.low[key] = false;
+  }
+  if (s.hp >= s.hpMax - 0.01 && s.low.hpFullReady) { s.low.hpFullReady = false; emit({ type: 'astra', lineId: 'astra.hp.full', mood: 'cheerful' }); }
+  if (s.hp < 80) s.low.hpFullReady = true;
 }
 
 function checkMeters(s, emit) {
@@ -297,6 +312,7 @@ function finishBuild(s, d, emit) {
   s.stats.builds += 1;
   emit({ type: 'built', module: id });
   onModuleBuilt(s, id, emit);
+  nextJob(s, d, emit);
 }
 
 function finishUpgrade(s, d, emit) {
@@ -307,6 +323,7 @@ function finishUpgrade(s, d, emit) {
   d.task = null;
   emit({ type: 'upgraded', module: id });
   if (UPGRADES[id]?.line) emit({ type: 'astra', lineId: UPGRADES[id].line, mood: 'cheerful' });
+  nextJob(s, d, emit);
 }
 
 function finishCraft(s, emit) {
@@ -318,6 +335,58 @@ function finishCraft(s, emit) {
     emit({ type: 'crafted', recipe: id });
     if (id === 'suit_liner') emit({ type: 'astra', lineId: 'astra.rad.suit_liner', mood: 'cheerful' });
     if (id === 'rover_shielding') emit({ type: 'astra', lineId: 'astra.rad.rover_shield', mood: 'cheerful' });
+  }
+}
+
+
+/** Why a queued job could not be accepted right now, or null. Cost is paid when it starts. */
+function queueCheck(s, job) {
+  const m = s.modules[job.module];
+  const queued = s.drones.some((x) => x.queue.some((q) => q.type === job.type && q.module === job.module));
+  if (queued) return 'That job is already waiting.';
+  if (s.drones.some((x) => x.task && x.task.type === job.type && x.task.module === job.module)) return 'A drone is already on that job.';
+  if (s.drones.some((x) => x.queue.length >= 2) && s.drones.every((x) => x.queue.length >= 2)) return 'The drone queues are full.';
+  if (job.type === 'build' && m.status !== 'unbuilt') return m.status === 'online' ? 'Already finished.' : 'Already being built.';
+  if (job.type === 'upgrade' && (!UPGRADES[job.module] || m.tier === 2 || m.upgrading)) return 'No upgrade to do there.';
+  return null;
+}
+
+/** Start a build or upgrade on a free drone: all checks, payment and effects. Returns an error text or null. */
+function startJob(s, d, job, emit) {
+  const id = job.module;
+  const m = s.modules[id];
+  if (job.type === 'build') {
+    if (m.status !== 'unbuilt') return m.status === 'online' ? 'Already finished.' : 'Already being built.';
+    const why = unlockReason(s, id) ?? canPay(s, MODULES[id].cost);
+    if (why) return why;
+    pay(s, MODULES[id].cost);
+    m.status = 'building';
+    m.progress = 0;
+    m.drone = d.id;
+    d.task = { type: 'build', module: id };
+    emit({ type: 'build-started', module: id, drone: d.id });
+    onModuleStart(s, id, emit);
+    return null;
+  }
+  const u = UPGRADES[id];
+  if (!u) return 'No upgrade for that module.';
+  if (m.status !== 'online') return 'Build it first.';
+  if (m.tier === 2 || m.upgrading) return 'Already upgraded.';
+  const why = canPay(s, u);
+  if (why) return why;
+  pay(s, u);
+  m.upgrading = { progress: 0, drone: d.id };
+  d.task = { type: 'upgrade', module: id };
+  emit({ type: 'upgrade-started', module: id });
+  return null;
+}
+
+/** When a drone is free, start the next waiting job; one that cannot start is dropped with a note. */
+function nextJob(s, d, emit) {
+  while (d.queue.length && !d.task) {
+    const job = d.queue.shift();
+    const err = startJob(s, d, job, emit);
+    if (err) emit({ type: 'toast', text: `A waiting job was dropped: ${err}` });
   }
 }
 
@@ -352,40 +421,39 @@ export function command(s, cmd) {
       onDroneAwake(s, d.id, emit);
       break;
     }
-    case 'build': {
-      const id = cmd.module;
-      const m = s.modules[id];
-      if (!m || !MODULES[id] || MODULES[id].prebuilt) return fail('Unknown module.');
-      if (m.status !== 'unbuilt') return fail(m.status === 'online' ? 'Already finished.' : 'Already being built.');
-      const why = unlockReason(s, id) ?? canPay(s, MODULES[id].cost);
-      if (why) return fail(why);
-      const d = freeDrone(s);
-      if (!d) return fail('No free drone. Wake a drone or wait for one to finish.');
-      pay(s, MODULES[id].cost);
-      m.status = 'building';
-      m.progress = 0;
-      m.drone = d.id;
-      d.task = { type: 'build', module: id };
-      emit({ type: 'build-started', module: id, drone: d.id });
-      onModuleStart(s, id, emit);
-      break;
-    }
+    case 'build':
     case 'upgrade': {
       const id = cmd.module;
-      const u = UPGRADES[id];
-      const m = s.modules[id];
-      if (!u || !m) return fail('No upgrade for that module.');
-      if (m.status !== 'online') return fail('Build it first.');
-      if (m.tier === 2 || m.upgrading) return fail('Already upgraded.');
-      if (id === 'garage' && s.flags.noUpgradeUntilBack) return fail('Not now.');
-      const why = canPay(s, u);
-      if (why) return fail(why);
-      const d = freeDrone(s);
-      if (!d) return fail('No free drone.');
-      pay(s, u);
-      m.upgrading = { progress: 0, drone: d.id };
-      d.task = { type: 'upgrade', module: id };
-      emit({ type: 'upgrade-started', module: id });
+      if (!s.modules[id]) return fail('Unknown module.');
+      if (cmd.type === 'build' && (!MODULES[id] || MODULES[id].prebuilt)) return fail('Unknown module.');
+      const d = cmd.drone ? s.drones.find((x) => x.id === cmd.drone) : freeDrone(s);
+      if (cmd.drone && (!d || d.status !== 'awake')) return fail('That drone is asleep.');
+      if (!d) return fail('No free drone. Wake a drone or wait for one to finish.');
+      const job = { type: cmd.type, module: id };
+      if (d.task) { // Drone Link: the drone is busy, so the job waits in its queue (up to 2)
+        const why = queueCheck(s, job);
+        if (why) return fail(why);
+        d.queue.push(job);
+        emit({ type: 'queued', drone: d.id, job });
+        break;
+      }
+      const err = startJob(s, d, job, emit);
+      if (err) return fail(err);
+      break;
+    }
+    case 'unqueue': {
+      const d = s.drones.find((x) => x.id === cmd.drone);
+      if (!d || !d.queue[cmd.index]) return fail('Nothing to remove.');
+      d.queue.splice(cmd.index, 1);
+      break;
+    }
+    case 'order': {
+      if (s.away) return fail('The Commander is out with the Rover.');
+      if (!['bedroom', 'kitchen', 'lifesupport', 'workshop', 'lab', 'battery', 'garage', 'greenhouse', 'recreation', 'outside'].includes(cmd.place)) return fail('Unknown place.');
+      if (cmd.place !== 'bedroom' && cmd.place !== 'kitchen' && cmd.place !== 'lifesupport' && cmd.place !== 'outside' && !online(s, cmd.place)) return fail('That room is not finished yet.');
+      s.order = { place: cmd.place, until: s.minute + 180 };
+      s.flags.outside = cmd.place === 'outside';
+      emit({ type: 'ordered', place: cmd.place });
       break;
     }
     case 'craft': {
