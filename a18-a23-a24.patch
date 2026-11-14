@@ -1,0 +1,281 @@
+From 2a4b09bc5dd5a973db5b25c07d10ff933e07c278 Mon Sep 17 00:00:00 2001
+From: Vlad <a@b>
+Date: Sat, 14 Nov 2026 21:50:07 +0100
+Subject: [PATCH] Fix A18 (where to find parts), A23 (soft 'no' sound), A24
+ (close button and Esc)
+
+---
+ docs/ERRORS.md                  |  6 ++---
+ src/audio/audioDirector.js      |  2 +-
+ src/audio/soundManager.js       | 10 ++++++++
+ src/audio/soundManager.test.mjs | 10 ++++++++
+ src/campaign/sources.js         | 44 +++++++++++++++++++++++++++++++++
+ src/main.js                     |  2 +-
+ src/ui/campaign-ui.js           | 27 ++++++++++++++++++++
+ styles/game.css                 |  7 ++++++
+ tests/sources.test.mjs          | 28 +++++++++++++++++++++
+ 9 files changed, 131 insertions(+), 5 deletions(-)
+ create mode 100644 src/campaign/sources.js
+ create mode 100644 tests/sources.test.mjs
+
+diff --git a/docs/ERRORS.md b/docs/ERRORS.md
+index 381a1a4..ee31dd0 100644
+--- a/docs/ERRORS.md
++++ b/docs/ERRORS.md
+@@ -50,13 +50,13 @@ lander that do not exist but light up as clickable → A11. If one of them still
+ | A15 | The selection of objects looks too crude; a soft glow would be better than a white frame. | The hovered or selected object gets a white rectangle. | A soft glow around the sprite's outline instead of the frame. | PLAYER | OPEN |
+ | A16 | Remove the static from the solar panels. | SCENARIO 4.1 is "Solar Panel Static Wipe": zapping the static is step 1, and `astra.tut.solar_prompt` says it. | Team decision: no zapping. The player only swipes; sticky clumps keep small sparks as a hint and need 1–2 extra swipes; static stays as the explanation. Engineer: wiper 2× wider; Pilot: clumps outlined. See [SCENARIO 4.1](../SCENARIO.md#41-solar-panel-static-wipe). Code change: mini-game owner. | PLAYER | DECIDED |
+ | A17 | The label on the button is in the wrong place, and the battery icon itself needs fixing. | Not checked yet. | Centre the label and redraw the battery icon. | PLAYER | OPEN |
+-| A18 | Solar Array mission: where do I get 3 Solar Cells? | The mission shows the cost but not where the parts come from. SCENARIO 5.5: Expedition 2 brings 3 Solar Cells, and Scrap Runs can drop them. | Show where each missing component comes from in the mission and upgrade cards. | PLAYER | OPEN |
++| A18 | Solar Array mission: where do I get 3 Solar Cells? | The Base and Workshop rows showed the cost ("3× Solar Cell") but never where a part comes from. | New `src/campaign/sources.js` reads the expedition loot tables (no hard-coded list): every missing part gets a blue hint row, e.g. "3× Solar Cell (you have 0): find it on Pathfinder-X Wreck (Expedition 2) or a Scrap Run (random part)." Visited story trips say "already visited". Rows in the Base tab (build and upgrade) and the Workshop tab. `tests/sources.test.mjs`: every part used in a recipe or upgrade has a source; the Scrap Run pool matches `expeditions.js`. | PLAYER | FIXED |
+ | A19 | Why can't I stop building a module and send the workers to another module? | SCENARIO does not say whether a build can be stopped or switched. | Team decision: no change; a started build cannot be stopped or switched. | PLAYER | DECIDED: won't do |
+ | A20 | The top bar is not fixed; it can move. | Not checked yet. | Pin the top bar in place, so it never moves with the page. | PLAYER | OPEN |
+ | A21 | Clicking objects does nothing. | Not checked yet (see also A11). | Every object that lights up opens its info or action; anything else does not light up. | PLAYER | OPEN |
+ | A22 | In the cracked-filter event I could pick the water option before the Garage was built. | Not checked yet; probably a Dilemma 2 choice that needs the Garage is not locked (`story.js`, Mykhailo's file). | Grey out a choice whose building is missing and say why. | PLAYER | OPEN (Mykhailo's file) |
+-| A23 | No sound when an action fails (for example, the queue is full, or a build cannot start because one is already running). | Not checked yet. | Play a soft "no" sound with every refused command. | PLAYER | OPEN |
+-| A24 | There is no normal way to close pop-up windows; add a close button in the top-right corner. | Not checked yet. | A close button (×) in the top-right corner of every card and window, and Esc closes it too. | PLAYER | OPEN |
++| A23 | No sound when an action fails (for example, the queue is full, or a build cannot start because one is already running). | `send()` in `main.js` showed the toast for a refused command but played no sound, and the sound engine had no "no" sound. | New `actionDenied()` in the sound engine: two soft falling notes, at most one every 0.35 s so repeated taps do not stack. `send()` plays it with every refused command (queue full, Workshop busy, not enough parts...). Tested in `soundManager.test.mjs`. | PLAYER | FIXED |
++| A24 | There is no normal way to close pop-up windows; add a close button in the top-right corner. | Each window had only its own bottom button (Close, Continue, Got it); no corner button, no Esc. | Every window gets a round × in its top-right corner and closes with Esc (`campaign-ui.js`, one place, works for windows added later). Not on windows that need an answer: dilemma, event and radio decisions, and Game Over. Esc inside a mini-game still only closes the mini-game. | PLAYER | FIXED |
+ | A25 | The Repair Kit and Drone #02 mission should be two sub-tasks. | `missions.js` had one step, done only when Drone #02 woke. | Two steps: "Craft a Repair Kit" (done when a kit is in stock or the drone is awake; shows the Workshop's progress; "Show me" opens the Workshop tab), then "Drag the Repair Kit onto Drone #02". The same split for the Reboot Kit and Drone #03. Main list 19 → 21 missions; checked in `tests/missions.test.mjs`. | PLAYER | FIXED |
+ 
+ ### Third player report (2026-11-14)
+diff --git a/src/audio/audioDirector.js b/src/audio/audioDirector.js
+index 53116f0..2768f7f 100644
+--- a/src/audio/audioDirector.js
++++ b/src/audio/audioDirector.js
+@@ -43,7 +43,7 @@ export const LEGACY_CUES = Object.freeze({
+ 
+ /** Sound-engine methods that `cue()` may call by name. */
+ export const SFX_NAMES = Object.freeze([
+-  'typewriterBlip', 'astraSlideIn', 'uiClick', 'uiTabSwitch', 'dilemmaChoice',
++  'typewriterBlip', 'astraSlideIn', 'uiClick', 'uiTabSwitch', 'dilemmaChoice', 'actionDenied',
+   'landerDescent', 'landerTouchdown', 'alertWarning', 'alertEmergency', 'medRestActivate',
+   'droneWake', 'droneBuildTick', 'moduleComplete', 'solDawnChime',
+   'staticZap', 'brushWipe', 'pipeRotate', 'waterValveTurn', 'nutrientDrop', 'pebblePop',
+diff --git a/src/audio/soundManager.js b/src/audio/soundManager.js
+index 2455a4f..7f023d6 100644
+--- a/src/audio/soundManager.js
++++ b/src/audio/soundManager.js
+@@ -555,6 +555,16 @@ export class SoundManager {
+     this._playSfxNote(392, 'sine', 0.05, 0.14, 523.25, 0, 950, false);
+   }
+ 
++  // A23: a soft, low "uh-uh" when a command is refused (queue full, Workshop busy...).
++  // Two gentle falling notes, never harsh; at most one every 0.35 s so repeated taps don't stack.
++  actionDenied() {
++    const t = Date.now();
++    if (t - (this._lastDenied ?? 0) < 350) return;
++    this._lastDenied = t;
++    this._playSfxNote(392.00, 'triangle', 0.10, 0.16, null, 0.00, 700, false);
++    this._playSfxNote(329.63, 'triangle', 0.16, 0.16, 293.66, 0.11, 650, false);
++  }
++
+   dilemmaChoice() {
+     this._playSfxNote(523.25, 'triangle', 0.10, 0.20, null, 0.00, 900, true);
+     this._playSfxNote(659.25, 'triangle', 0.18, 0.20, null, 0.08, 950, true);
+diff --git a/src/audio/soundManager.test.mjs b/src/audio/soundManager.test.mjs
+index 48f08bc..239d4a5 100644
+--- a/src/audio/soundManager.test.mjs
++++ b/src/audio/soundManager.test.mjs
+@@ -83,3 +83,13 @@ test('music priority', async () => {
+   assert.equal(resolveMusicTrack({ emergency: true }), 'storm_alert');
+   assert.equal(resolveMusicTrack({ victory: true, storm: true }), 'victory');
+ });
++
++test('A23: actionDenied is soft and does not stack on repeated taps', async () => {
++  const stats = installFakeBrowser();
++  const { SoundManager } = await import('./soundManager.js?denied');
++  const s = new SoundManager();
++  s.unlock();
++  const before = stats.oscillators;
++  s.actionDenied(); s.actionDenied(); s.actionDenied();
++  assert.equal(stats.oscillators - before, 2); // one "uh-uh" (two notes), the rest throttled
++});
+diff --git a/src/campaign/sources.js b/src/campaign/sources.js
+new file mode 100644
+index 0000000..08f333c
+--- /dev/null
++++ b/src/campaign/sources.js
+@@ -0,0 +1,44 @@
++/**
++ * Where does a component come from? (docs/ERRORS.md A18, SCENARIO 5.5 Component ledger)
++ * Pure functions over the expedition loot tables, so the hint stays right when loot changes.
++ */
++import { EXPEDITIONS } from './expeditions.js';
++
++/** Items a Scrap Run can drop (one at random). Mirrors the pool in expeditions.js (Scrap Run branch); a test keeps them equal. */
++export const SCRAP_DROPS = Object.freeze(['circuit_board', 'titanium_plate', 'solar_cell']);
++
++/**
++ * Every place an item can be found, in story order.
++ * @returns {{ id: string|number, nameId?: string, label: string, repeatable: boolean }[]}
++ */
++export function sourcesOf(item) {
++  const out = [];
++  for (const id of [1, 2, 3, 4, 5]) {
++    const ex = EXPEDITIONS[id];
++    if (ex?.loot.items[item]) out.push({ id, nameId: ex.nameId, label: `Expedition ${id}`, repeatable: false });
++  }
++  if (EXPEDITIONS.ice?.loot.items[item]) out.push({ id: 'ice', label: 'Ice Run', repeatable: true });
++  if (SCRAP_DROPS.includes(item)) out.push({ id: 'run', label: 'Scrap Run (random part)', repeatable: true });
++  return out;
++}
++
++/** The items of a cost the player does not have yet: [{ item, need, have }]. */
++export function missingItems(s, cost = {}) {
++  return Object.entries(cost.items ?? {})
++    .map(([item, need]) => ({ item, need, have: s.items?.[item] ?? 0 }))
++    .filter((m) => m.have < m.need);
++}
++
++/**
++ * One kid-friendly line: "find it on Pathfinder-X Wreck (Expedition 2) or a Scrap Run (random part)".
++ * `nameOf(nameId)` turns a line ID into text; visited story trips are marked so the player looks elsewhere.
++ */
++export function whereText(s, item, nameOf = (x) => x) {
++  const list = sourcesOf(item).map((src) => {
++    if (src.repeatable) return `a ${src.label}`;
++    const visited = s.flags?.done?.[src.id] ? ', already visited' : '';
++    return `${nameOf(src.nameId)} (${src.label}${visited})`;
++  });
++  if (!list.length) return 'it is made in the Workshop or found on the story trips';
++  return `find it on ${list.length > 1 ? `${list.slice(0, -1).join(', ')} or ${list.at(-1)}` : list[0]}`;
++}
+diff --git a/src/main.js b/src/main.js
+index 8f07222..a59cb2f 100644
+--- a/src/main.js
++++ b/src/main.js
+@@ -166,7 +166,7 @@ function handleEvents(events) {
+ function send(cmd) {
+   if (cmd.type === 'say') { say(guide, { lineId: cmd.lineId, mood: 'curious' }); return { ok: true }; }
+   const res = command(s, cmd);
+-  if (!res.ok) { toast(res.error); return res; }
++  if (!res.ok) { toast(res.error); audio.play('actionDenied'); return res; } // A23: a soft "no" with every refused command
+   handleEvents(res.events);
+   if (tut?.state === 'TUT_BUILD' && cmd.type === 'build' && cmd.module === 'battery') finishTutorial();
+   if (mode === 'play') scheduleSave();
+diff --git a/src/ui/campaign-ui.js b/src/ui/campaign-ui.js
+index f32eb14..eecceba 100644
+--- a/src/ui/campaign-ui.js
++++ b/src/ui/campaign-ui.js
+@@ -12,6 +12,7 @@ import { ICON } from '../render/atlas.js';
+ import { play, director } from './audio.js';
+ import { CARDS, BADGES, buildReport } from '../campaign/logbook.js';
+ import { LOW_LIMITS } from '../campaign/hazards.js';
++import { missingItems, whereText } from '../campaign/sources.js';
+ 
+ const $ = (id) => document.getElementById(id);
+ const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+@@ -19,6 +20,8 @@ const name = (id) => (hasString(id) ? t(id) : id);
+ const itemName = (it) => t(`ui.item.${it}.name`);
+ const costText = (c = {}) => [c.sp ? `${c.sp} SP` : null, c.water ? `${c.water} Water` : null, ...Object.entries(c.items ?? {}).map(([i, n]) => `${n}× ${itemName(i)}`)].filter(Boolean).join(', ');
+ const MINI_NAME = { solar_wipe: 'ui.mg.solar_wipe.title', heat_pump: 'ui.mg.heat_pump_reroute.title', valve_balance: 'ui.mg.valve_balance.title', water_sort: 'ui.mg.water_sort.title', nutrient_match: 'ui.mg.nutrient_match.title', air_filter: 'ui.mg.air_filter_scrub.title', antenna: 'ui.mg.dish_antenna_alignment.title', wheel_vacuum: 'ui.mg.wheel_pebble_vacuum.title', suit_seal: 'ui.mg.suit_seal_check.title' };
++/** A18: one hint row per missing component, saying where to find it. */
++const whereRows = (s, cost) => missingItems(s, cost).map(({ item, need, have }) => el('div', 'why where', `${need}× ${itemName(item)} (you have ${have}): ${whereText(s, item, name)}.`));
+ export const miniTitle = (g) => (hasString(MINI_NAME[g]) ? t(MINI_NAME[g]) : g.replaceAll('_', ' '));
+ 
+ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }) {
+@@ -77,6 +80,7 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
+         b.addEventListener('click', () => send({ type: 'build', module: id, drone: selectedDrone() }));
+         actions.append(b);
+         if (info.reason) row.append(el('div', 'why', info.reason)); else row.append(el('div', 'why', `Cost: ${costText(info.cost)}`));
++        row.append(...whereRows(s, info.cost));
+       } else if (info.status === 'online' && info.upgrade && info.tier === 1 && !info.upgrading) {
+         const b = el('button', '', 'Upgrade');
+         b.title = `${name(info.upgrade.nameId)}: ${costText(info.upgrade)}`;
+@@ -84,6 +88,7 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
+         b.addEventListener('click', () => send({ type: 'upgrade', module: id, drone: selectedDrone() }));
+         actions.append(b);
+         row.append(el('div', 'why', `${name(info.upgrade.nameId)}: ${costText(info.upgrade)}`));
++        row.append(...whereRows(s, info.upgrade));
+       }
+       row.prepend(actions);
+       row.addEventListener('click', (e) => { if (e.target.tagName !== 'BUTTON') { selected = `module:${id}`; sig = ''; } });
+@@ -103,6 +108,7 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
+       b.disabled = Boolean(s.crafting);
+       b.addEventListener('click', () => send({ type: 'craft', recipe: id }));
+       row.prepend(b);
++      row.append(...whereRows(s, r));
+       body.append(row);
+     }
+     const inv = Object.entries(s.items).filter(([, n]) => n > 0);
+@@ -210,6 +216,27 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
+   $('stage').append(modalRoot);
+   let modalKey = null;
+   const closeModal = () => { modalRoot.hidden = true; modalRoot.innerHTML = ''; modalKey = null; closeModalHook(); };
++  // A24: every window gets a close button (top right) and Esc closes it, except the ones that need an answer:
++  // a decision (dilemma, event, radio) must be chosen, and Game Over has its own two buttons.
++  const mustAnswer = () => !modalKey || modalKey.startsWith('choice:') || modalKey === 'gameover';
++  const addCloseButton = () => {
++    if (modalRoot.hidden || mustAnswer()) return;
++    const card = modalRoot.querySelector('.card');
++    if (!card || card.querySelector(':scope > .xClose')) return;
++    const x = el('button', 'xClose', '\u00D7');
++    x.type = 'button';
++    x.title = 'Close (Esc)';
++    x.setAttribute('aria-label', 'Close');
++    x.addEventListener('click', () => { play('click'); closeModal(); });
++    card.prepend(x);
++  };
++  new MutationObserver(addCloseButton).observe(modalRoot, { childList: true });
++  window.addEventListener('keydown', (e) => {
++    if (e.key !== 'Escape' || modalRoot.hidden || mustAnswer()) return;
++    if (!document.getElementById('mgWrap')?.hidden) return; // a mini-game on top handles its own Esc
++    e.preventDefault();
++    closeModal();
++  });
+   const openModal = (html, key) => { modalKey = key; modalRoot.hidden = false; modalRoot.innerHTML = html; };
+ 
+   function showChoice(kind, id) {
+diff --git a/styles/game.css b/styles/game.css
+index 39bbe37..bcd8f5b 100644
+--- a/styles/game.css
++++ b/styles/game.css
+@@ -128,3 +128,10 @@ button:hover { background:#1a4668; } button:disabled { opacity:.45; cursor:defau
+ .card.gameover { text-align: center; max-width: 760px; border-color: #ff5252; box-shadow: 0 0 60px #ff525255; }
+ .card.gameover h1 { margin: 6px 0 10px; font-size: 64px; letter-spacing: 6px; color: #ff6b6b; }
+ .card.gameover .stats { color: #9fb5c8; font-size: 20px; } .card.gameover .choices { display: flex; gap: 14px; justify-content: center; margin-top: 16px; }
++
++/* A24: close button in the top-right corner of every window that does not need an answer */
++.card { position: relative; }
++.card > .xClose { position: absolute; top: 10px; right: 12px; width: 44px; height: 44px; padding: 0; border-radius: 50%; font-size: 28px; line-height: 38px; text-align: center; background: rgba(18,48,74,.9); z-index: 2; }
++.card > .xClose:hover { background: var(--orange); }
++/* A18: where to find a missing component */
++.why.where { color: #9fd8ff; }
+diff --git a/tests/sources.test.mjs b/tests/sources.test.mjs
+new file mode 100644
+index 0000000..393b270
+--- /dev/null
++++ b/tests/sources.test.mjs
+@@ -0,0 +1,28 @@
++// A18: every component needed for a craft or an upgrade says where it can be found.
++import { test } from 'node:test';
++import assert from 'node:assert/strict';
++import { readFileSync } from 'node:fs';
++import { RECIPES, UPGRADES } from '../src/campaign/data.js';
++import { sourcesOf, missingItems, whereText, SCRAP_DROPS } from '../src/campaign/sources.js';
++
++test('every item used in a recipe or an upgrade has at least one source', () => {
++  const used = new Set();
++  for (const c of [...Object.values(RECIPES), ...Object.values(UPGRADES)]) for (const it of Object.keys(c.items ?? {})) used.add(it);
++  for (const it of used) assert.ok(sourcesOf(it).length > 0, `${it} has no source`);
++});
++
++test('solar cells: Expedition 2 and the Scrap Run', () => {
++  const ids = sourcesOf('solar_cell').map((x) => x.id);
++  assert.deepEqual(ids, [2, 'run']);
++  const s = { items: { solar_cell: 1 }, flags: { done: { 2: true } } };
++  assert.deepEqual(missingItems(s, { items: { solar_cell: 3 } }), [{ item: 'solar_cell', need: 3, have: 1 }]);
++  assert.match(whereText(s, 'solar_cell', (id) => id), /Expedition 2, already visited\) or a Scrap Run/);
++});
++
++test('SCRAP_DROPS matches the Scrap Run pool in expeditions.js', () => {
++  const src = readFileSync(new URL('../src/campaign/expeditions.js', import.meta.url), 'utf8');
++  const m = src.match(/const pool = \[([^\]]+)\]/);
++  assert.ok(m, 'Scrap Run pool not found');
++  const pool = m[1].split(',').map((x) => x.trim().replace(/['"]/g, ''));
++  assert.deepEqual(pool, [...SCRAP_DROPS]);
++});
+-- 
+2.43.0
+
