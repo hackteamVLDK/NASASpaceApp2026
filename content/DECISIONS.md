@@ -27,3 +27,16 @@ files, so every task branch can add to it without merge conflicts.
 - 2026-11-14 · Expedition 2 radio decision: table prompt aligned with the Section 7 JSON; Dilemma 5 JSON labels aligned with the table · same ID had two texts; the table is the source of truth.
 - 2026-11-14 · content/tools tests run with `node --test content/tools/*.test.mjs`, not npm test · package.json belongs to Mykhailo.
 - 2026-11-14 · PR #5 (strings) merged by me: only SCENARIO.md + content/, mergeable, tests 85/88 unchanged.
+- 2026-11-14 · The given src/audio/soundManager.js was the unfixed version (no unlock/updateMusic/resolveMusicTrack, broke in Node) while its test expected the fixed one; I added the fixes to match the test and the description · the test is the spec; asking would not change the outcome.
+- 2026-11-14 · The "previous message" with the SFX list was not in this session; I hooked every SFX method of soundManager.js (29) · the engine's API is the complete list.
+- 2026-11-14 · Pavlo wrote src/main.js, src/ui, src/render, src/campaign (no git_status_Pavlo); treated as his files: hooks in PR #7, not merged · user's rule for teammate-owned files.
+- 2026-11-14 · Mykhailo owns src/flow: crawl char for typewriter blips in PR #8, not merged · same rule.
+- 2026-11-14 · Only feature/audio (PR #6: new src/audio + content/) merged · no teammate files, no conflicts, tests 161/161 vs main 144/144.
+- 2026-11-14 · Intro cue mapping: wind-hum and retro-rocket-roar → landerDescent, parachute-deploy → brushWipe, landing-thud → landerTouchdown, airlock-hiss → airlockCycle, astra-chime → astraSlideIn, bass-boom → canyonSeismicThump · the engine has no dedicated wind/parachute/boom sounds; closest timbre.
+- 2026-11-14 · Decision cards (dilemma/event/radio) alert from the UI when the card opens (urgent e1/d5 → alertEmergency), not from campaign events; choice sound from the button, not the `chosen` event · avoids double sounds and covers decisions pending in a loaded save.
+- 2026-11-14 · Canyon music during black-box decoding: from decode_start until 8 s after blackbox_react2 shows, max 120 s; not restored on Continue · the window is under 2 minutes.
+- 2026-11-14 · No music during the intro crawl and landing cutscene; base music from the tutorial on · the crawl has its own blips and the cutscene its own SFX.
+- 2026-11-14 · Music/SFX sliders not built (no settings/pause screen) → listed in content/handoff/AUDIO_HOOKS.md · user's rule: don't build missing UI.
+- 2026-11-14 · Codex audio review: accepted findings 1, 2, 4, 5 and 3 in part; rejected 6 (mute title strings) for now · details in content/ai-collaboration/records/20261114-audio-integration-review.md.
+- 2026-11-14 · Codex CLI updated to 0.169.0 (0.133 could not read the model list) · user approved `npm install -g @openai/codex@latest`.
+- 2026-11-14 · Browser smoke test used Playwright from ~/hackathon/ukaz/node_modules (read-only, nothing installed) · Chromium was already cached; no new dependency in this repo.
