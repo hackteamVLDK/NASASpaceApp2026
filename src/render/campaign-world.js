@@ -11,11 +11,12 @@ import { LAYOUT, MODULES } from '../campaign/data.js';
 import { clockAt, isDay, online } from '../campaign/util.js';
 import { ICON } from './atlas.js';
 import { buildSoil, SCREEN, CREW_COLORS, DRONE_BUMPERS, SOIL } from './world.js';
-import { SURFACE, PERSON_H, DRONE_H, SHAFT_X, GROUND_Y, LADDER, roomRect, anchor, feetY, bedroomSpots, garageSpots, baseBottom, rightWingWidth } from './geometry.js';
+import { SURFACE, LANDER_FLIGHT_W, PERSON_H, DRONE_H, SHAFT_X, GROUND_Y, LADDER, roomRect, anchor, feetY, bedroomSpots, garageSpots, baseBottom, rightWingWidth } from './geometry.js';
 import { onSurface, createMover, setGoal, advance, place as placeAt, arrived, roverPose, ROVER } from './movers.js';
 import { CLIMB_FRAMES } from './ladders.js';
 import { SURFACE_LIGHTING } from '../data/surface-lighting.js';
 import { surfaceEffects, paintSurfaceEffects } from './surface-lighting.js';
+import { flames } from './lander.js';
 
 export { SCREEN, buildSoil, roomRect, anchor };
 
@@ -121,9 +122,14 @@ export function drawCampaign(ctx, atlas, S) {
   // ---- the lander in flight (cutscene)
   if (cut?.lander?.visible && !cut.lander.landed) {
     const L = cut.lander;
-    atlas.sprite(ctx, 'lander', 0, SURFACE.lander.x, L.y, { w: SURFACE.lander.w - 20 });
+    // one flame under the middle of each nozzle, drawn first so the lander's nozzle rims cover the flat tops of the flames (A13, A41);
+    // both flame frames share the scale of the longer one, so the short frame stays short instead of coming out wider
+    if (L.thrusters) {
+      const box = atlas.bbox('parachute', 2);
+      for (const f of flames({ x: SURFACE.lander.x, y: L.y, w: LANDER_FLIGHT_W, tick: Math.floor(wm / 90) })) atlas.sprite(ctx, 'parachute', f.frame, f.x, f.y, { h: box.h * f.k, box, anchor: 'top' });
+    }
+    atlas.sprite(ctx, 'lander', 0, SURFACE.lander.x, L.y, { w: LANDER_FLIGHT_W });
     if (L.parachute === 'attached') atlas.sprite(ctx, 'parachute', 0, SURFACE.lander.x, L.y - 150, { w: 340 });
-    if (L.thrusters) for (let i = 0; i < 4; i++) atlas.sprite(ctx, 'parachute', 2 + (Math.floor(wm / 90) % 2), SURFACE.lander.x - 78 + i * 52, L.y - 4, { h: 110, anchor: 'top' }); // flames hang below the nozzles (A13)
   }
   if (cut?.lander?.parachute === 'drifting-left') {
     const d = cut.parachuteDrift ?? 0;

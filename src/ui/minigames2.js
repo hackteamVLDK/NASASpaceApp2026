@@ -50,6 +50,7 @@ function scaffold({ canvas, game, onWin, onFail, onTitle, onHint, title, hint, m
     pointerdown: (e) => { pressed = true; canvas.setPointerCapture?.(e.pointerId); director.minigame(game, 'down'); g.down?.(pt(canvas, e), api); },
     pointermove: (e) => { if (pressed) director.minigame(game, 'move'); g.move?.(pt(canvas, e), api); },
     pointerup: (e) => { pressed = false; g.up?.(pt(canvas, e), api); },
+    pointercancel: (e) => { pressed = false; g.up?.(pt(canvas, e), api); }, // a lost touch lets go instead of sticking
   };
   for (const [k, f] of Object.entries(handlers)) canvas.addEventListener(k, f);
   function frame(now) {
@@ -125,37 +126,63 @@ function heatPump() {
 
 // ------------------------------------------------------------------ 4.3 Valve Balance
 function valveBalance() {
-  const v = { co2: 0.85, o2: 0.15 };
-  const knobs = [{ id: 'A', x: 250 }, { id: 'B', x: 550 }, { id: 'C', x: 850 }];
-  let drag = null, greenSince = null;
-  const bandCo2 = [0.2, 0.4], bandO2 = [0.55, 0.75];
-  const ang = (k, p) => Math.atan2(p.y - 480, p.x - k.x);
+  // Reworked (docs/ERRORS.md): two clear sliders instead of three round knobs (A, B, C) that had to be turned in
+  // circles. Each slider belongs to one gauge and sits right under it, in its colour: drag it, and its needle follows
+  // (with a little lag). The air keeps changing a bit, so the needles wobble: keep both in SAFE for 2 seconds.
+  const gauges = [
+    { id: 'co2', name: 'CO\u2082 scrubber', hint: 'Too much CO\u2082 makes people sleepy: keep it low.', x: 70, col: '#b8c4cc', band: [0.15, 0.38], v: 0.85, target: 0.85, phase: 0 },
+    { id: 'o2', name: 'O\u2082 maker', hint: 'Enough oxygen to breathe easy.', x: 590, col: '#4db8ff', band: [0.55, 0.78], v: 0.15, target: 0.15, phase: 2.1 },
+  ];
+  const GW = 440; // gauge and slider width
+  let drag = null, greenSince = null, touched = false;
+  const sliderY = 430;
+  const shown = (g, now) => Math.max(0, Math.min(1, g.v + 0.035 * Math.sin(now / 650 + g.phase))); // the wobble
+  const setTarget = (g, p) => { g.target = Math.max(0, Math.min(1, (p.x - g.x) / GW)); };
   return {
-    down(p) { const k = knobs.find((q) => Math.hypot(p.x - q.x, p.y - 480) < 70); if (k) drag = { k, last: ang(k, p) }; },
-    move(p) {
-      if (!drag) return;
-      let d = ang(drag.k, p) - drag.last;
-      if (d > Math.PI) d -= 2 * Math.PI; if (d < -Math.PI) d += 2 * Math.PI;
-      drag.last = ang(drag.k, p);
-      const amt = d * 0.12;
-      if (drag.k.id === 'A') v.co2 -= amt; else if (drag.k.id === 'B') v.o2 += amt; else { v.co2 -= amt * 0.4; v.o2 += amt * 0.4; }
-      v.co2 = Math.max(0, Math.min(1, v.co2)); v.o2 = Math.max(0, Math.min(1, v.o2));
+    down(p) {
+      const g = gauges.find((q) => p.x > q.x - 30 && p.x < q.x + GW + 30 && Math.abs(p.y - sliderY) < 60);
+      if (g) { drag = g; touched = true; setTarget(g, p); }
     },
+    move(p) { if (drag) setTarget(drag, p); },
     up() { drag = null; },
     draw(c, now) {
-      label(c, 'Hold both needles in the green for 2 seconds', W / 2, 60, 28, '#ffb000');
-      const gauge = (cx, val, band, name, col) => {
-        c.fillStyle = '#16293c'; rr(c, cx - 200, 110, 400, 220, 16); c.fill();
-        c.fillStyle = 'rgba(67,224,96,.5)'; c.fillRect(cx - 170 + band[0] * 340, 140, (band[1] - band[0]) * 340, 40);
-        c.fillStyle = col; c.fillRect(cx - 170, 250, 340 * val, 22); c.strokeStyle = '#fff'; c.strokeRect(cx - 170, 250, 340, 22);
-        c.fillStyle = '#fff'; c.fillRect(cx - 172 + val * 340, 130, 6, 90);
-        label(c, name, cx, 310, 24);
-      };
-      gauge(350, v.co2, bandCo2, 'CO₂', '#9aa');
-      gauge(750, v.o2, bandO2, 'O₂', '#4db8ff');
-      knobs.forEach((k) => { c.fillStyle = '#394b5d'; c.beginPath(); c.arc(k.x, 480, 62, 0, Math.PI * 2); c.fill(); c.strokeStyle = '#ffb000'; c.lineWidth = 6; c.stroke(); label(c, k.id, k.x, 490, 36); });
-      this._ok = v.co2 >= bandCo2[0] && v.co2 <= bandCo2[1] && v.o2 >= bandO2[0] && v.o2 <= bandO2[1];
-      if (this._ok) { greenSince ??= now; c.fillStyle = '#43e060'; c.fillRect(100, 380, Math.min(900, ((now - greenSince) / 2000) * 900), 14); } else greenSince = null;
+      label(c, 'Slide each lever until its needle is in SAFE, then hold for 2 seconds', W / 2, 52, 26, '#ffb000');
+      let ok = true;
+      for (const g of gauges) {
+        g.v += (g.target - g.v) * 0.08; // the needle follows the lever with a little lag, like a real valve
+        const val = shown(g, now);
+        const inBand = val >= g.band[0] && val <= g.band[1];
+        ok &&= inBand;
+        // gauge
+        c.fillStyle = '#16293c'; rr(c, g.x - 20, 90, GW + 40, 230, 16); c.fill();
+        label(c, g.name, g.x + GW / 2, 128, 26, g.col);
+        c.fillStyle = '#0c1624'; c.fillRect(g.x, 160, GW, 70);
+        c.fillStyle = inBand ? 'rgba(67,224,96,.55)' : 'rgba(67,224,96,.3)'; c.fillRect(g.x + g.band[0] * GW, 160, (g.band[1] - g.band[0]) * GW, 70);
+        label(c, 'SAFE', g.x + ((g.band[0] + g.band[1]) / 2) * GW, 202, 20, '#d7ffe0');
+        c.strokeStyle = '#38546e'; c.lineWidth = 3; c.strokeRect(g.x, 160, GW, 70);
+        c.fillStyle = inBand ? '#43e060' : '#ff8a80'; c.fillRect(g.x + val * GW - 4, 150, 8, 90); // the needle
+        label(c, g.hint, g.x + GW / 2, 280, 18, '#bcd');
+        // slider (lever) right under its gauge, in its colour
+        c.fillStyle = '#22384d'; rr(c, g.x, sliderY - 10, GW, 20, 10); c.fill();
+        const hx = g.x + g.target * GW;
+        c.fillStyle = g.col; c.beginPath(); c.arc(hx, sliderY, 34, 0, Math.PI * 2); c.fill();
+        c.strokeStyle = drag === g ? '#fff' : '#0b1522'; c.lineWidth = 4; c.stroke();
+        label(c, '\u2194', hx, sliderY + 9, 28, '#0b1522');
+        // which way to go: a pulsing arrow until the needle is safe
+        if (!inBand) {
+          const dir = val > g.band[1] ? -1 : 1, a = 0.5 + 0.5 * Math.sin(now / 180);
+          c.fillStyle = `rgba(255,214,0,${a})`; c.beginPath();
+          const ax = hx + dir * 62;
+          c.moveTo(ax + dir * 22, sliderY); c.lineTo(ax, sliderY - 18); c.lineTo(ax, sliderY + 18); c.closePath(); c.fill();
+        }
+      }
+      if (!touched) tapHand(c, gauges[0].x + gauges[0].target * GW - ((now / 1600) % 1) * 200, sliderY, now); // shows the drag: lever to the left
+      if (ok) {
+        greenSince ??= now;
+        const k = Math.min(1, (now - greenSince) / 2000);
+        c.fillStyle = '#0c1624'; c.fillRect(150, 520, 800, 26); c.fillStyle = '#43e060'; c.fillRect(150, 520, 800 * k, 26);
+        label(c, 'Hold steady...', W / 2, 512, 22, '#9affb0');
+      } else greenSince = null;
       this._since = greenSince;
       this._now = now;
     },
@@ -173,7 +200,7 @@ function waterSort() {
   const slotRect = (i) => ({ x: 250 + i * 250, y: 250, w: 200, h: 110 });
   return {
     down(p) {
-      if (inR(p, 480, 130, 140, 60)) { // the tap
+      if (inR(p, 30, 150, 150, 70)) { // the tap (left of the pipe; it used to cover the droplet)
         director.minigame('water_sort', 'tap');
         const ok = slots.every((s, i) => s === order[i]);
         if (ok) flowing = performance.now(); else { const bad = slots.findIndex((s, i) => s !== order[i]); wobble = { i: bad, at: performance.now() }; slots.fill(null); pos.forEach((m, i) => { m.x = [200, 500, 800][i]; m.y = 500; }); }
@@ -191,11 +218,19 @@ function waterSort() {
     },
     draw(c, now) {
       label(c, 'Filter → Boiler → Purifier, then tap the tap!', W / 2, 60, 28, '#ffb000');
-      c.fillStyle = flowing ? '#4db8ff' : '#6b4a2a'; c.beginPath(); c.arc(550, 150, 30, 0, Math.PI * 2); c.fill();
-      c.fillStyle = '#ffb000'; rr(c, 480, 130, 140, 60); c.fill(); label(c, 'TAP', 550, 170, 28, '#000');
+      // the pipe the water runs through: tap -> three machines -> clean water
+      c.fillStyle = '#22384d'; c.fillRect(100, 296, 960, 18);
+      c.fillStyle = '#ffb000'; rr(c, 30, 150, 150, 70); c.fill(); label(c, 'TAP', 105, 196, 30, '#000');
+      // the droplet: murky at the start, it runs along the pipe and turns clear blue after the last machine
+      const k = flowing ? Math.min(1, (now - flowing) / 900) : 0;
+      const dx = 105 + k * 920;
+      const clean = Math.min(1, Math.max(0, (dx - 250) / 700));
+      c.fillStyle = `rgb(${Math.round(107 + (77 - 107) * clean)},${Math.round(74 + (184 - 74) * clean)},${Math.round(42 + (255 - 42) * clean)})`;
+      c.beginPath(); c.arc(dx, 305, 28, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#fff'; c.beginPath(); c.arc(dx - 8, 299, 5, 0, Math.PI * 2); c.arc(dx + 8, 299, 5, 0, Math.PI * 2); c.fill(); // eyes
       for (let i = 0; i < 3; i++) { const r = slotRect(i); c.strokeStyle = wobble?.i === i && now - wobble.at < 600 ? '#ff5252' : '#4db8ff'; c.setLineDash([10, 8]); c.lineWidth = 4; c.strokeRect(r.x + (wobble?.i === i && now - wobble.at < 600 ? Math.sin(now / 30) * 6 : 0), r.y, r.w, r.h); c.setLineDash([]); }
       pos.forEach((m) => { c.fillStyle = m.col; rr(c, m.x - 85, m.y - 45, 170, 90, 12); c.fill(); label(c, m.id, m.x, m.y + 8, 26, '#000'); });
-      this._done = flowing && now - flowing > 800;
+      this._done = flowing && now - flowing > 1000;
     },
     done() { return Boolean(this._done); },
   };

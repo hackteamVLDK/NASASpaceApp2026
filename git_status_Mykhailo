@@ -58,7 +58,9 @@ Updated: 2026-11-14 (UTC+1), after the backend was aligned with SCENARIO.md
   Project tests: 270/270 pass. Files: src/render/campaign-world.js, src/render/surface-lighting.js,
   src/data/surface-lighting.js. Reviewed in .codex-worktrees/night-lighting before integration.
   No ongoing edits to the renderer. User requested publication of all changes, including the supplied
-  screenshots, to origin/main. Browser screenshots/audit: assets/incoming/_night-preview/.
+  screenshots, to origin/main. Merged team changes through 45ae034; kept both lighting and lander imports.
+  Combined project tests: 278/278 pass; main browser pixel checks: 15/15 pass.
+  Browser screenshots/audit: assets/incoming/_night-preview/.
 - All surface Garage changes committed on main; merged origin/main through 6f392e8 without conflicts.
   Combined game checked in Edge; npm test 273/273 pass. Ready for the user-requested push to origin/main.
 - Surface Garage art: generated raw reference + processed two-state sheet + prompt/manifest, visual preview checked;

@@ -839,15 +839,15 @@ Nine mini-games, each 10–20 seconds, each tied to a real Mars problem. They op
 
 **Trigger & real cause:** Oxygen below 30, the Airlock Micro-Leak event, or a stuck valve every ~6 Sols. Breathing out builds up carbon dioxide, and the scrubber must remove it while making oxygen.
 
-**UI & interaction:** Two gauges side by side, CO2 (gray) and O2 (blue), each needle needing to sit in a green band. Three round valve knobs below.
-1. Turn knob A (drag in a circle) to lower CO2.
-1. Turn knob B to raise O2.
-1. Knob C nudges both: use it to fine-tune.
-1. Hold both needles in green for 2 s.
+**UI & interaction:** Two gauges side by side, "CO2 scrubber" (gray) and "O2 maker" (blue), each with a green SAFE band and a one-line reason under it. Under each gauge sits its own slider (lever) in the same colour. (Reworked after play-testing: three round knobs A, B, C that had to be turned in circles were hard to understand.)
+1. Drag the gray lever to the left: the CO2 needle follows it down into SAFE.
+1. Drag the blue lever to the right: the O2 needle follows it up into SAFE.
+1. A pulsing arrow beside each lever shows the way until its needle is safe; the needles wobble a little because the air keeps changing.
+1. Hold both needles in SAFE for 2 s (a "Hold steady" bar fills).
 
 **Win / fail:** Both green for 2 s within 15 s. On fail, Oxygen output −30% until retried; the CO2 gauge glows to show what went wrong.
 
-**Role modifiers:** Engineer: green bands 50% wider, +5 s. Botanist (Wobbly with Wrenches): needles drift slightly after release, −3 s. Pilot, Comms: standard.
+**Role modifiers:** Engineer: SAFE bands 50% wider, +5 s. Botanist (Wobbly with Wrenches): the needles wobble more, −3 s. Pilot, Comms: standard.
 
 **ASTRA:** "Every breath you breathe out has carbon dioxide in it, and too much makes people sleepy and sick. Our scrubbers grab it. Then our machine pulls oxygen out of Mars's carbon dioxide air, just like NASA's MOXIE did."
 
