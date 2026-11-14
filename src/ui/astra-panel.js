@@ -8,6 +8,8 @@ import { play, director } from './audio.js';
 
 const CPS = 70; // typewriter speed, characters per second
 
+const PLAY_HOLD_MS = 5000; // gameplay: how long a finished ASTRA line stays when the next one waits
+
 export function createAstraPanel(guide, atlas, { onDismiss = () => {} } = {}) {
   const root = document.getElementById('astra');
   const text = document.getElementById('astraText');
@@ -58,6 +60,9 @@ export function createAstraPanel(guide, atlas, { onDismiss = () => {} } = {}) {
       if (!typing && !finishedAt) finishedAt = nowMs;
       btn.textContent = typing ? ASTRA.buttons.next : guide.queue.length ? ASTRA.buttons.next : guide.current.button;
       if (auto && !typing && nowMs - finishedAt > (guide.queue.length ? 1500 : 1500 + Math.min(2500, msg.length * 8))) advance();
+      // in play the panel never sits on an old line: with more lines waiting, a finished line moves on after a few
+      // seconds (the last one stays until Got it). Without this the landing line was still shown on Sol 19.
+      else if (!auto && guide.queue.length && !typing && finishedAt && nowMs - finishedAt > PLAY_HOLD_MS) advance();
       // avatar: calm idle / speaking, or the mood frame
       const mood = props.mood;
       let frame = typing ? 2 + (Math.floor(nowMs / 160) % 2) : Math.floor(nowMs / 600) % 2;

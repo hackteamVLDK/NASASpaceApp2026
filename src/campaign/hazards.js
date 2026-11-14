@@ -26,6 +26,13 @@ const EMPTY = {
   morale: ['Morale is gone', 'The crew has lost heart: builds and crafts are 25% slower.', 'Build Recreation, call Earth, keep the base warm and lit.'],
 };
 
+/** Title and line for each empty meter (the old text said "everything except life support is off" for heat and oxygen too). */
+const EMERGENCY = {
+  power: ['No power', 'The batteries are empty. Everything except life support is off.'],
+  heat: ['No heat', 'The heaters are off and the base is getting very cold.'],
+  oxygen: ['No oxygen', 'Oxygen is at 0. Fix the air machine now.'],
+};
+
 export function hazards(s) {
   const h = [];
   const add = (id, severity, title, detail, place, counter) => h.push({ id, severity, title, detail, place, counter });
@@ -34,7 +41,7 @@ export function hazards(s) {
   if (s.pending?.id === 'e1' || s.pending?.id === 'd5') add('flare', 'alarm', 'Solar flare', 'Fast particles reach Mars in under an hour. Anyone outside takes a big dose.', 'surface', 'Shelter in the Bedroom, or hide behind rock or the Rover shield.');
   if (s.flags.flareWarned && !s.pending) add('flare-watch', 'info', 'Space weather watch', 'The Sun has a stormy spot facing Mars. A flare may come soon.', 'surface', 'Get ready to shelter.');
   for (const [k, place] of [['power', 'surface'], ['heat', 'battery'], ['oxygen', 'lifesupport']]) {
-    if (s.emergency[k]) add(`emergency-${k}`, 'alarm', `Emergency: ${k}`, `The ${k} ran out. Everything except life support is off.`, place, 'Open the Tasks tab and play the job.');
+    if (s.emergency[k]) add(`emergency-${k}`, 'alarm', EMERGENCY[k][0], EMERGENCY[k][1], place, 'Open the Tasks tab and play the job.');
   }
   if (s.recycleEta < 0.98) add('filter', 'warn', 'Cracked water filter', `The recycler saves only ${Math.round(s.recycleEta * 100)}% of the water.`, 'lifesupport', 'Fix it: Water Sort, or spare parts.');
   if (s.mods.some((m) => m.id === 'leak')) add('leak', 'warn', 'Airlock leak', 'A tiny leak costs Oxygen and Water every Sol.', 'surface', 'Hunt the leak with the Valve Balance job.');
