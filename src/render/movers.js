@@ -5,14 +5,9 @@
  * wall. The surface is the top of the shaft: the airlock. Screen-side animation only; the
  * simulation does not know about any of this.
  */
-import { LAYOUT } from '../campaign/data.js';
+import { SHAFT_X, GROUND_Y, floorFeetY, garageSpots } from './geometry.js';
 
-export const SHAFT_X = LAYOUT.shaftX + LAYOUT.shaftWidth / 2; // 960: the middle of the shaft
-export const GROUND_Y = LAYOUT.groundY + 8; // feet on the surface, next to the airlock
-const FOOT = 16; // feet stand this far above the bottom of a room
-
-/** Feet height of floor `floor` (1 = the top floor). */
-export const floorFeetY = (floor) => LAYOUT.firstFloorY + (floor - 1) * LAYOUT.floorHeight + LAYOUT.floorHeight - FOOT;
+export { SHAFT_X, GROUND_Y, floorFeetY };
 
 /** Is a body at `pos` outside, on the surface? (It then wears the EVA suit.) */
 export const onSurface = (pos) => Boolean(pos) && pos.y <= GROUND_Y + 40;
@@ -57,6 +52,7 @@ export function place(m, pos) {
  * when the game runs faster than normal, so bodies still arrive.
  */
 export function advance(m, dtMs, { walk = 480, climb = 320, pace = 1 } = {}) {
+  if (!(dtMs > 0)) return m; // time is stopped: the pose stays exactly as it was (still walking, still climbing)
   m.moving = false;
   m.climbing = false;
   let left = (Math.max(0, dtMs) / 1000) * pace; // seconds of movement to spend
@@ -82,17 +78,20 @@ export const arrived = (m) => Boolean(m.pos) && m.path.length === 0 && !m.moving
 
 // ---------------------------------------------------------------- the Rover
 
-/** Where the Rover stands in the Garage, and how far it drives out of the right edge. */
-export const ROVER = Object.freeze({ parkX: 1470, outX: 2500, width: 300, ms: 2400 });
+/**
+ * The Rover parks in the Garage (a surface building) and drives out of the right edge of the screen
+ * (SCENARIO 5.1). `outX` is beyond the right edge of the gameplay view (world x 3180 at zoom 0.5).
+ */
+export const ROVER = Object.freeze({ parkX: garageSpots().park.x, boardX: garageSpots().board.x, outX: 3400, width: 170, ms: 2600 });
 
 /**
- * The Rover's pose in an animation phase. `phase`: 'parked' | 'out' (driving away) | 'in' (coming
- * home) | 'gone'. `k`: 0..1 progress of the drive. Returns { visible, x, alpha, driving }.
+ * The Rover's pose in an animation phase. `phase`: 'parked' | 'boarding' (still parked) | 'out' (driving
+ * away) | 'in' (coming home) | 'gone'. `k`: 0..1 progress of the drive. Returns { visible, x, driving }.
  */
 export function roverPose(phase, k = 0) {
   const u = Math.min(1, Math.max(0, k));
-  if (phase === 'parked' || phase === 'boarding') return { visible: true, x: ROVER.parkX, alpha: 1, driving: false };
-  if (phase === 'out') { const e = u * u; return { visible: u < 1, x: ROVER.parkX + (ROVER.outX - ROVER.parkX) * e, alpha: 1 - Math.max(0, u - 0.55) / 0.45, driving: true }; }
-  if (phase === 'in') { const e = 1 - (1 - u) * (1 - u); return { visible: true, x: ROVER.outX + (ROVER.parkX - ROVER.outX) * e, alpha: Math.min(1, u / 0.35), driving: u < 1 }; }
-  return { visible: false, x: ROVER.outX, alpha: 0, driving: false };
+  if (phase === 'parked' || phase === 'boarding') return { visible: true, x: ROVER.parkX, driving: false };
+  if (phase === 'out') { const e = u * u; return { visible: u < 1, x: ROVER.parkX + (ROVER.outX - ROVER.parkX) * e, driving: true }; }
+  if (phase === 'in') { const e = 1 - (1 - u) * (1 - u); return { visible: true, x: ROVER.outX + (ROVER.parkX - ROVER.outX) * e, driving: u < 1 }; }
+  return { visible: false, x: ROVER.outX, driving: false };
 }

@@ -47,6 +47,9 @@ const SIDE = [
   ['side-sleep', 'Sleep a full night, every night, for a week', (s) => clockAt(s.minute).sol >= 7 && s.stats.medRests === 0, null, 'Well Rested badge'],
 ];
 
+/** The Act in which each optional goal first becomes possible: the Missions window shows only the current Act's goals. */
+const SIDE_ACT = { 'side-wipes': 1, 'side-sleep': 1, 'side-food': 2, 'side-water': 2, 'side-soil': 2, 'side-ice': 3, 'side-ingenuity': 3, 'side-cards': 3 };
+
 /** The whole list with live status. */
 export function missions(s) {
   const main = MAIN.map(([id, act, title, why, test, progress, reward, focus]) => {
@@ -55,7 +58,7 @@ export function missions(s) {
   });
   const firstOpen = main.findIndex((m) => !m.done);
   main.forEach((m, i) => { m.state = m.done ? 'done' : i === firstOpen ? 'current' : m.act === (main[firstOpen]?.act ?? 3) && i < firstOpen + 3 ? 'next' : 'later'; });
-  const side = SIDE.map(([id, title, test, progress, reward]) => ({ id, kind: 'side', title, reward, done: test(s), progress: progress ? progress(s) : null, state: test(s) ? 'done' : 'open' }));
+  const side = SIDE.map(([id, title, test, progress, reward]) => ({ id, kind: 'side', act: SIDE_ACT[id] ?? 3, title, reward, done: test(s), progress: progress ? progress(s) : null, state: test(s) ? 'done' : 'open' }));
   return { main, side, currentAct: main[firstOpen]?.act ?? 4, finished: firstOpen === -1 };
 }
 

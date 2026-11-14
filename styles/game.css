@@ -89,3 +89,27 @@ button:hover { background:#1a4668; } button:disabled { opacity:.45; cursor:defau
 #side #tabsBox { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; max-height: none; }
 #side #tabsBox #tabBody { max-height: none; flex: 1 1 auto; min-height: 140px; }
 #side section:not(#tabsBox) { flex: 0 0 auto; }
+
+/* every mini-game can be left (except the tutorial steps) */
+#mgWrap { position: absolute; }
+#mgBack { position: absolute; left: 16px; top: 14px; z-index: 2; font-size: 20px; padding: 6px 16px; }
+
+/* a meter that runs low turns amber; an empty one turns red and pulses (the same limits as the Threats strip) */
+.gauge.warn .bar i { background: #ffb000; } .gauge.warn .val { color: #ffd180; }
+.gauge.low .val { color: #ff8a80; animation: blinkval 1s infinite; } .gauge.low .bar { border-color: #ff5252; box-shadow: 0 0 8px #ff525288; }
+@keyframes blinkval { 50% { opacity: .35; } }
+#g-power .val { min-width: 70px; }
+
+/* the Missions window: chips for the three Acts, only the current Act's list below them */
+.acts { display: flex; gap: 10px; margin: 6px 0 10px; } .actchip { padding: 4px 14px; border-radius: 16px; border: 2px solid #38546e; font-weight: 800; font-size: 18px; opacity: .55; }
+.actchip.now { background: var(--orange); border-color: var(--orange); color: #04121c; opacity: 1; } .actchip.done { border-color: #43e060; color: #9affb0; opacity: .9; }
+.card.missions h3 small { color: #9fb5c8; font-weight: 600; margin-left: 8px; font-size: 16px; }
+
+/* the panels stand BELOW the surface strip (the ground line lands at screen y 330), beside the base, so the surface with the
+   dome, the Garage and the Rover is never covered */
+#tracker { top: calc(352px / var(--ui)); }
+#side { top: calc(352px / var(--ui)); max-height: calc(712px / var(--ui)); }
+
+#g-power { flex: 1.5; } #g-power .val { white-space: nowrap; }
+
+#toast.alert { border-color: #ff5252; background: #2a0f12; box-shadow: 0 0 24px #ff525288; }

@@ -57,14 +57,21 @@ export const UPGRADE_SOLS = 0.5;
 export const DRONE_BUILD_POWER = -5; // per Sol while a drone builds
 export const STORM = Object.freeze({ solarT1: 0.3, solarT2: 0.5, batteryPowerMult: 4 });
 
-/** Floor and column of each room in the cutaway (src/render/world.js reads this). Floors count from 1 at the top. */
+/**
+ * Where each room stands in the cutaway (src/render/geometry.js reads this). Three floors, counted from 1 at the top.
+ * The left wing is one room wide, the right wing two rooms wide (`col` 0 is next to the shaft). The Garage &
+ * Airlock is a surface building: SCENARIO 1 lists the "Garage airlock" among the surface structures.
+ * Layout, not a rule of the game: SCENARIO line 16 says the wings are "not a fixed layout".
+ */
 export const LAYOUT = Object.freeze({
-  groundY: 1050, firstFloorY: 1240, floorHeight: 270, floors: 6,
-  leftX: 300, shaftX: 900, rightX: 1020, wingWidth: 600, shaftWidth: 120,
+  groundY: 1050, firstFloorY: 1240, floorHeight: 270, floors: 3,
+  leftX: 300, shaftX: 900, rightX: 1020, roomWidth: 600, shaftWidth: 120,
   rooms: {
     bedroom: { wing: 'left', floor: 1 }, kitchen: { wing: 'left', floor: 2 }, lifesupport: { wing: 'left', floor: 3 },
-    workshop: { wing: 'right', floor: 1 }, lab: { wing: 'right', floor: 2 }, battery: { wing: 'right', floor: 3 },
-    garage: { wing: 'right', floor: 4 }, greenhouse: { wing: 'right', floor: 5 }, recreation: { wing: 'right', floor: 6 },
+    battery: { wing: 'right', floor: 1, col: 0 }, workshop: { wing: 'right', floor: 1, col: 1 },
+    greenhouse: { wing: 'right', floor: 2, col: 0 }, lab: { wing: 'right', floor: 2, col: 1 },
+    recreation: { wing: 'right', floor: 3, col: 0 },
+    garage: { wing: 'surface', x: 1940 },
   },
 });
 

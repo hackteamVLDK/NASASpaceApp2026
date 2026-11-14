@@ -57,16 +57,21 @@ export function createExtras({ s, ui, openMap }) {
 
   function showMissions() {
     const m = missions(s);
-    const act = { 1: 'ACT I: WAKE UP', 2: 'ACT II: REACH OUT', 3: 'ACT III: THE SIGNAL' };
-    let html = '<div class="card missions"><div class="hd">MISSIONS</div><div class="cols"><div>';
-    for (const a of [1, 2, 3]) {
-      html += `<h3>${act[a]}</h3>`;
-      for (const x of m.main.filter((y) => y.act === a)) {
-        html += `<div class="ms ${x.state}"><span class="chk">${x.done ? '✔' : x.state === 'current' ? '▶' : '○'}</span><div><b>${x.title}</b><br><small>${x.why}</small>${x.progress ? ` <small>(${x.progress[0]}/${x.progress[1]})</small>` : ''}<br><small class="rw">Reward: ${x.reward}</small></div>${x.focus && !x.done ? `<button data-focus="${x.focus}">Show me</button>` : ''}</div>`;
-      }
+    const names = { 1: 'ACT I: WAKE UP', 2: 'ACT II: REACH OUT', 3: 'ACT III: THE SIGNAL' };
+    const cur = Math.min(3, m.currentAct); // currentAct is 4 when every story mission is done: stay on the last Act
+    const chip = (a) => `<span class="actchip ${a < m.currentAct ? 'done' : a === cur ? 'now' : 'later'}">${a < m.currentAct ? '✔ ' : a > cur ? '\u{1F512} ' : ''}${names[a].split(':')[0]}</span>`;
+    const mine = m.main.filter((y) => y.act === cur);
+    const doneCount = mine.filter((y) => y.done).length;
+    let html = `<div class="card missions"><div class="hd">MISSIONS</div><div class="acts">${[1, 2, 3].map(chip).join('')}</div>`;
+    html += `<h3>${names[cur]} <small>${doneCount} of ${mine.length} done</small></h3><div class="cols"><div>`;
+    for (const x of mine) {
+      html += `<div class="ms ${x.state}"><span class="chk">${x.done ? '✔' : x.state === 'current' ? '▶' : '○'}</span><div><b>${x.title}</b><br><small>${x.why}</small>${x.progress ? ` <small>(${x.progress[0]}/${x.progress[1]})</small>` : ''}<br><small class="rw">Reward: ${x.reward}</small></div>${x.focus && !x.done ? `<button data-focus="${x.focus}">Show me</button>` : ''}</div>`;
     }
-    html += '</div><div><h3>OPTIONAL GOALS</h3>';
-    for (const x of m.side) html += `<div class="ms ${x.state}"><span class="chk">${x.done ? '✔' : '○'}</span><div><b>${x.title}</b>${x.progress ? ` <small>(${x.progress[0]}/${x.progress[1]})</small>` : ''}<br><small class="rw">${x.reward}</small></div></div>`;
+    if (m.finished) html += '<div class="ms done"><span class="chk">★</span><div><b>All story missions done!</b><br><small>Free-Play: keep the base thriving.</small></div></div>';
+    // optional goals of this Act; once the story is finished, every goal that is still open
+    const goals = m.side.filter((x) => (m.finished ? !x.done : x.act === cur));
+    html += `</div><div><h3>OPTIONAL GOALS</h3>${goals.length ? '' : '<div class="ms done"><small>None for this Act.</small></div>'}`;
+    for (const x of goals) html += `<div class="ms ${x.state}"><span class="chk">${x.done ? '✔' : '○'}</span><div><b>${x.title}</b>${x.progress ? ` <small>(${x.progress[0]}/${x.progress[1]})</small>` : ''}<br><small class="rw">${x.reward}</small></div></div>`;
     html += '</div></div><button class="choice" id="msClose">Close</button></div>';
     ui.openModal(html, 'missions');
     for (const b of document.querySelectorAll('#modal [data-focus]')) b.addEventListener('click', () => focusOn(b.dataset.focus));

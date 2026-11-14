@@ -58,7 +58,7 @@ until the team decides. **Answers wanted from the team.**
 | 1 | Is the Dining Room usable at the start? Section 4 puts it in the operational wing; ASTRA says only Water, Air and Sleeping Quarters are online. | Yes, usable. |
 | 2 | Where does power come from before Battery & Heating is built? | A small emergency battery (90 kWh). |
 | 3 | Food: there is no greenhouse in the scenario. | Packaged food only. A Hydroponics bay exists as a proposal for levels 2–3, not in level 1. |
-| 4 | Room positions inside the wings; pixel scale. | 4 floors of 270 units; 5 world units per art pixel (every number in the scenario divides by 5). |
+| 4 | Room positions inside the wings; pixel scale. | 270 units per floor; 5 world units per art pixel (every number in the scenario divides by 5). The campaign game now has 3 floors, a right wing two rooms wide and the Garage on the surface (docs/ERRORS.md A2, A9). |
 | 5 | How are the 2 buried drones woken: same mini-game, or dig them out first? | Same mini-game. |
 | 6 | Do woken drones help build? | Yes, faster by daylight. |
 | 7 | How many people arrive, and who are they? The cutscene shows one astronaut leaving the lander. | Four placeholders: Amara, Kenji, Sofia, Leo. |

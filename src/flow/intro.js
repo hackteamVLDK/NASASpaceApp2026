@@ -121,12 +121,13 @@ const easeInOut = (u) => (u < 0.5 ? 2 * u * u : 1 - 2 * (1 - u) * (1 - u));
 const easeOut = (u) => 1 - (1 - u) * (1 - u);
 
 /**
- * Gameplay framing (PROPOSAL; the scenario leaves the zoom to the layout work): the whole base fits,
- * all six floors down to the Recreation room, and a strip of surface stays visible ABOVE the top
- * bar of the interface (about 98 px), where the solar panels, the airlock and the Commander at work
- * outside can be seen. Zoom is screen pixels per world unit; the top of the view is 516 world units.
+ * Gameplay framing (PROPOSAL; the scenario leaves the zoom to the layout work): the whole base fits, three
+ * floors and the two-room-wide right wing (x 300 to 2220, so the camera centres on x 1260), and a strip of
+ * surface about 230 px tall stays visible BELOW the top bar of the interface (about 98 px): the solar panels,
+ * the dome, the Garage and the Rover, and the Commander at work outside. Zoom is screen pixels per world unit;
+ * the top of the view is world y 390 and the ground line lands at screen y 330.
  */
-export const GAMEPLAY_VIEW = Object.freeze({ zoom: 0.46, centerY: 1690, surfaceStripTopY: 516 });
+export const GAMEPLAY_VIEW = Object.freeze({ zoom: 0.5, centerX: 1260, centerY: 1470, surfaceStripTopY: 390 });
 
 /** Camera centre Y at time `sec`. Locked on the sky, follows the lander, then pans underground. */
 export function cameraYAt(sec) {
@@ -135,6 +136,14 @@ export function cameraYAt(sec) {
   if (sec < c.panFrom) return lerp(c.skyY, c.surfaceY, unit(sec, CUTSCENE.lander.thrustersAt, CUTSCENE.proposals.cameraTracksUntil));
   if (sec < c.gameplaySettleAt) return lerp(c.surfaceY, GAMEPLAY_VIEW.centerY, easeInOut(unit(sec, c.panFrom, c.gameplaySettleAt)));
   return GAMEPLAY_VIEW.centerY;
+}
+
+/** Camera centre X at time `sec`: the cutscene is centred on x 960, then it eases to the centre of the whole base. */
+export function cameraXAt(sec) {
+  const c = CUTSCENE.camera;
+  if (sec < c.panFrom) return 960;
+  if (sec < c.gameplaySettleAt) return lerp(960, GAMEPLAY_VIEW.centerX, easeInOut(unit(sec, c.panFrom, c.gameplaySettleAt)));
+  return GAMEPLAY_VIEW.centerX;
 }
 
 /** Camera zoom at time `sec`: 1 in the cutscene, then eases to the gameplay framing. */
@@ -172,6 +181,57 @@ export function astronautAt(sec) {
   return { visible: sec >= CUTSCENE.astronaut.exitsShaftAt, helmetOn: sec < CUTSCENE.proposals.helmetOffAt };
 }
 
+// ---------------------------------------------------------------- the astronaut comes in (25.0 s - 31.2 s)
+
+/**
+ * How the astronaut gets into the base. The scenario fixes only: touchdown 25.0 s, the airlock hiss (25.8 s here),
+ * "29.0 s: the astronaut exits the crew airlock shaft into the left wing", helmet off (30.0 s here). Everything
+ * between is PROPOSAL, chosen so the walking speed stays under 480 units/s and the climb under 320 units/s.
+ */
+export const ENTRY = Object.freeze({
+  leavesLanderAt: 25.1, // steps out of the lander hatch
+  walksToDomeAt: 25.3, // then crosses the ground to the dome
+  atDomeAt: 26.7, // stops at the hatch of the dome
+  hatchClosesAt: 27.1, // the hatch is open from the hiss (25.8) to here
+  insideUntil: 27.3, // the airlock cycles, the astronaut is not seen
+  shaftBottomAt: 28.96, // down the ladder in the shaft (the camera is panning), then out of the shaft...
+  exitsShaftAt: CUTSCENE.astronaut.exitsShaftAt, // ...into the left wing at 29.0 s
+  atBedroomAt: 29.98, // stands in the Bedroom
+  helmetOffAt: CUTSCENE.proposals.helmetOffAt, // lifts the helmet off
+  helmetHeldAt: 30.6, // holds it under the arm
+  standsAt: 31.2, // then stands about
+  walkFps: 6.25, // walking and climbing frames per second
+});
+
+/** The open or closed hatch of the dome. */
+export function entryDoorsAt(sec) {
+  return { airlockOpen: sec >= CUTSCENE.proposals.airlockHissAt && sec < ENTRY.hatchClosesAt };
+}
+
+/**
+ * Where the astronaut is and what he looks like at time `sec`, for any time, in any order (it is a pure function).
+ * `geo` comes from src/render/geometry.js: { landerHatch, landerExit, domeHatch, shaftTop, shaftBottom, bedroomStand },
+ * each { x, y } feet. Returns { visible, x, y, sheet ('crewEva' | 'crewIndoor'), frame, flip, phase }.
+ */
+export function astronautPathAt(sec, geo) {
+  const E = ENTRY;
+  const lerpPt = (a, b, u) => ({ x: lerp(a.x, b.x, u), y: lerp(a.y, b.y, u) });
+  const walkFrame = (from) => 2 + (Math.floor(Math.max(0, sec - from) * E.walkFps) % 6);
+  const none = { visible: false, x: geo.domeHatch.x, y: geo.domeHatch.y, sheet: 'crewEva', frame: 0, flip: false, phase: 'inside' };
+  if (sec < E.leavesLanderAt) return { ...none, x: geo.landerHatch.x, y: geo.landerHatch.y, phase: 'in the lander' };
+  if (sec < E.walksToDomeAt) { const p = lerpPt(geo.landerHatch, geo.landerExit, unit(sec, E.leavesLanderAt, E.walksToDomeAt)); return { visible: true, ...p, sheet: 'crewEva', frame: walkFrame(E.leavesLanderAt), flip: true, phase: 'leaves the lander' }; }
+  if (sec < E.atDomeAt) { const p = lerpPt(geo.landerExit, geo.domeHatch, unit(sec, E.walksToDomeAt, E.atDomeAt)); return { visible: true, ...p, sheet: 'crewEva', frame: walkFrame(E.walksToDomeAt), flip: true, phase: 'walks to the dome' }; }
+  if (sec < E.hatchClosesAt) return { visible: true, ...geo.domeHatch, sheet: 'crewEva', frame: Math.floor(sec * 2) % 2, flip: true, phase: 'at the hatch' };
+  if (sec < E.insideUntil) return { ...none, phase: 'inside' };
+  if (sec < E.shaftBottomAt) { const p = lerpPt(geo.shaftTop, geo.shaftBottom, unit(sec, E.insideUntil, E.shaftBottomAt)); return { visible: true, ...p, sheet: 'crewEva', frame: 16 + (Math.floor((sec - E.insideUntil) * E.walkFps) % 2), flip: false, phase: 'climbs down' }; }
+  if (sec < E.atBedroomAt) { const p = lerpPt(geo.shaftBottom, geo.bedroomStand, unit(sec, E.shaftBottomAt, E.atBedroomAt)); return { visible: true, ...p, sheet: 'crewEva', frame: walkFrame(E.shaftBottomAt), flip: true, phase: 'walks into the Bedroom' }; }
+  const at = { visible: true, ...geo.bedroomStand, flip: false };
+  if (sec < E.helmetOffAt) return { ...at, sheet: 'crewEva', frame: 0, phase: 'stands, helmet on' };
+  if (sec < E.helmetHeldAt) return { ...at, sheet: 'crewIndoor', frame: 22, phase: 'lifts the helmet' };
+  if (sec < E.standsAt) return { ...at, sheet: 'crewIndoor', frame: 23, phase: 'holds the helmet' };
+  return { ...at, sheet: 'crewIndoor', frame: Math.floor(sec * 1.4) % 2, phase: 'stands' };
+}
+
 /** Is Drone #01's red LED lit right now? (1 Hz from 31.0 s.) */
 export function droneLedOn(sec) {
   const d = CUTSCENE.drone;
@@ -185,6 +245,7 @@ export function openingFrameAt(sec) {
     t: sec,
     flowState: flowStateAt(sec),
     text: sec < INTRO_TEXT.to ? introTextAt(sec) : null,
+    cameraX: cameraXAt(sec),
     cameraY: cameraYAt(sec),
     zoom: cameraZoomAt(sec),
     lander: landerAt(sec),
