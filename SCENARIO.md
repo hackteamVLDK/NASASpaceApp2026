@@ -940,6 +940,8 @@ Nine mini-games, each 10–20 seconds, each tied to a real Mars problem. They op
 
 **Win / fail:** 4+ bars held for 3 s within 20 s. On fail, the window is missed: no Earth message and no Morale bonus until the next window.
 
+**Recurring windows (note, 2026-11-15).** Windows open every 3 Sols counted from the Sol the Lab is finished; Dilemma 4 is the window of its Sol, and its choice starts the next 3-Sol count. The first contact plays `astra.act3.earth_reply`; each later won window gives Morale +5 (`gameplay`). The bent-dish step waits for a dust storm after the Lab: the scripted storm ends before the Lab can exist.
+
 **Role modifiers:** Comms: green zone 2× wider, Earth drifts slower, +5 Morale on success. Engineer: skips the bent-dish step. Pilot, Botanist: standard.
 
 **ASTRA:** "Radio waves travel at the speed of light. Still, a message takes about 3 to 22 minutes to cross between Mars and Earth. Point the dish just right, or the message misses Earth completely!"

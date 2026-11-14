@@ -8,6 +8,7 @@ import { SOL, MODULES, MODULE_LINES, RECYCLER, BREAKDOWNS, BREAKDOWN_RULES } fro
 import { clockAt, online, at, addMod, after, clampTo, powerCapOf } from './util.js';
 
 const say = (emit, lineId, mood = 'calm') => emit({ type: 'astra', lineId, mood });
+const EARTH_WINDOW_SOLS = 3; // SCENARIO 3.3: "Earth window every 3 Sols" (gameplay)
 const once = (s, id, cond, fn) => {
   const key = `_${id}`;
   if (!s.flags[key] && cond()) { s.flags[key] = true; fn(); }
@@ -83,6 +84,12 @@ const EVENTS = [
 
 export function onSol(s, emit, now, rand) {
   const { sol } = now;
+  // C11: a recurring Earth window (SCENARIO 3.3 Lab row, 4.9). Dilemma 4 is the window of its Sol: until it is answered
+  // no other window opens from Sol 16 on, and its choices set the next one (D4 A: "Next Earth window on Sol 19").
+  if (s.flags.nextEarth && sol >= s.flags.nextEarth && online(s, 'lab')) {
+    const d4Waiting = sol >= 16 && !s.choices.some((c) => c.startsWith('d4'));
+    if (!d4Waiting) { addTask(s, 'antenna', 'An Earth window is open. Point the dish!'); s.flags.nextEarth = sol + EARTH_WINDOW_SOLS; }
+  }
   if (s.flags.filterDue === sol) { addTask(s, 'air_filter', 'Dust rode in on the suit. Scrub the air filter.'); s.flags.filterClog = BREAKDOWN_RULES.filterOutput; }
   if (sol === 7 && s.drones[1].status === 'awake') once(s, 'act2', () => true, () => emit({ type: 'act', act: 2, lineId: 'astra.act2.title' }));
   if (sol % 5 === 0 && sol > 20) say(emit, 'astra.sandbox.random_tip', 'curious');
@@ -151,6 +158,7 @@ export function onModuleBuilt(s, id, emit) {
   const l = MODULE_LINES[id]?.built;
   if (l) say(emit, l, 'cheerful');
   if (id === 'greenhouse') after(s, s.minute + SOL, 'harvest');
+  if (id === 'lab') s.flags.nextEarth = clockAt(s.minute).sol + EARTH_WINDOW_SOLS; // C11: Earth windows every 3 Sols after the Lab (3.3, 4.9)
 }
 
 export function onKit(s, kit, emit) {
@@ -295,14 +303,16 @@ export function applyChoice(s, pending, choice, emit, rand) {
     // ---- Dilemma 4: cold plants or call home
     case 'd4a':
       setRes(s, 'morale', -5);
-      s.flags.earthWindow = sol + 3;
+      s.flags.nextEarth = sol + EARTH_WINDOW_SOLS; // "Next Earth window on Sol 19"
       follow('astra.d4.a');
       break;
     case 'd4b':
       addTask(s, 'antenna', 'Call Earth tonight.');
+      s.flags.nextEarth = sol + EARTH_WINDOW_SOLS;
       s.flags.d4b = true;
       break;
     case 'd4c':
+      s.flags.nextEarth = sol + EARTH_WINDOW_SOLS;
       addMod(s, 'd4c_food', 'food', -0.2 * MODULES.greenhouse[s.modules.greenhouse.tier === 2 ? 't2' : 't1'].food, s.minute + SOL); // D-T17f: Greenhouse food -20% for 1 Sol
       droneChore(s, emit, 'trays', 'kitchen', 0.5); // 1 drone for half a Sol
       setRes(s, 'morale', 5);
@@ -438,10 +448,12 @@ export function onMini(s, { game, win }, emit) {
       dropTask(s, 'antenna');
       setRes(s, 'morale', s.flags.d4b ? 10 : 5);
       s.research += s.flags.d4b ? 10 : 0;
-      say(emit, 'astra.act3.earth_reply', 'cheerful');
+      if (!s.flags.earthContact) { // the reply and the badge belong to the first contact; later windows bring Morale
+        say(emit, 'astra.act3.earth_reply', 'cheerful');
+        emit({ type: 'badge', id: 'first_contact' });
+      } else emit({ type: 'toast', text: `Message sent to Earth! Morale +${s.flags.d4b ? 10 : 5}` });
       s.flags.earthContact = true;
       emit({ type: 'earth-contact' });
-      emit({ type: 'badge', id: 'first_contact' });
       if (s.flags.d4b) {
         s.flags.d4b = false;
         s.flags.freshOff = true;

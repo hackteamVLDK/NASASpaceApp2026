@@ -128,3 +128,24 @@ test('C22: under 50 Power the Solar Array upgrade is hinted; a warning once the 
   s.res.power = 60;
   assert.equal(hazards(s).find((h) => h.id === 'solar-upgrade'), undefined);
 });
+
+test('C11: Earth windows open every 3 Sols after the Lab; Dilemma 4 is the Sol 16 window', async () => {
+  const { onModuleBuilt, onSol, applyChoice, onMini } = await import('../src/campaign/story.js');
+  const s = createCampaign();
+  s.modules.lab.status = 'online';
+  s.minute = 12 * 1440 + 600; // Sol 13
+  onModuleBuilt(s, 'lab', () => {});
+  const has = () => s.tasks.some((t) => t.game === 'antenna');
+  const dawn = (sol) => onSol(s, () => {}, { sol }, () => 0.99);
+  dawn(14); dawn(15); assert.equal(has(), false);
+  dawn(16); assert.equal(has(), false, 'Sol 16 belongs to Dilemma 4');
+  s.minute = 15 * 1440 + 18 * 60; // Sol 16, 18:00
+  applyChoice(s, { kind: 'dilemma', id: 'd4' }, 'a', () => {}, () => 0.5); s.choices.push('d4a');
+  dawn(17); dawn(18); assert.equal(has(), false);
+  dawn(19); assert.equal(has(), true, 'D4 A: next Earth window on Sol 19');
+  const ev = []; onMini(s, { game: 'antenna', win: true }, (e) => ev.push(e));
+  assert.ok(ev.some((e) => e.lineId === 'astra.act3.earth_reply'), 'the first contact plays the reply');
+  dawn(22); assert.equal(has(), true);
+  const ev2 = []; onMini(s, { game: 'antenna', win: true }, (e) => ev2.push(e));
+  assert.ok(!ev2.some((e) => e.lineId === 'astra.act3.earth_reply'), 'later windows do not repeat the first reply');
+});
