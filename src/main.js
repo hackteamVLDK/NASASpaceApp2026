@@ -426,8 +426,8 @@ async function boot() {
     cont.textContent = 'Continue mission';
     cont.addEventListener('click', () => {
       audio.unlock();
-      audio.director.reset();
       Object.assign(s, saved); // the UI and the renderer hold this same object
+      audio.director.reset(s); // music state that one-time events would have set (finale)
       for (const d of s.drones) d.queue ??= []; // saves made before Drone Link have no queue
       s.order ??= null;
       $('loading').hidden = true;
