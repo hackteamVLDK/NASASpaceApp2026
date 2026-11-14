@@ -1,9 +1,10 @@
 # git_status_Vlad
 
 ## DOING NOW
-- Autonomous run (decisions in content/DECISIONS.md). Stacked SCENARIO.md branches, merge in order:
-  1. content/science-fact-check  2. content/scenario-open-items  3. content/characters (done)
-  4. content/astra-voice (next)  5. content/readability (after 4)
+- Waiting for `gh auth login` to open PRs. All branches pushed; merge in this order (each is based on the previous):
+  1. content/science-fact-check  2. content/scenario-open-items  3. content/characters
+  4. content/astra-voice (also changes AGENTS.md: one paragraph pointing to the ASTRA voice guide)
+  5. content/readability (readability pass for ages 7-8 + review fixes for 3-5)
 - content/space-apps-submission: parked until the end of the hackathon.
 
 ## FOR MYKHAILO (sim / flow / assets)
@@ -15,6 +16,9 @@
 - Characters (SCENARIO 2.5, branch content/characters): names/looks for crew.portraits (was awaiting-lore),
   new overlays crew.heads and drone.bumpers; prompts in content/handoff/CHARACTER_PROMPTS.md.
   Names keep your crew.js first names; Comms Officer (Noor) and Mission Control (Rosa) are new.
+  EVA art: crew.eva unchanged (gold visor); crew.heads is indoor-only.
+- Readability pass changed ASTRA line texts (not IDs/numbers). tests/flow.test.mjs compares texts with SCENARIO.md.
+- "(fiction)" in Line cells is a writers' note: please strip it in the strings module.
 
 ## NOTE FOR MYKHAILO
 - tests/flow.test.mjs (3 failures) checks the old pre-PR#1 scenario. Please update it to the new
