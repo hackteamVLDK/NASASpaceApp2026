@@ -291,9 +291,27 @@ export function runTimer(s, id, emit) {
 
 const MINI_LINES = { solar_wipe: 'astra.mg.solar_wipe', heat_pump: 'astra.mg.heat_pump_reroute', valve_balance: 'astra.mg.valve_balance', water_sort: 'astra.mg.water_sort', nutrient_match: 'astra.mg.nutrient_match', air_filter: 'astra.mg.air_filter_scrub', antenna: 'astra.mg.dish_antenna_alignment', wheel_vacuum: 'astra.mg.wheel_pebble_vacuum', suit_seal: 'astra.mg.suit_seal_check' };
 
+const PREP_GAMES = ['wheel_vacuum', 'suit_seal']; // before every trip (5.1)
+const TUTORIAL_GAMES = ['solar_wipe', 'battery']; // the Sol 1 tutorial plays these once without a task
+
+/**
+ * Why a mini-game result is refused, or null. A game only counts when the base asked for it:
+ * a task on offer (which includes every Emergency), the prep before a trip, or the tutorial.
+ * Without this, reporting wins over and over gave free Spare Parts and free Heat.
+ */
+export function miniBlock(s, game) {
+  if (s.tasks.some((t) => t.game === game)) return null;
+  if (PREP_GAMES.includes(game)) return s.away ? 'The Rover is already out.' : null;
+  if (TUTORIAL_GAMES.includes(game) && clockAt(s.minute).sol === 1 && !s.flags.mini?.[game]) return null;
+  return 'That job is not needed right now.';
+}
+
 export function onMini(s, { game, win }, emit) {
   const rec = (s.flags.mini ??= {});
-  if (win) {
+  // The prep games pay once per trip, not once per try.
+  const onOffer = s.tasks.some((t) => t.game === game);
+  const prepAlreadyDone = !onOffer && ((game === 'wheel_vacuum' && s.flags.prepWheel === 'ok') || (game === 'suit_seal' && s.flags.prepSuit));
+  if (win && !prepAlreadyDone) {
     s.stats.miniWins += 1;
     if (game === 'solar_wipe') s.stats.wipes += 1;
     setRes(s, 'sp', 2);
@@ -339,6 +357,7 @@ export function onMini(s, { game, win }, emit) {
       }
     } else if (s.flags.d4b) { s.flags.d4b = false; }
   } else if (game === 'wheel_vacuum') {
+    if (win) dropTask(s, 'wheel_vacuum'); // also clears the extra check after a Bumpy or Rough ride
     s.flags.prepWheel = win ? 'ok' : 'failed';
   } else if (game === 'suit_seal') {
     if (win) s.flags.prepSuit = true;
