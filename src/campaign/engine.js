@@ -273,7 +273,8 @@ function stepHp(s, emit, now) {
   let d = 0;
   if (s.where === 'bedroom' && isNight(now.hourFloat) && !s.away) d += HP.sleepPerHour / 60;
   if (s.away && isNight(now.hourFloat)) d += HP.roverSleepPerHour / 60; // camping in the Rover (3.6: +6 a night)
-  if (!s.away) d -= (HP.radiationPerSol * shieldFactor(s, s.where) * (s.flags.flare ? 3 : 1)) * dt;
+  const liner = s.where === 'outside' && s.upgrades.suit_liner ? 0.75 : 1; // D-T17d: "Surface HP loss x0.75" (SCENARIO 5.4), also on foot
+  if (!s.away) d -= (HP.radiationPerSol * shieldFactor(s, s.where) * (s.flags.flare ? 3 : 1) * liner) * dt;
   if (online(s, 'greenhouse') && s.res.food >= 30 && !s.flags.freshOff) d += (s.modules.greenhouse.tier === 2 ? HP.freshCropsT2 : HP.freshCropsT1) * dt + (s.flags.soilBeds ? dt : 0);
   if (s.res.morale >= HP.moraleThreshold) d += HP.highMorale * dt;
   for (const m of s.mods) if (m.res === 'hp') d += m.perSol * dt;
@@ -496,6 +497,7 @@ export function command(s, cmd) {
       const d = s.drones.find((x) => x.id === cmd.drone);
       if (!d) return fail('Unknown drone.');
       if (d.status === 'awake') return fail('That drone is already awake.');
+      if (d.id !== 'drone-01') return fail('This drone needs its kit from the Workshop.'); // D-T17c: only the tutorial wakes a drone for free
       d.status = 'awake';
       emit({ type: 'drone-awake', drone: d.id });
       onDroneAwake(s, d.id, emit);
