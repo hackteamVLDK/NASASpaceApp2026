@@ -83,3 +83,19 @@ test('music priority', async () => {
   assert.equal(resolveMusicTrack({ emergency: true }), 'storm_alert');
   assert.equal(resolveMusicTrack({ victory: true, storm: true }), 'victory');
 });
+
+test('hidden tab: nothing is scheduled until the tab is visible again', async () => {
+  const stats = installFakeBrowser();
+  let onVis = null;
+  globalThis.document = { hidden: false, addEventListener(type, f) { if (type === 'visibilitychange') onVis = f; } };
+  const { SoundManager } = await import('./soundManager.js?fake4');
+  const s = new SoundManager();
+  s.unlock();
+  globalThis.document.hidden = true; onVis();
+  const before = stats.oscillators;
+  s.moduleComplete();
+  assert.equal(stats.oscillators, before);
+  globalThis.document.hidden = false; onVis();
+  s.moduleComplete();
+  assert.ok(stats.oscillators > before);
+});
