@@ -5,7 +5,7 @@ Status: Binding game scenario and design specification (v2, 2026-11-14). Source 
 ## How to use this file
 
 - Precedence. For story, gameplay rules, balance numbers and player-facing text, this file wins. For process (Git, agents, assets, sync), the master project instructions win.
-- Localization keys. Every player-facing line has an ID (astra.*, radio.*, crawl.*, ui.*, card.*, report.*, badge.*). Code must reference IDs, never hard-code English strings.
+- Localization keys. Every player-facing line has an ID (astra.*, radio.*, crawl.*, ui.*, card.*, report.*, badge.*). Code must reference IDs, never hard-code English strings. All player-facing text is extracted to `content/data/strings.en.json` by `content/tools/extract-strings.mjs`. Lines written without an explicit ID get a derived ID: dilemma N `ui.dN.title`, `ui.dN.header`, `astra.dN.alert`, `ui.dN.<a|b|c>.label`, `astra.dN.<a|b|c>`; event N the same with `eN` (plus `astra.e1.watch`, `astra.e2.a.clean`/`.dusty`); mini-game `ui.mg.<id>.title`, `astra.mg.<id>` (ids as in Section 7); expedition N `ui.expN.name`, `radio.expN.<percent>` (0% is `00`), `ui.expN.<percent>.<a|b>.label` for radio decisions, `astra.expN.return`, `astra.expN.at<percent>`; Scrap & Ice Run `radio.run.<percent>.<1-3>`; names `ui.module.*`, `ui.upgrade.*`, `ui.item.*`, `ui.res.*`, `ui.role.*`, `ui.buff.*`; Logbook `card.<card>.title`/`.text`. "(fiction)" tags are stripped.
 - Numbers. All rates and costs are starting values for playtesting. Change them in data modules (src/data/*.js), then update this file in the same commit. The JSON in Section 7 is the shape spec: the JS modules export objects with the same shape.
 - Data labels. Tag every number in data files with source: nasa_measurement, approximation or gameplay.
 
@@ -1001,7 +1001,7 @@ ASTRA on return: "Weather probes measure wind, dust and temperature. This one go
 | 0 | Rover rolling north. Titanium wheels ready for the boulder field. |
 | 25 | Boulders everywhere! Weaving between them slowly. |
 | 50 | I see a mast sticking out of the dust... It's Pathfinder-X! |
-| 60 | Radio decision: The black box is under a heavy solar panel. (A) Lift it with the Rover's robot arm: safe, takes longer (+0.25 Sol). (B) Dig it out by hand: fast, but more time outside (−5 HP). |
+| 60 | Radio decision: The black box is under a heavy solar panel. How should we get it out? (A) Lift it with the robot arm: safe, takes longer (+0.25 Sol). (B) Dig it out by hand: fast, but more time outside (−5 HP). |
 | 80 | Black box secured. Unbolting its big dish antenna too. |
 | 100 | Pathfinder-X, you did great. We'll take it from here. Heading home! |
 
@@ -1423,7 +1423,7 @@ The Engineer's Heavy Toolkit HP penalty is stored as surfaceRadiationMultiplier:
         },
         {
           "id": "B_shelter",
-          "label": "Shelter under the cliff",
+          "label": "Shelter under the cliff overhang for 1 Sol",
           "previewIcons": [ { "stat": "time", "direction": "down" }, { "stat": "morale", "direction": "down" } ],
           "immediate": {
             "crewShieldedForSols": 1,
@@ -1435,7 +1435,7 @@ The Engineer's Heavy Toolkit HP penalty is stored as surfaceRadiationMultiplier:
         },
         {
           "id": "C_keep_working",
-          "label": "Keep working behind the shielding",
+          "label": "Keep working behind the Rover's shielding",
           "previewIcons": [ { "stat": "hp", "direction": "down" }, { "stat": "spareParts", "direction": "down" } ],
           "immediate": {
             "crewHpFormula": { "flareMultiplier": 3, "durationSols": 0.5 },
