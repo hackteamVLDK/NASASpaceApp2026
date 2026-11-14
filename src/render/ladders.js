@@ -45,13 +45,38 @@ function isPersonColour(r, g, b, kind) {
   return (s >= 0.18 && v >= 0.42) || v > 0.92;
 }
 
+/** Clear every group of touching set cells (8 neighbours) of `mask` that has fewer than `min` cells. */
+function dropSmallGroups(mask, w, h, min) {
+  const seen = new Uint8Array(w * h);
+  for (let start = 0; start < w * h; start++) {
+    if (!mask[start] || seen[start]) continue;
+    const group = [start];
+    seen[start] = 1;
+    for (let n = 0; n < group.length; n++) {
+      const cx = group[n] % w;
+      const cy = Math.floor(group[n] / w);
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const nx = cx + dx;
+          const ny = cy + dy;
+          if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+          const k = ny * w + nx;
+          if (mask[k] && !seen[k]) { seen[k] = 1; group.push(k); }
+        }
+      }
+    }
+    if (group.length < min) for (const k of group) mask[k] = 0;
+  }
+}
+
 /**
  * Erase the painted ladder from one cell. `data` is the cell's RGBA array (w x h), changed in place.
  * In the ladder area, ladder-coloured pixels go first; then everything that is not within `reach` pixels of a person-coloured pixel goes
- * too (the ladder's dark outline and its blurred edges), so the climber keeps his own outline and nothing else. Specks left alone in
- * the ladder area are removed last. Returns the number of pixels erased.
+ * too (the ladder's dark outline and its blurred edges), so the climber keeps his own outline and nothing else. Person-coloured groups
+ * smaller than `personMin` pixels (a bright speck on a rail) do not count as the person; specks left alone in the ladder area are removed
+ * last. Returns the number of pixels erased.
  */
-export function eraseLadder(data, w, h, { kind, from, reach = 8, speck = 90 }) {
+export function eraseLadder(data, w, h, { kind, from, reach = 8, speck = 90, personMin = 150 }) {
   const inArea = (x, y) => from.some(([fx, fy]) => x >= fx && y >= fy);
   const idx = (x, y) => y * w + x;
   const opaque = (x, y) => data[idx(x, y) * 4 + 3] !== 0;
@@ -63,6 +88,7 @@ export function eraseLadder(data, w, h, { kind, from, reach = 8, speck = 90 }) {
       if (!(inArea(x, y) && isLadderColour(data[i], data[i + 1], data[i + 2], kind)) && isPersonColour(data[i], data[i + 1], data[i + 2], kind)) person[idx(x, y)] = 1;
     }
   }
+  dropSmallGroups(person, w, h, personMin); // a bright speck on a rail is not a person
   // the climber's own outline and blur: everything within `reach` of a person pixel
   const near = new Uint8Array(w * h);
   for (let y = 0; y < h; y++) {
