@@ -9,7 +9,7 @@ import { moduleInfo, clockAt, online } from '../campaign/engine.js';
 import { EXPEDITIONS, hpCost, durationMinutes } from '../campaign/expeditions.js';
 import { t, hasString } from '../flow/strings.js';
 import { ICON } from '../render/atlas.js';
-import { play } from './audio.js';
+import { play, director } from './audio.js';
 import { CARDS, BADGES, buildReport } from '../campaign/logbook.js';
 
 const $ = (id) => document.getElementById(id);
@@ -54,7 +54,7 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
   for (const id of tabs) {
     const b = el('button', '', { base: 'Base', workshop: 'Workshop', drones: 'Drones', tasks: 'Tasks', logbook: 'Logbook' }[id]);
     b.dataset.tab = id;
-    b.addEventListener('click', () => { tab = id; sig = ''; play('click'); });
+    b.addEventListener('click', () => { tab = id; sig = ''; play('uiTabSwitch'); });
     tabBar.append(b);
   }
   let sig = '';
@@ -231,13 +231,13 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
       const labelId = radio ? `${prefix}.${c}.label` : `ui.${id}.${c}.label`;
       const b = el('button', 'choice', `<span class="k">${c.toUpperCase()}</span>${t(labelId)}`);
       b.dataset.choice = c;
-      b.addEventListener('click', () => { play('click'); send(radio ? { type: 'radio', choice: c } : { type: 'choose', choice: c }); closeModal(); });
+      b.addEventListener('click', () => { play('dilemmaChoice'); send(radio ? { type: 'radio', choice: c } : { type: 'choose', choice: c }); closeModal(); });
       box.append(b);
     }
     void warm;
     modalRoot.innerHTML = '';
     modalRoot.append(card);
-    play('alert');
+    director.decisionShown(id); // urgent (e1, d5) -> emergency alert
   }
 
   function showActCard(lineId) {

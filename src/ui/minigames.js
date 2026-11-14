@@ -5,7 +5,7 @@
  * Implemented: Solar Panel Static Wipe (4.1) and the tutorial battery + cable step.
  */
 import { t } from '../flow/strings.js';
-import { play } from './audio.js';
+import { play, director } from './audio.js';
 import { ICON } from '../render/atlas.js';
 
 const W = 1100;
@@ -85,7 +85,7 @@ export function startSolarWipe({ canvas, atlas, title, hint, timeLimit = 23, onW
     const pt = pointer(canvas, e);
     canvas.setPointerCapture(e.pointerId);
     const tap = clumps.find((c) => !c.zapped && Math.hypot(panels[c.panel].x + c.x - pt.x, panels[c.panel].y + c.y - pt.y) < c.r + 12);
-    if (tap) { tap.zapped = true; tapHint = false; play('zap'); return; }
+    if (tap) { tap.zapped = true; tapHint = false; director.minigame('solar_wipe', 'zap'); return; }
     last = pt; wipeAt(pt);
   };
   const move = (e) => {
@@ -93,6 +93,7 @@ export function startSolarWipe({ canvas, atlas, title, hint, timeLimit = 23, onW
     const pt = pointer(canvas, e);
     const steps = Math.ceil(Math.hypot(pt.x - last.x, pt.y - last.y) / 12);
     for (let i = 1; i <= steps; i++) wipeAt({ x: last.x + ((pt.x - last.x) * i) / steps, y: last.y + ((pt.y - last.y) * i) / steps });
+    if (steps > 0) director.minigame('solar_wipe', 'move'); // brush sound, rate-limited
     last = pt;
   };
   const up = () => { last = null; };
@@ -181,9 +182,9 @@ export function startBatteryStep({ canvas, atlas, title, hint, onDone, onTitle =
   const up = () => {
     if (!drag) return;
     if (drag.what === 'battery') {
-      if (Math.hypot(battery.x + battery.w / 2 - (slot.x + slot.w / 2), battery.y + battery.h / 2 - (slot.y + slot.h / 2)) < 110) { battery = { ...battery, x: slot.x + 30, y: slot.y + 15, seated: true }; play('click'); }
+      if (Math.hypot(battery.x + battery.w / 2 - (slot.x + slot.w / 2), battery.y + battery.h / 2 - (slot.y + slot.h / 2)) < 110) { battery = { ...battery, x: slot.x + 30, y: slot.y + 15, seated: true }; director.minigame('battery', 'insert'); }
       else battery = { x: 90, y: 400, w: 190, h: 100, seated: false };
-    } else if (Math.hypot(plug.x - socket.x, plug.y - socket.y) < 70) { plug = { ...socket }; done = true; flash = performance.now(); play('win'); setTimeout(() => { destroy(); onDone(); }, 800); }
+    } else if (Math.hypot(plug.x - socket.x, plug.y - socket.y) < 70) { plug = { ...socket }; done = true; flash = performance.now(); director.minigame('battery', 'cable'); play('win'); setTimeout(() => { destroy(); onDone(); }, 800); }
     else plug = { ...plugHome };
     drag = null;
   };
