@@ -83,7 +83,7 @@ export function drawCampaign(ctx, atlas, S) {
     const L = cut.lander;
     atlas.sprite(ctx, 'lander', 0, SURFACE.lander.x, L.y, { w: SURFACE.lander.w - 20 });
     if (L.parachute === 'attached') atlas.sprite(ctx, 'parachute', 0, SURFACE.lander.x, L.y - 150, { w: 340 });
-    if (L.thrusters) for (let i = 0; i < 4; i++) atlas.sprite(ctx, 'parachute', 2 + (Math.floor(wm / 90) % 2), SURFACE.lander.x - 78 + i * 52, L.y + 4, { h: 110 });
+    if (L.thrusters) for (let i = 0; i < 4; i++) atlas.sprite(ctx, 'parachute', 2 + (Math.floor(wm / 90) % 2), SURFACE.lander.x - 78 + i * 52, L.y - 4, { h: 110, anchor: 'top' }); // flames hang below the nozzles (A13)
   }
   if (cut?.lander?.parachute === 'drifting-left') {
     const d = cut.parachuteDrift ?? 0;
