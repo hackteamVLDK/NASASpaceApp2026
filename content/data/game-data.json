@@ -1,0 +1,2488 @@
+{
+  "meta": {
+    "source": "SCENARIO.md",
+    "generatedBy": "content/tools/extract-game-data.mjs",
+    "note": "Generated: edit SCENARIO.md and re-run the tool. Text lives in content/data/strings.en.json (resolve the *Id fields).",
+    "labels": {
+      "default": "gameplay",
+      "nasa_measurement": [
+        "needs.recycler.ok (ISS 98% water recovery)"
+      ],
+      "approximation": [
+        "radiation.routeFactor",
+        "radiation.flare",
+        "events[e1] forecast",
+        "time.solRealSeconds (1 Sol = 24 h 39 m, played as 4 min)"
+      ]
+    }
+  },
+  "time": {
+    "solRealSeconds": 240,
+    "dayRealSeconds": 180,
+    "nightRealSeconds": 60,
+    "buildSolsOneDrone": 2,
+    "tier2InstallSols": 0.5,
+    "craftsPerSol": {
+      "t1": 1,
+      "t2": 2
+    }
+  },
+  "power": {
+    "droneBuildingPerSol": -5,
+    "storm": {
+      "solarT1": 0.3,
+      "solarT2": 0.5,
+      "batteryPowerMult": 4
+    }
+  },
+  "resources": [
+    {
+      "id": "power",
+      "nameId": "ui.res.power.name",
+      "start": 60,
+      "atZero": "Non-life-support modules switch off; Emergency Mode",
+      "cap": 100,
+      "capWith": {
+        "batteryT1": 250,
+        "batteryT2": 400
+      }
+    },
+    {
+      "id": "heat",
+      "nameId": "ui.res.heat.name",
+      "start": 70,
+      "atZero": "Emergency Mode, Heat Pump mini-game",
+      "cap": 100
+    },
+    {
+      "id": "water",
+      "nameId": "ui.res.water.name",
+      "start": 80,
+      "atZero": "Greenhouse pauses; Morale −5 per Sol",
+      "cap": 100
+    },
+    {
+      "id": "oxygen",
+      "nameId": "ui.res.oxygen.name",
+      "start": 80,
+      "atZero": "Emergency Mode, Valve Balance mini-game",
+      "cap": 100
+    },
+    {
+      "id": "food",
+      "nameId": "ui.res.food.name",
+      "start": 70,
+      "atZero": "Emergency rations; Morale −5 per Sol, no fresh-crop HP",
+      "cap": 100
+    },
+    {
+      "id": "morale",
+      "nameId": "ui.res.morale.name",
+      "start": 70,
+      "atZero": "Builds and crafts 25% slower",
+      "cap": 100
+    },
+    {
+      "id": "sp",
+      "nameId": "ui.res.spare_parts.name",
+      "start": 60,
+      "atZero": "Scrap Run always available",
+      "cap": 999
+    },
+    {
+      "id": "hp",
+      "nameId": "ui.res.astronaut_hp.name",
+      "start": 100,
+      "atZero": "Med-Rest Mode (Section 3.6)",
+      "max": {
+        "commander": 100,
+        "roleRange": [
+          90,
+          120
+        ]
+      }
+    }
+  ],
+  "needs": {
+    "perAstronautPerSol": {
+      "oxygen": -10,
+      "food": -6,
+      "water": -1,
+      "morale": -2,
+      "power": -2
+    },
+    "pilotFood": -7.5,
+    "baseHeatLossPerSol": -20,
+    "waterUsedPerAstronaut": 50,
+    "recycler": {
+      "ok": 0.98,
+      "cracked": 0.7
+    }
+  },
+  "modules": [
+    {
+      "id": "solar_array",
+      "nameId": "ui.module.solar_array.name",
+      "prebuilt": true,
+      "surface": true,
+      "baseUpgrade": false,
+      "unlock": "Start",
+      "cost": {
+        "sp": 0,
+        "water": 0,
+        "items": {}
+      },
+      "t1": {
+        "effects": {
+          "power": 50
+        },
+        "text": "+50 Power"
+      },
+      "t2": {
+        "effects": {
+          "power": 80
+        },
+        "text": "+80 Power; storm loss 50% instead of 70%"
+      }
+    },
+    {
+      "id": "bedroom",
+      "nameId": "ui.module.bedroom.name",
+      "prebuilt": true,
+      "surface": false,
+      "baseUpgrade": false,
+      "unlock": "Start",
+      "cost": {
+        "sp": 0,
+        "water": 0,
+        "items": {}
+      },
+      "t1": {
+        "effects": {
+          "power": -2,
+          "morale": 3,
+          "sleepHp": 12
+        },
+        "text": "−2 Power, +3 Morale, sleep +12 HP"
+      },
+      "t2": null
+    },
+    {
+      "id": "kitchen",
+      "nameId": "ui.module.kitchen.name",
+      "prebuilt": true,
+      "surface": false,
+      "baseUpgrade": false,
+      "unlock": "Start",
+      "cost": {
+        "sp": 0,
+        "water": 0,
+        "items": {}
+      },
+      "t1": {
+        "effects": {
+          "power": -4,
+          "morale": 2
+        },
+        "text": "−4 Power, +2 Morale"
+      },
+      "t2": null
+    },
+    {
+      "id": "water_and_air_life_support",
+      "nameId": "ui.module.water_and_air_life_support.name",
+      "prebuilt": true,
+      "surface": false,
+      "baseUpgrade": false,
+      "unlock": "Start",
+      "cost": {
+        "sp": 0,
+        "water": 0,
+        "items": {}
+      },
+      "t1": {
+        "effects": {
+          "power": -12,
+          "oxygen": 14,
+          "waterRecycling": 0.98
+        },
+        "text": "−12 Power, +14 Oxygen, 98% water recycling"
+      },
+      "t2": {
+        "effects": {
+          "power": -14,
+          "oxygen": 20
+        },
+        "text": "−14 Power, +20 Oxygen, auto-melts Ice Cores"
+      }
+    },
+    {
+      "id": "battery_and_heating",
+      "nameId": "ui.module.battery_and_heating.name",
+      "prebuilt": false,
+      "surface": false,
+      "baseUpgrade": false,
+      "unlock": "Sol 1",
+      "cost": {
+        "sp": 10,
+        "water": 0,
+        "items": {}
+      },
+      "t1": {
+        "effects": {
+          "power": -6,
+          "heat": 25,
+          "powerCap": 250
+        },
+        "text": "−6 Power, +25 Heat, Power cap 250"
+      },
+      "t2": {
+        "effects": {
+          "power": -6,
+          "heat": 35,
+          "powerCap": 400
+        },
+        "text": "−6 Power, +35 Heat, Power cap 400"
+      }
+    },
+    {
+      "id": "workshop",
+      "nameId": "ui.module.workshop.name",
+      "prebuilt": false,
+      "surface": false,
+      "baseUpgrade": false,
+      "unlock": "Battery & Heating built",
+      "cost": {
+        "sp": 15,
+        "water": 0,
+        "items": {}
+      },
+      "t1": {
+        "effects": {
+          "power": -8,
+          "sp": 6
+        },
+        "text": "−8 Power, +6 SP, crafting"
+      },
+      "t2": {
+        "effects": {
+          "power": -10,
+          "sp": 10,
+          "craftsPerSol": 2
+        },
+        "text": "−10 Power, +10 SP, 2 crafts per Sol"
+      }
+    },
+    {
+      "id": "greenhouse",
+      "nameId": "ui.module.greenhouse.name",
+      "prebuilt": false,
+      "surface": false,
+      "baseUpgrade": false,
+      "unlock": "Workshop built",
+      "cost": {
+        "sp": 15,
+        "water": 10,
+        "items": {}
+      },
+      "t1": {
+        "effects": {
+          "power": -10,
+          "food": 10,
+          "oxygen": 3,
+          "water": -3,
+          "morale": 2,
+          "freshCropsHp": 4
+        },
+        "text": "−10 Power, +10 Food, +3 Oxygen, −3 Water, +2 Morale, fresh crops +4 HP"
+      },
+      "t2": {
+        "effects": {
+          "power": -12,
+          "food": 16,
+          "oxygen": 5,
+          "water": -4,
+          "morale": 2,
+          "freshCropsHp": 6
+        },
+        "text": "−12 Power, +16 Food, +5 Oxygen, −4 Water, +2 Morale, fresh crops +6 HP"
+      }
+    },
+    {
+      "id": "garage_and_airlock",
+      "nameId": "ui.module.garage_and_airlock.name",
+      "prebuilt": false,
+      "surface": false,
+      "baseUpgrade": false,
+      "unlock": "Greenhouse build started",
+      "cost": {
+        "sp": 15,
+        "water": 0,
+        "items": {}
+      },
+      "t1": {
+        "effects": {
+          "power": -6
+        },
+        "text": "−6 Power, expeditions"
+      },
+      "t2": {
+        "effects": {
+          "power": -6
+        },
+        "text": "−6 Power, expeditions −1 Sol (min. 1)"
+      }
+    },
+    {
+      "id": "research_and_comms_lab",
+      "nameId": "ui.module.research_and_comms_lab.name",
+      "prebuilt": false,
+      "surface": false,
+      "baseUpgrade": false,
+      "unlock": "Garage built + Dish Antenna",
+      "cost": {
+        "sp": 20,
+        "water": 0,
+        "items": {
+          "dish_antenna": 1
+        }
+      },
+      "t1": {
+        "effects": {
+          "power": -10,
+          "research": 5
+        },
+        "text": "−10 Power, +5 Research, Earth window every 3 Sols"
+      },
+      "t2": {
+        "effects": {
+          "power": -12,
+          "research": 8
+        },
+        "text": "−12 Power, +8 Research, warnings +1 Sol early, Deep Scan"
+      }
+    },
+    {
+      "id": "recreation_and_storage",
+      "nameId": "ui.module.recreation_and_storage.name",
+      "prebuilt": false,
+      "surface": false,
+      "baseUpgrade": false,
+      "unlock": "Lab build started",
+      "cost": {
+        "sp": 10,
+        "water": 0,
+        "items": {}
+      },
+      "t1": {
+        "effects": {
+          "power": -4,
+          "morale": 4
+        },
+        "text": "−4 Power, +4 Morale, emergency refill once per 5 Sols, exercise station (3.11)"
+      },
+      "t2": {
+        "effects": {
+          "power": -4,
+          "morale": 6
+        },
+        "text": "−4 Power, +6 Morale, refill once per 3 Sols"
+      }
+    },
+    {
+      "id": "regolith_roof_layer",
+      "nameId": "ui.module.regolith_roof_layer.name",
+      "prebuilt": false,
+      "surface": false,
+      "baseUpgrade": true,
+      "unlock": "Lab build started",
+      "cost": {
+        "sp": 10,
+        "water": 0,
+        "items": {
+          "titanium_plate": 1
+        }
+      },
+      "t1": {
+        "effects": {},
+        "text": "Right-wing rooms become fully shielded"
+      },
+      "t2": null
+    }
+  ],
+  "recipes": [
+    {
+      "id": "repair_kit",
+      "nameId": "ui.upgrade.repair_kit.name",
+      "type": "drone",
+      "cost": {
+        "sp": 10,
+        "water": 0,
+        "items": {}
+      },
+      "effect": "Wakes Drone #02"
+    },
+    {
+      "id": "reboot_kit",
+      "nameId": "ui.upgrade.reboot_kit.name",
+      "type": "drone",
+      "cost": {
+        "sp": 10,
+        "water": 0,
+        "items": {
+          "probe_power_core": 1,
+          "circuit_board": 1
+        }
+      },
+      "effect": "Wakes Drone #03"
+    },
+    {
+      "id": "titanium_wheels",
+      "nameId": "ui.upgrade.titanium_wheels.name",
+      "type": "rover",
+      "cost": {
+        "sp": 10,
+        "water": 0,
+        "items": {
+          "titanium_scrap": 2
+        }
+      },
+      "effect": "Expedition 2; −1 risk on rocky routes"
+    },
+    {
+      "id": "deep_ice_drill",
+      "nameId": "ui.upgrade.deep_ice_drill.name",
+      "type": "rover",
+      "cost": {
+        "sp": 10,
+        "water": 0,
+        "items": {
+          "titanium_plate": 1,
+          "circuit_board": 1
+        }
+      },
+      "effect": "Expedition 3, Ice Run"
+    },
+    {
+      "id": "regolith_radiation_shielding",
+      "nameId": "ui.upgrade.regolith_radiation_shielding.name",
+      "type": "rover",
+      "cost": {
+        "sp": 15,
+        "water": 0,
+        "items": {
+          "titanium_plate": 1
+        }
+      },
+      "effect": "Expedition 4; surface HP loss ×0.6"
+    },
+    {
+      "id": "suit_radiation_liner",
+      "nameId": "ui.upgrade.suit_radiation_liner.name",
+      "type": "suit",
+      "cost": {
+        "sp": 10,
+        "water": 0,
+        "items": {
+          "circuit_board": 1
+        }
+      },
+      "effect": "Surface HP loss ×0.75 (each suit; co-op crafts 1 per astronaut, extra liners 10 SP)"
+    },
+    {
+      "id": "long_range_battery",
+      "nameId": "ui.upgrade.long_range_battery.name",
+      "type": "rover",
+      "cost": {
+        "sp": 15,
+        "water": 0,
+        "items": {
+          "rare_battery_cell": 1,
+          "titanium_plate": 1
+        }
+      },
+      "effect": "Expedition 5; all trips −1 Sol (min. 1)",
+      "tier2Of": "garage_and_airlock"
+    },
+    {
+      "id": "regolith_roof_layer",
+      "nameId": "ui.upgrade.regolith_roof_layer.name",
+      "type": "base",
+      "cost": {
+        "sp": 10,
+        "water": 0,
+        "items": {
+          "titanium_plate": 1
+        }
+      },
+      "effect": "Right-wing rooms fully shielded"
+    },
+    {
+      "id": "clean_sweep_panels",
+      "nameId": "ui.upgrade.clean_sweep_panels.name",
+      "type": "module",
+      "cost": {
+        "sp": 10,
+        "water": 0,
+        "items": {
+          "solar_cell": 3
+        }
+      },
+      "effect": "Power +80",
+      "tier2Of": "solar_array"
+    },
+    {
+      "id": "precision_fabricator",
+      "nameId": "ui.upgrade.precision_fabricator.name",
+      "type": "module",
+      "cost": {
+        "sp": 10,
+        "water": 0,
+        "items": {
+          "titanium_plate": 1,
+          "circuit_board": 1
+        }
+      },
+      "effect": "+10 SP, 2 crafts per Sol",
+      "tier2Of": "workshop"
+    },
+    {
+      "id": "vertical_led_farm",
+      "nameId": "ui.upgrade.vertical_led_farm.name",
+      "type": "module",
+      "cost": {
+        "sp": 10,
+        "water": 10,
+        "items": {
+          "circuit_board": 2
+        }
+      },
+      "effect": "+16 Food, fresh crops +6 HP",
+      "tier2Of": "greenhouse"
+    },
+    {
+      "id": "moxie_x_and_ice_melter",
+      "nameId": "ui.upgrade.moxie_x_and_ice_melter.name",
+      "type": "module",
+      "cost": {
+        "sp": 10,
+        "water": 0,
+        "items": {
+          "water_filter_membrane": 1,
+          "ice_core": 2,
+          "circuit_board": 1,
+          "titanium_plate": 1
+        }
+      },
+      "effect": "+20 Oxygen, auto-melts ice",
+      "tier2Of": "water_and_air_life_support"
+    },
+    {
+      "id": "deep_cell_bank",
+      "nameId": "ui.upgrade.deep_cell_bank.name",
+      "type": "module",
+      "cost": {
+        "sp": 10,
+        "water": 0,
+        "items": {
+          "rare_battery_cell": 2
+        }
+      },
+      "effect": "+35 Heat, Power cap 400",
+      "tier2Of": "battery_and_heating"
+    },
+    {
+      "id": "deep_space_array",
+      "nameId": "ui.upgrade.deep_space_array.name",
+      "type": "module",
+      "cost": {
+        "sp": 15,
+        "water": 0,
+        "items": {
+          "lab_sensor_kit": 1,
+          "weather_sensor": 1
+        }
+      },
+      "effect": "Deep Scan, early warnings",
+      "tier2Of": "research_and_comms_lab"
+    },
+    {
+      "id": "habitat_lounge",
+      "nameId": "ui.upgrade.habitat_lounge.name",
+      "type": "module",
+      "cost": {
+        "sp": 10,
+        "water": 0,
+        "items": {
+          "mineral_sample": 1
+        }
+      },
+      "effect": "+6 Morale, refill every 3 Sols",
+      "tier2Of": "recreation_and_storage"
+    }
+  ],
+  "items": [
+    {
+      "id": "circuit_board",
+      "nameId": "ui.item.circuit_board.name",
+      "foundIn": "Exp 1 ×3, Exp 2 ×2, Exp 3 ×1, Exp 4 ×2",
+      "usedBy": "Reboot Kit, Ice Drill, Suit Liner, Workshop T2, Greenhouse T2 ×2, Life Support T2",
+      "ledger": {
+        "found": 8,
+        "required": 7,
+        "more": false
+      }
+    },
+    {
+      "id": "titanium_scrap",
+      "nameId": "ui.item.titanium_scrap.name",
+      "foundIn": "Exp 1 ×2",
+      "usedBy": "Titanium Wheels",
+      "ledger": {
+        "found": 2,
+        "required": 2,
+        "more": false
+      }
+    },
+    {
+      "id": "titanium_plate",
+      "nameId": "ui.item.titanium_plate.name",
+      "foundIn": "Exp 2 ×3, Exp 3 ×2, Exp 4 ×1",
+      "usedBy": "Ice Drill, Rover Shielding, Roof Layer, Life Support T2, Workshop T2, Long-Range Battery",
+      "ledger": {
+        "found": 6,
+        "required": 6,
+        "more": false
+      }
+    },
+    {
+      "id": "solar_cell",
+      "nameId": "ui.item.solar_cell.name",
+      "foundIn": "Exp 2 ×3",
+      "usedBy": "Solar Array T2",
+      "ledger": {
+        "found": 3,
+        "required": 3,
+        "more": false
+      }
+    },
+    {
+      "id": "ice_core",
+      "nameId": "ui.item.ice_core.name",
+      "foundIn": "Exp 3 ×3, Ice Run ×2 each",
+      "usedBy": "Life Support T2 ×2; spares melt into Water",
+      "ledger": {
+        "found": 3,
+        "required": 2,
+        "more": true
+      }
+    },
+    {
+      "id": "rare_battery_cell",
+      "nameId": "ui.item.rare_battery_cell.name",
+      "foundIn": "Exp 4 ×3",
+      "usedBy": "Battery T2 ×2, Long-Range Battery",
+      "ledger": {
+        "found": 3,
+        "required": 3,
+        "more": false
+      }
+    },
+    {
+      "id": "probe_power_core",
+      "nameId": "ui.item.probe_power_core.name",
+      "foundIn": "Exp 1",
+      "usedBy": "Reboot Kit",
+      "ledger": {
+        "found": 1,
+        "required": 1,
+        "more": false
+      }
+    },
+    {
+      "id": "weather_sensor",
+      "nameId": "ui.item.weather_sensor.name",
+      "foundIn": "Exp 1",
+      "usedBy": "Lab T2",
+      "ledger": {
+        "found": 1,
+        "required": 1,
+        "more": false
+      }
+    },
+    {
+      "id": "dish_antenna",
+      "nameId": "ui.item.dish_antenna.name",
+      "foundIn": "Exp 2",
+      "usedBy": "Research & Comms Lab",
+      "ledger": {
+        "found": 1,
+        "required": 1,
+        "more": false
+      }
+    },
+    {
+      "id": "black_box",
+      "nameId": "ui.item.black_box.name",
+      "foundIn": "Exp 2",
+      "usedBy": "Story: decoded by the Lab on Sol 16",
+      "ledger": {
+        "found": 1,
+        "required": 1,
+        "more": false
+      }
+    },
+    {
+      "id": "water_filter_membrane",
+      "nameId": "ui.item.water_filter_membrane.name",
+      "foundIn": "Exp 3",
+      "usedBy": "Life Support T2",
+      "ledger": {
+        "found": 1,
+        "required": 1,
+        "more": false
+      }
+    },
+    {
+      "id": "lab_sensor_kit",
+      "nameId": "ui.item.lab_sensor_kit.name",
+      "foundIn": "Exp 4",
+      "usedBy": "Lab T2",
+      "ledger": {
+        "found": 1,
+        "required": 1,
+        "more": false
+      }
+    },
+    {
+      "id": "mineral_sample",
+      "nameId": "ui.item.mineral_sample.name",
+      "foundIn": "Exp 4 ×3",
+      "usedBy": "Recreation T2 (1); each also gives +5 Research when scanned",
+      "ledger": {
+        "found": 3,
+        "required": 1,
+        "more": false
+      }
+    }
+  ],
+  "expeditions": [
+    {
+      "id": "exp1",
+      "nameId": "ui.exp1.name",
+      "fiction": true,
+      "sol": 10,
+      "durationSols": 1,
+      "route": "floor",
+      "routeFactor": 1,
+      "requires": "Garage & Airlock",
+      "risk": "low",
+      "commanderHpCost": 17,
+      "loot": {
+        "sp": 15,
+        "items": {
+          "probe_power_core": 1,
+          "circuit_board": 3,
+          "titanium_scrap": 2,
+          "weather_sensor": 1
+        }
+      }
+    },
+    {
+      "id": "exp2",
+      "nameId": "ui.exp2.name",
+      "fiction": true,
+      "sol": 12,
+      "durationSols": 1,
+      "route": "floor",
+      "routeFactor": 1,
+      "requires": "Titanium Wheels",
+      "risk": "medium",
+      "commanderHpCost": 17,
+      "loot": {
+        "sp": 20,
+        "items": {
+          "black_box": 1,
+          "dish_antenna": 1,
+          "solar_cell": 3,
+          "titanium_plate": 3,
+          "circuit_board": 2
+        }
+      }
+    },
+    {
+      "id": "exp3",
+      "nameId": "ui.exp3.name",
+      "fiction": true,
+      "sol": 14,
+      "durationSols": 1,
+      "route": "rim",
+      "routeFactor": 1.25,
+      "requires": "Deep Ice Drill",
+      "risk": "medium",
+      "commanderHpCost": 21,
+      "loot": {
+        "sp": 20,
+        "items": {
+          "ice_core": 3,
+          "water_filter_membrane": 1,
+          "titanium_plate": 2,
+          "circuit_board": 1
+        }
+      }
+    },
+    {
+      "id": "exp4",
+      "nameId": "ui.exp4.name",
+      "fiction": false,
+      "sol": [
+        17,
+        18
+      ],
+      "durationSols": 2,
+      "route": "delta",
+      "routeFactor": 1.25,
+      "requires": "Regolith Radiation Shielding (+ Suit Liner recommended)",
+      "risk": "high",
+      "commanderHpCost": 19,
+      "loot": {
+        "sp": 25,
+        "items": {
+          "rare_battery_cell": 3,
+          "lab_sensor_kit": 1,
+          "mineral_sample": 3,
+          "titanium_plate": 1,
+          "circuit_board": 2
+        }
+      },
+      "commanderHpCostNoLiner": 27
+    },
+    {
+      "id": "exp5",
+      "nameId": "ui.exp5.name",
+      "fiction": true,
+      "sol": 20,
+      "durationSols": 1,
+      "route": "canyon",
+      "routeFactor": 1.5,
+      "requires": "All 4 Rover upgrades + Lab T2 Deep Scan",
+      "risk": "scripted success",
+      "commanderHpCost": 12,
+      "loot": {
+        "sp": 30,
+        "items": {
+          "canyon_samples": 1,
+          "brine_sample": 1
+        }
+      },
+      "durationSolsNoLongRange": 2
+    },
+    {
+      "id": "run",
+      "nameId": "ui.exp_run.name",
+      "fiction": false,
+      "sol": "Scrap from 10, Ice from 14",
+      "durationSols": 1,
+      "route": "floor",
+      "routeFactor": 1,
+      "requires": "Garage (Ice mode: Deep Ice Drill)",
+      "risk": "low",
+      "commanderHpCost": 17,
+      "modes": {
+        "scrap": {
+          "sp": 15,
+          "randomItem": [
+            "circuit_board",
+            "titanium_plate",
+            "solar_cell"
+          ]
+        },
+        "ice": {
+          "items": {
+            "ice_core": 2
+          }
+        }
+      },
+      "commanderHpCostShielded": 8
+    }
+  ],
+  "risk": {
+    "low": {
+      "smooth": 0.85,
+      "bumpy": 0.15,
+      "rough": 0
+    },
+    "medium": {
+      "smooth": 0.6,
+      "bumpy": 0.3,
+      "rough": 0.1
+    },
+    "high": {
+      "smooth": 0.4,
+      "bumpy": 0.4,
+      "rough": 0.2
+    }
+  },
+  "radiation": {
+    "basePerSol": 20,
+    "routeFactor": {
+      "floor": 1,
+      "rim": 1.25,
+      "delta": 1.25,
+      "canyon": 1.5
+    },
+    "radiationResistance": {
+      "commander": 0.15,
+      "chief_engineer": 0.1,
+      "rover_pilot_and_geologist": 0.25,
+      "astro_botanist": 0,
+      "comms_and_science_officer": 0
+    },
+    "roleSurfaceMultiplier": {
+      "chief_engineer": 1.2,
+      "astro_botanist": 1.25,
+      "comms_and_science_officer": 1.3
+    },
+    "roverShielding": 0.6,
+    "suitLiner": 0.75,
+    "flare": 3,
+    "fitnessMultiplier": {
+      "atLeast40": 1,
+      "from16to39": 1.1,
+      "atMost15": 1.25
+    },
+    "rooms": [
+      {
+        "where": "Surface, no Rover shielding",
+        "factor": 1,
+        "hpPerSol": -20,
+        "hpPerSolFlare": -60
+      },
+      {
+        "where": "Right-wing rooms before the Regolith Roof Layer",
+        "factor": 0.3,
+        "hpPerSol": -6,
+        "hpPerSolFlare": -18
+      },
+      {
+        "where": "Left wing, and right wing after the Roof Layer",
+        "factor": 0.05,
+        "hpPerSol": -1,
+        "hpPerSolFlare": -3
+      },
+      {
+        "where": "Bedroom storm shelter",
+        "factor": 0.02,
+        "hpPerSol": -0.4,
+        "hpPerSolFlare": -1.2
+      }
+    ],
+    "recovery": [
+      {
+        "source": "Sleep",
+        "amount": "+12 per night",
+        "condition": "In the base at night (+6 if camping in the Rover)"
+      },
+      {
+        "source": "Fresh crops",
+        "amount": "+4 (Tier 1), +6 (Tier 2), +1 more with Soil Beds",
+        "condition": "Greenhouse working and Food at 30 or more"
+      },
+      {
+        "source": "High morale",
+        "amount": "+2 per Sol",
+        "condition": "Morale at 70 or more"
+      },
+      {
+        "source": "Field Nurse (Botanist)",
+        "amount": "+15",
+        "condition": "Once per Sol, to another astronaut"
+      },
+      {
+        "source": "Med-Rest Mode",
+        "amount": "Back to 50 HP",
+        "condition": "HP hit 0; astronaut spends 1 Sol in the Bedroom"
+      }
+    ],
+    "medRestHp": 50,
+    "commanderHpCost": [
+      {
+        "expedition": "1. Breeze-7 (1 Sol, floor)",
+        "upgrades": "None",
+        "hp": "17"
+      },
+      {
+        "expedition": "2. Pathfinder-X (1 Sol, floor)",
+        "upgrades": "None",
+        "hp": "17"
+      },
+      {
+        "expedition": "3. Crater Rim Ice (1 Sol, rim)",
+        "upgrades": "None",
+        "hp": "21"
+      },
+      {
+        "expedition": "4. Delta Cliffs (2 Sols, delta)",
+        "upgrades": "Rover Shielding + Suit Liner",
+        "hp": "19 (+ flare, see Dilemma 5)"
+      },
+      {
+        "expedition": "5. Canyon Anomaly (1 Sol, canyon)",
+        "upgrades": "All + Long-Range",
+        "hp": "12"
+      },
+      {
+        "expedition": "Scrap or Ice Run (1 Sol, floor)",
+        "upgrades": "None / Shield + Liner",
+        "hp": "17 / 8"
+      }
+    ]
+  },
+  "roles": [
+    {
+      "id": "commander",
+      "mode": "solo",
+      "nameId": "ui.role.commander.name",
+      "blurbId": "ui.role.commander.blurb",
+      "baseHp": 100,
+      "radiationResistance": 0.15,
+      "buffs": [
+        {
+          "id": "all_rounder",
+          "nameId": "ui.buff.all_rounder.name",
+          "textId": "ui.buff.all_rounder.text"
+        },
+        {
+          "id": "drone_link",
+          "nameId": "ui.buff.drone_link.name",
+          "textId": "ui.buff.drone_link.text"
+        }
+      ],
+      "limits": [
+        {
+          "id": "one_pair_of_hands",
+          "nameId": "ui.buff.one_pair_of_hands.name",
+          "textId": "ui.buff.one_pair_of_hands.text"
+        }
+      ]
+    },
+    {
+      "id": "chief_engineer",
+      "mode": "coop",
+      "nameId": "ui.role.chief_engineer.name",
+      "baseHp": 100,
+      "radiationResistance": 0.1,
+      "buffs": [
+        {
+          "id": "master_mechanic",
+          "nameId": "ui.buff.master_mechanic.name",
+          "textId": "ui.buff.master_mechanic.text"
+        },
+        {
+          "id": "fast_fabricator",
+          "nameId": "ui.buff.fast_fabricator.name",
+          "textId": "ui.buff.fast_fabricator.text"
+        }
+      ],
+      "debuffs": [
+        {
+          "id": "not_a_gardener",
+          "nameId": "ui.buff.not_a_gardener.name",
+          "textId": "ui.buff.not_a_gardener.text"
+        },
+        {
+          "id": "heavy_toolkit",
+          "nameId": "ui.buff.heavy_toolkit.name",
+          "textId": "ui.buff.heavy_toolkit.text"
+        }
+      ]
+    },
+    {
+      "id": "astro_botanist",
+      "mode": "coop",
+      "nameId": "ui.role.astro_botanist.name",
+      "baseHp": 110,
+      "radiationResistance": 0,
+      "buffs": [
+        {
+          "id": "green_thumb",
+          "nameId": "ui.buff.green_thumb.name",
+          "textId": "ui.buff.green_thumb.text"
+        },
+        {
+          "id": "field_nurse",
+          "nameId": "ui.buff.field_nurse.name",
+          "textId": "ui.buff.field_nurse.text"
+        }
+      ],
+      "debuffs": [
+        {
+          "id": "surface_rookie",
+          "nameId": "ui.buff.surface_rookie.name",
+          "textId": "ui.buff.surface_rookie.text"
+        },
+        {
+          "id": "wobbly_with_wrenches",
+          "nameId": "ui.buff.wobbly_with_wrenches.name",
+          "textId": "ui.buff.wobbly_with_wrenches.text"
+        }
+      ]
+    },
+    {
+      "id": "rover_pilot_and_geologist",
+      "mode": "coop",
+      "nameId": "ui.role.rover_pilot_and_geologist.name",
+      "baseHp": 120,
+      "radiationResistance": 0.25,
+      "buffs": [
+        {
+          "id": "ace_driver",
+          "nameId": "ui.buff.ace_driver.name",
+          "textId": "ui.buff.ace_driver.text"
+        },
+        {
+          "id": "rock_hound",
+          "nameId": "ui.buff.rock_hound.name",
+          "textId": "ui.buff.rock_hound.text"
+        }
+      ],
+      "debuffs": [
+        {
+          "id": "can_t_plot_routes",
+          "nameId": "ui.buff.can_t_plot_routes.name",
+          "textId": "ui.buff.can_t_plot_routes.text"
+        },
+        {
+          "id": "hungry_explorer",
+          "nameId": "ui.buff.hungry_explorer.name",
+          "textId": "ui.buff.hungry_explorer.text"
+        }
+      ]
+    },
+    {
+      "id": "comms_and_science_officer",
+      "mode": "coop",
+      "nameId": "ui.role.comms_and_science_officer.name",
+      "baseHp": 90,
+      "radiationResistance": 0,
+      "buffs": [
+        {
+          "id": "signal_whisperer",
+          "nameId": "ui.buff.signal_whisperer.name",
+          "textId": "ui.buff.signal_whisperer.text"
+        },
+        {
+          "id": "storm_watch",
+          "nameId": "ui.buff.storm_watch.name",
+          "textId": "ui.buff.storm_watch.text"
+        }
+      ],
+      "debuffs": [
+        {
+          "id": "desk_scientist",
+          "nameId": "ui.buff.desk_scientist.name",
+          "textId": "ui.buff.desk_scientist.text"
+        },
+        {
+          "id": "all_thumbs",
+          "nameId": "ui.buff.all_thumbs.name",
+          "textId": "ui.buff.all_thumbs.text"
+        }
+      ]
+    }
+  ],
+  "dilemmas": [
+    {
+      "id": "d1",
+      "sol": 3,
+      "radioDecision": false,
+      "titleId": "ui.d1.title",
+      "headerId": "ui.d1.header",
+      "alertId": "astra.d1.alert",
+      "choices": [
+        {
+          "id": "a",
+          "labelId": "ui.d1.a.label",
+          "followUpId": "astra.d1.a",
+          "immediate": "Power use −6 per Sol. Morale −3 per Sol (cold meals, dark rooms)",
+          "delayed": "Power ends the storm at about 16. Sol 7: Morale +5 (\"We planned ahead!\")"
+        },
+        {
+          "id": "b",
+          "labelId": "ui.d1.b.label",
+          "followUpId": "astra.d1.b",
+          "immediate": "Power +40 now. Commander HP −10 (half a Sol on the surface)",
+          "delayed": "Power ends the storm at about 38. Full sleep restores the HP by Sol 4"
+        },
+        {
+          "id": "c",
+          "labelId": "ui.d1.c.label",
+          "followUpId": "astra.d1.c",
+          "immediate": "No change",
+          "delayed": "Sol 6: Power hits 0. Power Emergency, Static Wipe and Heat Pump mini-games, Morale −10. No HP loss (crew sheltered in the Bedroom)"
+        }
+      ]
+    },
+    {
+      "id": "d2",
+      "sol": 8,
+      "radioDecision": false,
+      "titleId": "ui.d2.title",
+      "headerId": "ui.d2.header",
+      "alertId": "astra.d2.alert",
+      "choices": [
+        {
+          "id": "a",
+          "labelId": "ui.d2.a.label",
+          "followUpId": "astra.d2.a",
+          "immediate": "Water Sort mini-game; recycling back to 98%",
+          "delayed": "SP tight until Sol 10"
+        },
+        {
+          "id": "b",
+          "labelId": "ui.d2.b.label",
+          "followUpId": "astra.d2.b",
+          "immediate": "Water −15 per Sol until fixed",
+          "delayed": "Expedition 1 brings +20 bonus SP. Sol 11: filter fixed automatically (−12 SP). Water about −45 in total"
+        },
+        {
+          "id": "c",
+          "labelId": "ui.d2.c.label",
+          "followUpId": "astra.d2.c",
+          "immediate": "Water loss halved (−7 per Sol). Morale −2 and HP −2 per Sol (thirsty and tired)",
+          "delayed": "Sol 10: Workshop income pays for the fix. Morale and HP recover with sleep"
+        }
+      ]
+    },
+    {
+      "id": "d3",
+      "sol": 11,
+      "radioDecision": false,
+      "titleId": "ui.d3.title",
+      "headerId": "ui.d3.header",
+      "alertId": "astra.d3.alert",
+      "choices": [
+        {
+          "id": "a",
+          "labelId": "ui.d3.a.label",
+          "followUpId": "astra.d3.a",
+          "immediate": "−10 Water. A potato bed appears",
+          "delayed": "Sol 13: potatoes grow, but ASTRA's scan finds perchlorates before anyone eats them. Harvest composted. Morale −3. Choice B unlocks in the Lab menu"
+        },
+        {
+          "id": "b",
+          "labelId": "ui.d3.b.label",
+          "followUpId": "astra.d3.b",
+          "immediate": "Water dips (tight until Expedition 3)",
+          "delayed": "Sol 13: Soil Beds unlock. Greenhouse +3 Food per Sol and fresh crops +1 HP, for good. +5 Research"
+        },
+        {
+          "id": "c",
+          "labelId": "ui.d3.c.label",
+          "followUpId": "astra.d3.c",
+          "immediate": "No cost",
+          "delayed": "No bonus. Choice B stays available from the Lab menu"
+        }
+      ]
+    },
+    {
+      "id": "d4",
+      "sol": 16,
+      "radioDecision": false,
+      "titleId": "ui.d4.title",
+      "headerId": "ui.d4.header",
+      "alertId": "astra.d4.alert",
+      "choices": [
+        {
+          "id": "a",
+          "labelId": "ui.d4.a.label",
+          "followUpId": "astra.d4.a",
+          "immediate": "Greenhouse safe. Earth window missed. Morale −5",
+          "delayed": "Next Earth window on Sol 19"
+        },
+        {
+          "id": "b",
+          "labelId": "ui.d4.b.label",
+          "followUpId": "astra.d4.b",
+          "immediate": "Antenna Alignment mini-game. On success: Morale +10, Research +10, astra.act3.earth_reply plays",
+          "delayed": "Greenhouse gets cold: Food output −50% and no fresh-crop HP for 2 Sols; Nutrient Match triggers"
+        },
+        {
+          "id": "c",
+          "labelId": "ui.d4.c.label",
+          "followUpId": "astra.d4.c",
+          "immediate": "Food output −20% for 1 Sol. Lab has enough power for a text-only message: Morale +5",
+          "delayed": "No further cost"
+        }
+      ]
+    },
+    {
+      "id": "d5",
+      "sol": 18,
+      "radioDecision": true,
+      "titleId": "ui.d5.title",
+      "headerId": "ui.d5.header",
+      "alertId": "astra.d5.alert",
+      "choices": [
+        {
+          "id": "a",
+          "labelId": "ui.d5.a.label",
+          "followUpId": "astra.d5.a",
+          "immediate": "Crew HP −6 (driving through the start of the storm). Trip ends with half loot: Rare Battery Cell ×2, Lab Sensor Kit, Mineral Sample ×1, 10 SP",
+          "delayed": "Short 1 Rare Battery Cell. Expedition 4 becomes repeatable (1 Sol) to collect the rest"
+        },
+        {
+          "id": "b",
+          "labelId": "ui.d5.b.label",
+          "followUpId": "astra.d5.b",
+          "immediate": "Almost no flare HP loss: −2 (thick rock overhead counts like deep shielding). Morale −3 (a boring day)",
+          "delayed": "Full loot. Rover home on Sol 19, a Sol later; Tier 2 installs that Sol still finish in time for Sol 20"
+        },
+        {
+          "id": "c",
+          "labelId": "ui.d5.c.label",
+          "followUpId": "astra.d5.c",
+          "immediate": "Crew HP −14 (flare ×3 for half a Sol, reduced by shield, liner and RR). Full loot, on time",
+          "delayed": "Shielding worn out: re-craft for 15 SP before the next trip. Morale −3"
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "id": "e1",
+      "titleId": "ui.e1.title",
+      "headerId": "ui.e1.header",
+      "alertId": "astra.e1.alert",
+      "firstSol": 8,
+      "chancePerSol": 0.1,
+      "daytimeOnly": false,
+      "cooldownSols": 6,
+      "warning": "1 Sol with Lab T2 or Comms Officer (2 with both)",
+      "choices": [
+        {
+          "id": "a",
+          "labelId": "ui.e1.a.label",
+          "followUpId": "astra.e1.a",
+          "immediate": "Almost no HP loss (−1 in the shelter). Workshop and Greenhouse tasks pause: −3 SP, −5 Food",
+          "delayed": "None"
+        },
+        {
+          "id": "b",
+          "labelId": "ui.e1.b.label",
+          "followUpId": "astra.e1.b",
+          "immediate": "Anyone in an unfinished right-wing room: HP −9 (half a Sol at −18). Anyone in a finished room: HP −2. Anyone on the surface: flare ×3 formula",
+          "delayed": "None. HP recovers with sleep"
+        },
+        {
+          "id": "c",
+          "labelId": "ui.e1.c.label",
+          "followUpId": "astra.e1.c",
+          "immediate": "Crew shelters at the right moment; drones keep working. Only the tiny shelter dose (−1 HP)",
+          "delayed": "None"
+        }
+      ],
+      "forecastId": "astra.e1.watch",
+      "warningSols": {
+        "labT2OrComms": 1,
+        "both": 2
+      },
+      "name": "Solar Flare Radiation Spike"
+    },
+    {
+      "id": "e2",
+      "titleId": "ui.e2.title",
+      "headerId": "ui.e2.header",
+      "alertId": "astra.e2.alert",
+      "firstSol": 5,
+      "chancePerSol": 0.15,
+      "daytimeOnly": true,
+      "cooldownSols": 4,
+      "warning": "None",
+      "choices": [
+        {
+          "id": "a",
+          "labelId": "ui.e2.a.label",
+          "immediate": "Coin flip: 50% panels blown clean (Power +20% for 3 Sols); 50% panels dusted (Power −30% until Static Wipe)",
+          "delayed": "Effect lasts as stated",
+          "followUpIds": [
+            "astra.e2.a.clean",
+            "astra.e2.a.dusty"
+          ]
+        },
+        {
+          "id": "b",
+          "labelId": "ui.e2.b.label",
+          "followUpId": "astra.e2.b",
+          "immediate": "Power −50% for the rest of the Sol. No risk",
+          "delayed": "None"
+        },
+        {
+          "id": "c",
+          "labelId": "ui.e2.c.label",
+          "followUpId": "astra.e2.c",
+          "immediate": "Commander (or 1 astronaut) HP −5. Panels guaranteed clean; Power +10% for 3 Sols",
+          "delayed": "None"
+        }
+      ],
+      "name": "Electrostatic Dust Devil"
+    },
+    {
+      "id": "e3",
+      "titleId": "ui.e3.title",
+      "headerId": "ui.e3.header",
+      "alertId": "astra.e3.alert",
+      "firstSol": 10,
+      "chancePerSol": 0.1,
+      "daytimeOnly": false,
+      "cooldownSols": 5,
+      "warning": "None",
+      "choices": [
+        {
+          "id": "a",
+          "labelId": "ui.e3.a.label",
+          "followUpId": "astra.e3.a",
+          "immediate": "Seal Check variant: find the puff on the airlock wall and clamp it. Leak fixed",
+          "delayed": "None"
+        },
+        {
+          "id": "b",
+          "labelId": "ui.e3.b.label",
+          "followUpId": "astra.e3.b",
+          "immediate": "Leak stops now. −1 SP",
+          "delayed": "Leak returns after 3 Sols at half strength (Oxygen −2, Water −1 per Sol)"
+        },
+        {
+          "id": "c",
+          "labelId": "ui.e3.c.label",
+          "followUpId": "astra.e3.c",
+          "immediate": "No expeditions for 1 Sol. A drone fixes the leak (1 Sol of drone time)",
+          "delayed": "Airlock reopens next Sol"
+        }
+      ],
+      "name": "Airlock Micro-Leak"
+    },
+    {
+      "id": "e4",
+      "titleId": "ui.e4.title",
+      "headerId": "ui.e4.header",
+      "alertId": "astra.e4.alert",
+      "firstSol": 10,
+      "chancePerSol": 0.15,
+      "daytimeOnly": false,
+      "cooldownSols": 4,
+      "warning": "None",
+      "choices": [
+        {
+          "id": "a",
+          "labelId": "ui.e4.a.label",
+          "followUpId": "astra.e4.a",
+          "immediate": "LED & Nutrient Match mini-game. On win, Greenhouse back to normal",
+          "delayed": "None"
+        },
+        {
+          "id": "b",
+          "labelId": "ui.e4.b.label",
+          "followUpId": "astra.e4.b",
+          "immediate": "Water −10. Auto-fixed at the start of next Sol",
+          "delayed": "Food −40% until then"
+        },
+        {
+          "id": "c",
+          "labelId": "ui.e4.c.label",
+          "followUpId": "astra.e4.c",
+          "immediate": "Food output −40%, no fresh-crop HP",
+          "delayed": "After 2 Sols: plants wilt, Food −10, and the mini-game opens automatically"
+        }
+      ],
+      "name": "Hydroponic Nutrient Drift"
+    }
+  ],
+  "eventRules": {
+    "maxPerSol": 1,
+    "notOnStoryDilemmaSol": true,
+    "notWhileCommanderAway": true
+  },
+  "logbook": [
+    {
+      "id": "gravity",
+      "tier": "core",
+      "trigger": "astra.intro.landing",
+      "triggerIds": [
+        "astra.intro.landing"
+      ],
+      "titleId": "card.gravity.title",
+      "textId": "card.gravity.text",
+      "mission": "NASA Mars Fact Sheet",
+      "image": "logbook.gravity",
+      "sources": [
+        "https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html"
+      ]
+    },
+    {
+      "id": "no_shield",
+      "tier": "core",
+      "trigger": "astra.intro.why_underground",
+      "triggerIds": [
+        "astra.intro.why_underground"
+      ],
+      "titleId": "card.no_shield.title",
+      "textId": "card.no_shield.text",
+      "mission": "MAVEN",
+      "image": "logbook.no_shield",
+      "sources": [
+        "https://science.nasa.gov/missions/maven/nasas-maven-illuminates-new-understanding-of-auroras-at-mars/"
+      ]
+    },
+    {
+      "id": "soil_blanket",
+      "tier": "core",
+      "trigger": "astra.intro.why_underground",
+      "triggerIds": [
+        "astra.intro.why_underground"
+      ],
+      "titleId": "card.soil_blanket.title",
+      "textId": "card.soil_blanket.text",
+      "mission": "Curiosity RAD (model checked against it)",
+      "image": "logbook.soil_blanket",
+      "sources": [
+        "https://doi.org/10.1029/2019JE006246"
+      ]
+    },
+    {
+      "id": "sunlight",
+      "tier": "core",
+      "trigger": "astra.tut.solar_done",
+      "triggerIds": [
+        "astra.tut.solar_done"
+      ],
+      "titleId": "card.sunlight.title",
+      "textId": "card.sunlight.text",
+      "mission": "NASA Mars Fact Sheet",
+      "image": "logbook.sunlight",
+      "sources": [
+        "https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html"
+      ]
+    },
+    {
+      "id": "sol",
+      "tier": "core",
+      "trigger": "astra.tut.done",
+      "triggerIds": [
+        "astra.tut.done"
+      ],
+      "titleId": "card.sol.title",
+      "textId": "card.sol.text",
+      "mission": "NASA GISS Mars24",
+      "image": "logbook.sol",
+      "sources": [
+        "https://www.giss.nasa.gov/tools/mars24/help/notes.html"
+      ]
+    },
+    {
+      "id": "blue_sunset",
+      "tier": "bonus",
+      "trigger": "astra.act1.first_sunset",
+      "triggerIds": [
+        "astra.act1.first_sunset"
+      ],
+      "titleId": "card.blue_sunset.title",
+      "textId": "card.blue_sunset.text",
+      "mission": "NASA rover images",
+      "image": "logbook.cat.surface",
+      "sources": [
+        "https://science.nasa.gov/image-article/apod-2025-june-15-two-worlds-one-sun/"
+      ]
+    },
+    {
+      "id": "cold_nights",
+      "tier": "core",
+      "trigger": "astra.act1.first_dusk",
+      "triggerIds": [
+        "astra.act1.first_dusk"
+      ],
+      "titleId": "card.cold_nights.title",
+      "textId": "card.cold_nights.text",
+      "mission": "Perseverance (MEDA)",
+      "image": "logbook.cold_nights",
+      "sources": [
+        "https://www.jpl.nasa.gov/news/nasas-first-weather-report-from-jezero-crater-on-mars/"
+      ]
+    },
+    {
+      "id": "waste_heat",
+      "tier": "core",
+      "trigger": "astra.act1.battery_built",
+      "triggerIds": [
+        "astra.act1.battery_built"
+      ],
+      "titleId": "card.waste_heat.title",
+      "textId": "card.waste_heat.text",
+      "mission": "Perseverance",
+      "image": "logbook.waste_heat",
+      "sources": [
+        "https://www.jpl.nasa.gov/news/press_kits/mars_2020/landing/mission/spacecraft/power/"
+      ]
+    },
+    {
+      "id": "global_storms",
+      "tier": "core",
+      "trigger": "astra.act1.storm_begin",
+      "triggerIds": [
+        "astra.act1.storm_begin"
+      ],
+      "titleId": "card.global_storms.title",
+      "textId": "card.global_storms.text",
+      "mission": "Mars Reconnaissance Orbiter, Opportunity",
+      "image": "logbook.global_storms",
+      "sources": [
+        "https://science.nasa.gov/solar-system/planets/mars/10-things-massive-dust-storm-on-mars/"
+      ]
+    },
+    {
+      "id": "storm_temps",
+      "tier": "bonus",
+      "trigger": "Dilemma 1 alert",
+      "triggerIds": [
+        "astra.d1.alert"
+      ],
+      "titleId": "card.storm_temps.title",
+      "textId": "card.storm_temps.text",
+      "mission": "Curiosity",
+      "image": "logbook.cat.surface",
+      "sources": [
+        "https://www.nasa.gov/missions/how-a-tiny-curiosity-motor-identified-a-massive-martian-dust-storm/"
+      ]
+    },
+    {
+      "id": "printed_wrench",
+      "tier": "core",
+      "trigger": "astra.act1.workshop_built",
+      "triggerIds": [
+        "astra.act1.workshop_built"
+      ],
+      "titleId": "card.printed_wrench.title",
+      "textId": "card.printed_wrench.text",
+      "mission": "International Space Station",
+      "image": "logbook.printed_wrench",
+      "sources": [
+        "https://www.nasa.gov/mission_pages/station/research/news/3Dratchet_wrench"
+      ]
+    },
+    {
+      "id": "sticky_dust",
+      "tier": "core",
+      "trigger": "astra.act1.storm_end",
+      "triggerIds": [
+        "astra.act1.storm_end"
+      ],
+      "titleId": "card.sticky_dust.title",
+      "textId": "card.sticky_dust.text",
+      "mission": "NASA dust research",
+      "image": "logbook.sticky_dust",
+      "sources": [
+        "https://ntrs.nasa.gov/api/citations/20120003263/downloads/20120003263.pdf"
+      ]
+    },
+    {
+      "id": "sleep_missions",
+      "tier": "bonus",
+      "trigger": "astra.act1.first_sleep",
+      "triggerIds": [
+        "astra.act1.first_sleep"
+      ],
+      "titleId": "card.sleep_missions.title",
+      "textId": "card.sleep_missions.text",
+      "mission": "International Space Station",
+      "image": "logbook.cat.iss",
+      "sources": [
+        "https://www.nasa.gov/missions/station/seven-ways-astronauts-improve-sleep-may-help-you-snooze-better-on-earth/"
+      ]
+    },
+    {
+      "id": "green_air",
+      "tier": "bonus",
+      "trigger": "astra.act2.greenhouse_start",
+      "triggerIds": [
+        "astra.act2.greenhouse_start"
+      ],
+      "titleId": "card.green_air.title",
+      "textId": "card.green_air.text",
+      "mission": "NASA plant research",
+      "image": "logbook.cat.plants",
+      "sources": [
+        "https://ntrs.nasa.gov/citations/20170011105"
+      ]
+    },
+    {
+      "id": "perchlorates",
+      "tier": "core",
+      "trigger": "astra.act2.greenhouse_built",
+      "triggerIds": [
+        "astra.act2.greenhouse_built"
+      ],
+      "titleId": "card.perchlorates.title",
+      "textId": "card.perchlorates.text",
+      "mission": "Phoenix; US EPA",
+      "image": "logbook.perchlorates",
+      "sources": [
+        "https://www.jpl.nasa.gov/news/missing-piece-inspires-new-look-at-mars-puzzle/",
+        "https://www.epa.gov/sdwa/perchlorate-drinking-water-frequent-questions"
+      ]
+    },
+    {
+      "id": "purple_garden",
+      "tier": "core",
+      "trigger": "astra.act2.greenhouse_built",
+      "triggerIds": [
+        "astra.act2.greenhouse_built"
+      ],
+      "titleId": "card.purple_garden.title",
+      "textId": "card.purple_garden.text",
+      "mission": "Veggie (space station)",
+      "image": "logbook.purple_garden",
+      "sources": [
+        "https://www.nasa.gov/exploration-research-and-technology/growing-plants-in-space/"
+      ]
+    },
+    {
+      "id": "sharp_rocks",
+      "tier": "core",
+      "trigger": "astra.act2.garage_built",
+      "triggerIds": [
+        "astra.act2.garage_built"
+      ],
+      "titleId": "card.sharp_rocks.title",
+      "textId": "card.sharp_rocks.text",
+      "mission": "Curiosity",
+      "image": "logbook.sharp_rocks",
+      "sources": [
+        "https://jpl.nasa.gov/news/news.php?release=2014-028"
+      ]
+    },
+    {
+      "id": "space_salad",
+      "tier": "core",
+      "trigger": "astra.act2.first_harvest",
+      "triggerIds": [
+        "astra.act2.first_harvest"
+      ],
+      "titleId": "card.space_salad.title",
+      "textId": "card.space_salad.text",
+      "mission": "Veggie (space station)",
+      "image": "logbook.space_salad",
+      "sources": [
+        "https://www.nasa.gov/blogs/spacestation/2015/08/10/cosmonauts-complete-russian-spacewalk/"
+      ]
+    },
+    {
+      "id": "surface_dose",
+      "tier": "core",
+      "trigger": "astra.act3.radiation_lesson",
+      "triggerIds": [
+        "astra.act3.radiation_lesson"
+      ],
+      "titleId": "card.surface_dose.title",
+      "textId": "card.surface_dose.text",
+      "mission": "Curiosity RAD; US NRC",
+      "image": "logbook.surface_dose",
+      "sources": [
+        "https://www.nasa.gov/news-release/nasa-rover-results-include-first-age-measurement-on-mars-and-help-for-human-exploration/",
+        "https://www.nrc.gov/about-nrc/radiation/around-us/doses-daily-lives.html"
+      ]
+    },
+    {
+      "id": "slow_messages",
+      "tier": "core",
+      "trigger": "astra.act3.lab_built",
+      "triggerIds": [
+        "astra.act3.lab_built"
+      ],
+      "titleId": "card.slow_messages.title",
+      "textId": "card.slow_messages.text",
+      "mission": "NASA Mars Fact Sheet",
+      "image": "logbook.slow_messages",
+      "sources": [
+        "https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html"
+      ]
+    },
+    {
+      "id": "chapea",
+      "tier": "bonus",
+      "trigger": "astra.act3.rec_built",
+      "triggerIds": [
+        "astra.act3.rec_built"
+      ],
+      "titleId": "card.chapea.title",
+      "textId": "card.chapea.text",
+      "mission": "CHAPEA",
+      "image": "logbook.cat.earth",
+      "sources": [
+        "https://www.nasa.gov/missions/analog-field-testing/chapea/first-mars-crew-completes-yearlong-simulated-red-planet-nasa-mission/"
+      ]
+    },
+    {
+      "id": "marsquakes",
+      "tier": "core",
+      "trigger": "astra.act3.blackbox_react1",
+      "triggerIds": [
+        "astra.act3.blackbox_react1"
+      ],
+      "titleId": "card.marsquakes.title",
+      "textId": "card.marsquakes.text",
+      "mission": "InSight",
+      "image": "logbook.marsquakes",
+      "sources": [
+        "https://www.jpl.nasa.gov/news/nasa-retires-insight-mars-lander-mission-after-years-of-science/"
+      ]
+    },
+    {
+      "id": "methane",
+      "tier": "bonus",
+      "trigger": "astra.act3.blackbox_react2",
+      "triggerIds": [
+        "astra.act3.blackbox_react2"
+      ],
+      "titleId": "card.methane.title",
+      "textId": "card.methane.text",
+      "mission": "Curiosity",
+      "image": "logbook.cat.rover",
+      "sources": [
+        "https://www.nasa.gov/solar-system/curiositys-mars-methane-mystery-continues/"
+      ]
+    },
+    {
+      "id": "wet_soil",
+      "tier": "bonus",
+      "trigger": "astra.act3.roof_built",
+      "triggerIds": [
+        "astra.act3.roof_built"
+      ],
+      "titleId": "card.wet_soil.title",
+      "textId": "card.wet_soil.text",
+      "mission": "Curiosity RAD (model checked against it)",
+      "image": "logbook.cat.surface",
+      "sources": [
+        "https://doi.org/10.1029/2019JE006246"
+      ]
+    },
+    {
+      "id": "moxie",
+      "tier": "core",
+      "trigger": "astra.act3.ls_t2",
+      "triggerIds": [
+        "astra.act3.ls_t2"
+      ],
+      "titleId": "card.moxie.title",
+      "textId": "card.moxie.text",
+      "mission": "Perseverance (MOXIE)",
+      "image": "logbook.moxie",
+      "sources": [
+        "https://www.jpl.nasa.gov/news/nasas-oxygen-generating-experiment-moxie-completes-mars-mission/"
+      ]
+    },
+    {
+      "id": "brine",
+      "tier": "bonus",
+      "trigger": "astra.act3.deep_scan",
+      "triggerIds": [
+        "astra.act3.deep_scan"
+      ],
+      "titleId": "card.brine.title",
+      "textId": "card.brine.text",
+      "mission": "Curiosity",
+      "image": "logbook.cat.surface",
+      "sources": [
+        "https://www.jpl.nasa.gov/news/nasa-mars-rovers-weather-data-bolster-case-for-brine/"
+      ]
+    },
+    {
+      "id": "rock_pages",
+      "tier": "bonus",
+      "trigger": "radio.exp5.02",
+      "triggerIds": [
+        "radio.exp5.02"
+      ],
+      "titleId": "card.rock_pages.title",
+      "textId": "card.rock_pages.text",
+      "mission": "Curiosity",
+      "image": "logbook.cat.rover",
+      "sources": [
+        "https://www.jpl.nasa.gov/news/curiosity-peels-back-layers-on-ancient-martian-lake/"
+      ]
+    },
+    {
+      "id": "leopard_spots",
+      "tier": "core",
+      "trigger": "astra.finale.leopard",
+      "triggerIds": [
+        "astra.finale.leopard"
+      ],
+      "titleId": "card.leopard_spots.title",
+      "textId": "card.leopard_spots.text",
+      "mission": "Perseverance",
+      "image": "logbook.leopard_spots",
+      "sources": [
+        "https://www.nasa.gov/news-release/nasa-says-mars-rover-discovered-potential-biosignature-last-year/"
+      ]
+    },
+    {
+      "id": "sealed_samples",
+      "tier": "bonus",
+      "trigger": "radio.exp5.06",
+      "triggerIds": [
+        "radio.exp5.06"
+      ],
+      "titleId": "card.sealed_samples.title",
+      "textId": "card.sealed_samples.text",
+      "mission": "Perseverance",
+      "image": "logbook.cat.rover",
+      "sources": [
+        "https://www.jpl.nasa.gov/news/nasas-perseverance-rover-collects-first-mars-rock-sample/"
+      ]
+    },
+    {
+      "id": "long_stay",
+      "tier": "bonus",
+      "trigger": "astra.sandbox.milestone_50",
+      "triggerIds": [
+        "astra.sandbox.milestone_50"
+      ],
+      "titleId": "card.long_stay.title",
+      "textId": "card.long_stay.text",
+      "mission": "NASA Mars Design Reference Architecture 5.0",
+      "image": "logbook.cat.earth",
+      "sources": [
+        "https://www.nasa.gov/wp-content/uploads/2015/09/373665main_nasa-sp-2009-566.pdf"
+      ]
+    },
+    {
+      "id": "hydrogen_shield",
+      "tier": "bonus",
+      "trigger": "astra.rad.suit_liner",
+      "triggerIds": [
+        "astra.rad.suit_liner"
+      ],
+      "titleId": "card.hydrogen_shield.title",
+      "textId": "card.hydrogen_shield.text",
+      "mission": "NASA space radiation research",
+      "image": "logbook.cat.sun",
+      "sources": [
+        "https://three.jsc.nasa.gov/articles/CucinottaKimChappell0512.pdf"
+      ]
+    },
+    {
+      "id": "dose_adds_up",
+      "tier": "bonus",
+      "trigger": "astra.tut.hp_intro",
+      "triggerIds": [
+        "astra.tut.hp_intro"
+      ],
+      "titleId": "card.dose_adds_up.title",
+      "textId": "card.dose_adds_up.text",
+      "mission": "NASA crew health standards",
+      "image": "logbook.cat.sun",
+      "sources": [
+        "https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-020-radiation-protection.pdf"
+      ]
+    },
+    {
+      "id": "water_98",
+      "tier": "bonus",
+      "trigger": "astra.res.water_low",
+      "triggerIds": [
+        "astra.res.water_low"
+      ],
+      "titleId": "card.water_98.title",
+      "textId": "card.water_98.text",
+      "mission": "International Space Station",
+      "image": "logbook.cat.iss",
+      "sources": [
+        "https://www.nasa.gov/missions/station/iss-research/nasa-achieves-water-recovery-milestone-on-international-space-station/"
+      ]
+    },
+    {
+      "id": "dust_devils",
+      "tier": "bonus",
+      "trigger": "astra.t2.solar",
+      "triggerIds": [
+        "astra.t2.solar"
+      ],
+      "titleId": "card.dust_devils.title",
+      "textId": "card.dust_devils.text",
+      "mission": "Spirit",
+      "image": "logbook.cat.rover",
+      "sources": [
+        "https://science.nasa.gov/mission/mer-spirit/"
+      ]
+    },
+    {
+      "id": "stacked_farm",
+      "tier": "bonus",
+      "trigger": "astra.t2.greenhouse",
+      "triggerIds": [
+        "astra.t2.greenhouse"
+      ],
+      "titleId": "card.stacked_farm.title",
+      "textId": "card.stacked_farm.text",
+      "mission": "NASA plant research spinoff",
+      "image": "logbook.cat.plants",
+      "sources": [
+        "https://spinoff.nasa.gov/indoor-farming"
+      ]
+    },
+    {
+      "id": "rover_marathon",
+      "tier": "bonus",
+      "trigger": "astra.t2.garage",
+      "triggerIds": [
+        "astra.t2.garage"
+      ],
+      "titleId": "card.rover_marathon.title",
+      "textId": "card.rover_marathon.text",
+      "mission": "Opportunity",
+      "image": "logbook.cat.rover",
+      "sources": [
+        "https://www.jpl.nasa.gov/news/nasas-opportunity-mars-rover-passes-marathon-distance/"
+      ]
+    },
+    {
+      "id": "insight_dust",
+      "tier": "bonus",
+      "trigger": "4.1 ASTRA",
+      "triggerIds": [
+        "astra.mg.solar_wipe"
+      ],
+      "titleId": "card.insight_dust.title",
+      "textId": "card.insight_dust.text",
+      "mission": "InSight",
+      "image": "logbook.cat.surface",
+      "sources": [
+        "https://www.jpl.nasa.gov/news/nasa-retires-insight-mars-lander-mission-after-years-of-science/"
+      ]
+    },
+    {
+      "id": "dust_hitchhikers",
+      "tier": "bonus",
+      "trigger": "4.2 ASTRA",
+      "triggerIds": [
+        "astra.mg.air_filter_scrub"
+      ],
+      "titleId": "card.dust_hitchhikers.title",
+      "textId": "card.dust_hitchhikers.text",
+      "mission": "Perseverance dust studies",
+      "image": "logbook.cat.surface",
+      "sources": [
+        "https://www.nasa.gov/missions/mars-2020-perseverance/nasas-perseverance-offers-clues-to-protect-crews-from-mars-dust/"
+      ]
+    },
+    {
+      "id": "too_much_co2",
+      "tier": "bonus",
+      "trigger": "4.3 ASTRA",
+      "triggerIds": [
+        "astra.mg.valve_balance"
+      ],
+      "titleId": "card.too_much_co2.title",
+      "textId": "card.too_much_co2.text",
+      "mission": "International Space Station",
+      "image": "logbook.cat.iss",
+      "sources": [
+        "https://www.nasa.gov/missions/station/iss-research/science-in-space-august-4-2023-spacecraft-air-quality/"
+      ]
+    },
+    {
+      "id": "thin_air",
+      "tier": "bonus",
+      "trigger": "4.8 ASTRA",
+      "triggerIds": [
+        "astra.mg.suit_seal_check"
+      ],
+      "titleId": "card.thin_air.title",
+      "textId": "card.thin_air.text",
+      "mission": "Curiosity",
+      "image": "logbook.cat.surface",
+      "sources": [
+        "https://www.jpl.nasa.gov/news/nasa-rover-finds-clues-to-changes-in-mars-atmosphere/"
+      ]
+    },
+    {
+      "id": "radiation_badge",
+      "tier": "bonus",
+      "trigger": "4.8 ASTRA",
+      "triggerIds": [
+        "astra.mg.suit_seal_check"
+      ],
+      "titleId": "card.radiation_badge.title",
+      "textId": "card.radiation_badge.text",
+      "mission": "NASA crew health standards",
+      "image": "logbook.cat.iss",
+      "sources": [
+        "https://www.nasa.gov/wp-content/uploads/2025/09/ochmo-tb-050-spacesuits.pdf"
+      ]
+    },
+    {
+      "id": "last_storm",
+      "tier": "bonus",
+      "trigger": "Dilemma 1, choice A follow-up",
+      "triggerIds": [
+        "astra.d1.a"
+      ],
+      "titleId": "card.last_storm.title",
+      "textId": "card.last_storm.text",
+      "mission": "Opportunity",
+      "image": "logbook.cat.rover",
+      "sources": [
+        "https://www.nasa.gov/news-release/nasas-record-setting-opportunity-rover-mission-on-mars-comes-to-end/"
+      ]
+    },
+    {
+      "id": "no_showers",
+      "tier": "bonus",
+      "trigger": "Dilemma 2, choice C follow-up",
+      "triggerIds": [
+        "astra.d2.c"
+      ],
+      "titleId": "card.no_showers.title",
+      "textId": "card.no_showers.text",
+      "mission": "International Space Station",
+      "image": "logbook.cat.iss",
+      "sources": [
+        "https://www.nasa.gov/image-article/astronaut-koichi-wakata-demonstrates-washing-his-hair-space/"
+      ]
+    },
+    {
+      "id": "plants_soak",
+      "tier": "bonus",
+      "trigger": "Dilemma 3, choice A follow-up",
+      "triggerIds": [
+        "astra.d3.a"
+      ],
+      "titleId": "card.plants_soak.title",
+      "textId": "card.plants_soak.text",
+      "mission": "Plant science (Environ. Sci. Technol. 2007)",
+      "image": "logbook.cat.plants",
+      "sources": [
+        "https://doi.org/10.1021/es062337s"
+      ]
+    },
+    {
+      "id": "soil_wash",
+      "tier": "bonus",
+      "trigger": "Dilemma 3, choice B follow-up",
+      "triggerIds": [
+        "astra.d3.b"
+      ],
+      "titleId": "card.soil_wash.title",
+      "textId": "card.soil_wash.text",
+      "mission": "Soil science (Soil Systems 2021)",
+      "image": "logbook.cat.plants",
+      "sources": [
+        "https://doi.org/10.3390/soilsystems5030037"
+      ]
+    },
+    {
+      "id": "fast_particles",
+      "tier": "bonus",
+      "trigger": "Dilemma 5 alert; Event 1 alert",
+      "triggerIds": [
+        "astra.d5.alert",
+        "astra.e1.alert"
+      ],
+      "titleId": "card.fast_particles.title",
+      "textId": "card.fast_particles.text",
+      "mission": "MAVEN, Curiosity",
+      "image": "logbook.cat.sun",
+      "sources": [
+        "https://www.nasa.gov/solar-system/planets/mars/nasa-watches-mars-light-up-during-epic-solar-storm/"
+      ]
+    },
+    {
+      "id": "cliff_shelter",
+      "tier": "bonus",
+      "trigger": "Dilemma 5, choice B follow-up",
+      "triggerIds": [
+        "astra.d5.b"
+      ],
+      "titleId": "card.cliff_shelter.title",
+      "textId": "card.cliff_shelter.text",
+      "mission": "Curiosity RAD",
+      "image": "logbook.cat.sun",
+      "sources": [
+        "https://www.jpl.nasa.gov/news/nasa-watches-mars-light-up-during-epic-solar-storm/"
+      ]
+    },
+    {
+      "id": "flare_forecast",
+      "tier": "bonus",
+      "trigger": "Event 1 early warning",
+      "triggerIds": [
+        "astra.e1.watch"
+      ],
+      "titleId": "card.flare_forecast.title",
+      "textId": "card.flare_forecast.text",
+      "mission": "NOAA Space Weather Prediction Center",
+      "image": "logbook.cat.sun",
+      "sources": [
+        "https://swpc-drupal.woc.noaa.gov/phenomena/solar-flares-radio-blackouts"
+      ]
+    },
+    {
+      "id": "thirty_xrays",
+      "tier": "bonus",
+      "trigger": "Event 1, choice A follow-up",
+      "triggerIds": [
+        "astra.e1.a"
+      ],
+      "titleId": "card.thirty_xrays.title",
+      "textId": "card.thirty_xrays.text",
+      "mission": "Curiosity RAD",
+      "image": "logbook.cat.sun",
+      "sources": [
+        "https://www.jpl.nasa.gov/news/nasa-watches-mars-light-up-during-epic-solar-storm/"
+      ]
+    },
+    {
+      "id": "tea_leaves",
+      "tier": "bonus",
+      "trigger": "Event 3, choice A follow-up",
+      "triggerIds": [
+        "astra.e3.a"
+      ],
+      "titleId": "card.tea_leaves.title",
+      "textId": "card.tea_leaves.text",
+      "mission": "International Space Station (Roscosmos report)",
+      "image": "logbook.cat.iss",
+      "sources": [
+        "https://www.universetoday.com/148443/the-crew-of-the-iss-has-found-the-source-of-the-stations-air-leak"
+      ]
+    },
+    {
+      "id": "space_flowers",
+      "tier": "bonus",
+      "trigger": "Event 4, choice A follow-up",
+      "triggerIds": [
+        "astra.e4.a"
+      ],
+      "titleId": "card.space_flowers.title",
+      "textId": "card.space_flowers.text",
+      "mission": "Veggie (space station)",
+      "image": "logbook.cat.plants",
+      "sources": [
+        "https://www.nasa.gov/exploration-research-and-technology/growing-plants-in-space/"
+      ]
+    },
+    {
+      "id": "weather_station",
+      "tier": "bonus",
+      "trigger": "Expedition 1, ASTRA on return",
+      "triggerIds": [
+        "astra.exp1.return"
+      ],
+      "titleId": "card.weather_station.title",
+      "textId": "card.weather_station.text",
+      "mission": "Perseverance (MEDA)",
+      "image": "logbook.cat.rover",
+      "sources": [
+        "https://www.jpl.nasa.gov/news/mars-is-getting-a-new-robotic-meteorologist/"
+      ]
+    },
+    {
+      "id": "wind_ripples",
+      "tier": "bonus",
+      "trigger": "Expedition 1 radio, 30%",
+      "triggerIds": [
+        "radio.exp1.30"
+      ],
+      "titleId": "card.wind_ripples.title",
+      "textId": "card.wind_ripples.text",
+      "mission": "NASA orbiters and rovers",
+      "image": "logbook.cat.surface",
+      "sources": [
+        "https://science.nasa.gov/photojournal/ripples-or-dunes/"
+      ]
+    },
+    {
+      "id": "hidden_ice",
+      "tier": "bonus",
+      "trigger": "Expedition 3, ASTRA on return",
+      "triggerIds": [
+        "astra.exp3.return"
+      ],
+      "titleId": "card.hidden_ice.title",
+      "textId": "card.hidden_ice.text",
+      "mission": "Mars Odyssey, MRO (SWIM project)",
+      "image": "logbook.cat.surface",
+      "sources": [
+        "https://www.jpl.nasa.gov/news/nasa-is-locating-ice-on-mars-with-this-new-map/"
+      ]
+    },
+    {
+      "id": "ingenuity",
+      "tier": "core",
+      "trigger": "Expedition 4, ASTRA at 20%",
+      "triggerIds": [
+        "astra.exp4.at20"
+      ],
+      "titleId": "card.ingenuity.title",
+      "textId": "card.ingenuity.text",
+      "mission": "Ingenuity",
+      "image": "logbook.ingenuity",
+      "sources": [
+        "https://www.nasa.gov/news-release/after-three-years-on-mars-nasas-ingenuity-helicopter-mission-ends/"
+      ]
+    },
+    {
+      "id": "ancient_lake",
+      "tier": "bonus",
+      "trigger": "Expedition 4, ASTRA at 35%",
+      "triggerIds": [
+        "astra.exp4.at35"
+      ],
+      "titleId": "card.ancient_lake.title",
+      "textId": "card.ancient_lake.text",
+      "mission": "Perseverance",
+      "image": "logbook.cat.surface",
+      "sources": [
+        "https://www.nasa.gov/solar-system/nasas-perseverance-rover-arrives-at-delta-for-new-science-campaign/"
+      ]
+    },
+    {
+      "id": "strong_in_space",
+      "tier": "bonus",
+      "trigger": "astra.fit.intro",
+      "triggerIds": [
+        "astra.fit.intro"
+      ],
+      "titleId": "card.strong_in_space.title",
+      "textId": "card.strong_in_space.text",
+      "mission": "International Space Station",
+      "image": "logbook.cat.iss",
+      "sources": [
+        "https://www.nasa.gov/missions/station/iss-research/counteracting-bone-and-muscle-loss-in-microgravity/"
+      ]
+    },
+    {
+      "id": "mars_gravity_body",
+      "tier": "bonus",
+      "trigger": "astra.fit.mars",
+      "triggerIds": [
+        "astra.fit.mars"
+      ],
+      "titleId": "card.mars_gravity_body.title",
+      "textId": "card.mars_gravity_body.text",
+      "mission": "Physiology research (Frontiers in Physiology 2019)",
+      "image": "logbook.cat.earth",
+      "sources": [
+        "https://doi.org/10.3389/fphys.2019.00899"
+      ]
+    }
+  ],
+  "badges": [
+    {
+      "id": "perchlorate_wash",
+      "nameId": "badge.perchlorate_wash.name",
+      "textId": "badge.perchlorate_wash.text",
+      "earnedWhen": "Dilemma 3: choose B, wash the soil first",
+      "card": "soil_wash"
+    },
+    {
+      "id": "flare_safe",
+      "nameId": "badge.flare_safe.name",
+      "textId": "badge.flare_safe.text",
+      "earnedWhen": "Every solar flare in the run costs each astronaut at most the shelter dose (1 HP or less)",
+      "card": "fast_particles"
+    },
+    {
+      "id": "forecaster",
+      "nameId": "badge.forecaster.name",
+      "textId": "badge.forecaster.text",
+      "earnedWhen": "Use an early warning to choose Event 1, C (planned shelter)",
+      "card": "flare_forecast"
+    },
+    {
+      "id": "storm_ready",
+      "nameId": "badge.storm_ready.name",
+      "textId": "badge.storm_ready.text",
+      "earnedWhen": "Dilemma 1: choose A or B, preparing before the dust storm",
+      "card": "global_storms"
+    },
+    {
+      "id": "closed_loop",
+      "nameId": "badge.closed_loop.name",
+      "textId": "badge.closed_loop.text",
+      "earnedWhen": "Keep the water recycler at 98% for 10 Sols in a row",
+      "card": "water_98"
+    },
+    {
+      "id": "air_from_mars",
+      "nameId": "badge.air_from_mars.name",
+      "textId": "badge.air_from_mars.text",
+      "earnedWhen": "Build Life Support Tier 2 (MOXIE-X)",
+      "card": "moxie"
+    },
+    {
+      "id": "under_the_blanket",
+      "nameId": "badge.under_the_blanket.name",
+      "textId": "badge.under_the_blanket.text",
+      "earnedWhen": "Build the Regolith Roof Layer",
+      "card": "soil_blanket"
+    },
+    {
+      "id": "panel_sweeper",
+      "nameId": "badge.panel_sweeper.name",
+      "textId": "badge.panel_sweeper.text",
+      "earnedWhen": "Win Solar Panel Static Wipe 5 times",
+      "card": "sticky_dust"
+    },
+    {
+      "id": "ice_miner",
+      "nameId": "badge.ice_miner.name",
+      "textId": "badge.ice_miner.text",
+      "earnedWhen": "Melt 5 Ice Cores",
+      "card": "hidden_ice"
+    },
+    {
+      "id": "strong_bones",
+      "nameId": "badge.strong_bones.name",
+      "textId": "badge.strong_bones.text",
+      "earnedWhen": "Keep Fitness at 70 or more for 10 Sols in a row",
+      "card": "strong_in_space"
+    },
+    {
+      "id": "well_rested",
+      "nameId": "badge.well_rested.name",
+      "textId": "badge.well_rested.text",
+      "earnedWhen": "Sleep 8 hours or more every Sol from Sol 1 to Sol 6",
+      "card": "sleep_missions"
+    },
+    {
+      "id": "first_contact",
+      "nameId": "badge.first_contact.name",
+      "textId": "badge.first_contact.text",
+      "earnedWhen": "Complete the first Earth contact (Antenna Alignment)",
+      "card": "slow_messages"
+    },
+    {
+      "id": "space_gardener",
+      "nameId": "badge.space_gardener.name",
+      "textId": "badge.space_gardener.text",
+      "earnedWhen": "Harvest 50 Food from the Greenhouse",
+      "card": "green_air"
+    },
+    {
+      "id": "look_dont_touch",
+      "nameId": "badge.look_dont_touch.name",
+      "textId": "badge.look_dont_touch.text",
+      "earnedWhen": "Pass Ingenuity on Expedition 4",
+      "card": "ingenuity"
+    },
+    {
+      "id": "biosignature_hunter",
+      "nameId": "badge.biosignature_hunter.name",
+      "textId": "badge.biosignature_hunter.text",
+      "earnedWhen": "Bring the Canyon Samples home (Expedition 5)",
+      "card": "leopard_spots"
+    }
+  ]
+}
