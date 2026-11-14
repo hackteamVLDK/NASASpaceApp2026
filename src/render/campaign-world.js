@@ -212,13 +212,13 @@ export function drawCampaign(ctx, atlas, S) {
     const a = mv.pos ?? goal;
     const working = Boolean(siteId) && arrived(mv);
     let frame;
-    if (d.status !== 'awake') frame = Math.floor(wm / 500) % 2 === 0 ? 0 : 1;
+    if (d.status !== 'awake') frame = prefs.reduceMotion || Math.floor(wm / 500) % 2 === 0 ? 0 : 1; // the red LED blinks; steady (lit) with Reduce motion (C21)
     else if (digging) frame = 20 + (Math.floor(wm / 220) % 4);
     else if (mv.climbing) frame = 6 + (Math.floor(wm / 250) % 2); // hovering up or down the shaft
     else if (mv.moving) frame = siteId ? 16 + (Math.floor(wm / 220) % 2) : 8 + (Math.floor(wm / 110) % 4); // carrying a girder to the site, or just rolling
     else if (working) frame = 12 + (Math.floor(wm / 180) % 4); // welding, by day and by night: drones never sleep
-    else if (!day) frame = 18 + (Math.floor(wm / 800) % 2); // idle at night: powered down for the dark
-    else frame = 6 + (Math.floor(wm / 500) % 2);
+    else if (!day) frame = 18 + (prefs.reduceMotion ? 0 : Math.floor(wm / 800) % 2); // idle at night: powered down for the dark
+    else frame = 6 + (prefs.reduceMotion ? 0 : Math.floor(wm / 500) % 2); // idle by day: a small bob, none with Reduce motion
     surfacePaint(`drone:${d.id}`, { x: a.x - 50, y: a.y - DRONE_H - 24, w: 100, h: DRONE_H + 34 }, (g) => {
       atlas.sprite(g, 'drone', frame, a.x, a.y, { h: DRONE_H, box: union, flip: mv.moving && !mv.climbing && mv.faceLeft });
       g.fillStyle = DRONE_BUMPERS[d.id]; g.fillRect(a.x - 13, a.y - 9, 26, 4);
