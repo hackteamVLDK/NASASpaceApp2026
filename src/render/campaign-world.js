@@ -14,6 +14,8 @@ import { buildSoil, SCREEN, CREW_COLORS, DRONE_BUMPERS, SOIL } from './world.js'
 import { SURFACE, PERSON_H, DRONE_H, SHAFT_X, GROUND_Y, LADDER, roomRect, anchor, feetY, bedroomSpots, garageSpots, baseBottom, rightWingWidth } from './geometry.js';
 import { onSurface, createMover, setGoal, advance, place as placeAt, arrived, roverPose, ROVER } from './movers.js';
 import { CLIMB_FRAMES } from './ladders.js';
+import { SURFACE_LIGHTING } from '../data/surface-lighting.js';
+import { surfaceEffects, paintSurfaceEffects } from './surface-lighting.js';
 
 export { SCREEN, buildSoil, roomRect, anchor };
 
@@ -66,6 +68,19 @@ export function drawCampaign(ctx, atlas, S) {
   const dusk = Math.max(0, 1 - Math.abs(clock.hourFloat - 18) / 2.5); // golden hour
   const dark = clock.hourFloat >= 22 || clock.hourFloat < 5 ? 1 : clock.hourFloat < 6 ? 6 - clock.hourFloat : clock.hourFloat >= 21 ? clock.hourFloat - 21 : 0;
   const ground = LAYOUT.groundY + 4;
+  const effects = surfaceEffects({ dark, dusk, storm: s.storm, flare: s.flags.flare });
+  // Apply weather separately so focusing the Garage never lights up the drones in front of it.
+  const surfacePaint = (id, bounds, paint, outside = true, cacheKey = id) => {
+    if (!outside || !effects.length || (id && (id === S.highlight || id === S.hover))) { paint(ctx); return; }
+    paintSurfaceEffects(ctx, cacheKey, bounds, paint, effects);
+  };
+  const surfaceSprite = (id, sheet, frame, x, y, options) => {
+    const own = atlas.bbox(sheet, frame);
+    const box = options.box ?? own;
+    const scale = options.h ? options.h / box.h : options.w / box.w;
+    const w = own.w * scale, h = own.h * scale;
+    surfacePaint(id, { x: x - w / 2, y: y - h, w, h }, (g) => atlas.sprite(g, sheet, frame, x, y, options), true, `${id}:${sheet}`);
+  };
 
   // ---- sky, soil
   atlas.cell(ctx, 'sky', 0, SOIL_X.x0, -250, SOIL_X.x1 - SOIL_X.x0, LAYOUT.groundY + 270);
@@ -76,20 +91,32 @@ export function drawCampaign(ctx, atlas, S) {
     ctx.globalAlpha = 1;
   }
 
+  // Weather reaches the feet and blends into the surface soil, rather than ending above the ground.
+  for (const effect of effects) {
+    const tint = `rgba(${effect.tint},${effect.opacity})`;
+    ctx.fillStyle = tint;
+    ctx.fillRect(SOIL_X.x0, -250, SOIL_X.x1 - SOIL_X.x0, GROUND_Y + 250);
+    const fade = ctx.createLinearGradient(0, GROUND_Y, 0, GROUND_Y + SURFACE_LIGHTING.groundFadeDepth);
+    fade.addColorStop(0, tint);
+    fade.addColorStop(1, `rgba(${effect.tint},0)`);
+    ctx.fillStyle = fade;
+    ctx.fillRect(SOIL_X.x0, GROUND_Y, SOIL_X.x1 - SOIL_X.x0, SURFACE_LIGHTING.groundFadeDepth);
+  }
+
   // ---- shaft down to the lowest floor
   for (let y = LAYOUT.groundY - 4; y < baseBottom; y += LAYOUT.floorHeight) atlas.cell(ctx, 'shaft', y === LAYOUT.groundY - 4 ? 1 : 0, LAYOUT.shaftX, y, LAYOUT.shaftWidth, Math.min(LAYOUT.floorHeight, baseBottom - y));
 
   // ---- surface
   const dusty = s.storm || s.tasks.some((t) => t.game === 'solar_wipe') || s.mult.solar < 0.95 || !s.flags.panelsCleaned;
-  atlas.sprite(ctx, 'solar', dusty ? 0 : 2, SURFACE.solar.x, ground, { w: SURFACE.solar.w });
-  atlas.sprite(ctx, 'antenna', s.flags.antennaFixed || s.modules.lab.status === 'online' ? 1 : 0, SURFACE.antenna.x, ground, { h: SURFACE.antenna.h });
+  surfaceSprite('module:solar', 'solar', dusty ? 0 : 2, SURFACE.solar.x, ground, { w: SURFACE.solar.w });
+  surfaceSprite('antenna', 'antenna', s.flags.antennaFixed || s.modules.lab.status === 'online' ? 1 : 0, SURFACE.antenna.x, ground, { h: SURFACE.antenna.h });
   // the hatch of the dome is open while someone stands at it (or the cutscene says so)
   const droneMovers = S.droneMovers ?? (S.droneMovers = {});
   const nearHatch = (p) => p && onSurface(p) && Math.abs(p.x - SHAFT_X) < 170;
   const hatchOpen = cut ? Boolean(cut.airlockOpen) : nearHatch(S.walker?.pos) || Object.values(droneMovers).some((m) => nearHatch(m.pos));
-  atlas.sprite(ctx, 'airlock', hatchOpen ? 1 : 0, SURFACE.airlock.x, ground, { w: SURFACE.airlock.w });
-  if (!cut || cut.landed) atlas.sprite(ctx, 'lander', 1, SURFACE.lander.x, ground, { w: SURFACE.lander.w });
-  if (cut?.showMound) SURFACE.mound.forEach((m) => atlas.sprite(ctx, 'mound', 0, m.x, ground, { w: m.w, flip: m.flip })); // the cutscene only: afterwards the drones wait in the Garage
+  surfaceSprite('airlock', 'airlock', hatchOpen ? 1 : 0, SURFACE.airlock.x, ground, { w: SURFACE.airlock.w });
+  if (!cut || cut.landed) surfaceSprite('lander', 'lander', 1, SURFACE.lander.x, ground, { w: SURFACE.lander.w });
+  if (cut?.showMound) SURFACE.mound.forEach((m, i) => surfaceSprite(`mound:${i}`, 'mound', 0, m.x, ground, { w: m.w, flip: m.flip })); // the cutscene only: afterwards the drones wait in the Garage
 
   // ---- the lander in flight (cutscene)
   if (cut?.lander?.visible && !cut.lander.landed) {
@@ -108,17 +135,6 @@ export function drawCampaign(ctx, atlas, S) {
     atlas.sprite(ctx, 'dust', f, SURFACE.lander.x + 60, ground + 6, { w: 280, flip: true });
   }
 
-  // ---- weather and night over the surface
-  const sky = { x: SOIL_X.x0, y: -250, w: SOIL_X.x1 - SOIL_X.x0, h: LAYOUT.groundY + 250 - 4 };
-  if (s.storm) {
-    ctx.fillStyle = 'rgba(200,110,40,0.38)'; ctx.fillRect(sky.x, sky.y, sky.w, sky.h);
-    ctx.fillStyle = 'rgba(235,165,95,0.42)';
-    for (let i = 0; i < 70; i++) ctx.fillRect(-1250 + ((i * 313 + wm * (0.55 + (i % 5) * 0.18)) % 4500), 540 + ((i * 131) % 500), 70 + (i % 4) * 40, 5);
-  }
-  if (dusk > 0 && !s.storm) { ctx.fillStyle = `rgba(80,110,200,${dusk * 0.22})`; ctx.fillRect(sky.x, sky.y, sky.w, sky.h); } // the blue Martian sunset
-  if (dark > 0) { ctx.fillStyle = `rgba(6,10,40,${dark * 0.62})`; ctx.fillRect(sky.x, sky.y, sky.w, sky.h); }
-  if (s.flags.flare) { ctx.fillStyle = 'rgba(140,255,120,0.18)'; ctx.fillRect(sky.x, sky.y, sky.w, sky.h); }
-
   hits.push({ id: 'surface', x: 130, y: LAYOUT.groundY - 330, w: 2500, h: 330 });
   // ---- left wing (always built)
   for (const [id, pic] of Object.entries(LEFT_PIC)) {
@@ -132,24 +148,26 @@ export function drawCampaign(ctx, atlas, S) {
     const m = s.modules[id];
     const built = m.status === 'online';
     const progress = built ? 1 : m.status === 'building' ? m.progress : 0;
-    if (id in FRAME) {
-      atlas.cell(ctx, 'unfinished', FRAME[id], r.x, r.y, r.w, r.h);
-      if (progress > 0) { ctx.globalAlpha = built ? 1 : 0.15 + progress * 0.8; atlas.cell(ctx, 'finished', FRAME[id], r.x, r.y, r.w, r.h); ctx.globalAlpha = 1; }
-    } else {
-      // Greenhouse, Recreation and the surface Garage each have unfinished | finished frames.
-      atlas.cell(ctx, id, 0, r.x, r.y, r.w, r.h);
-      if (progress > 0) { ctx.globalAlpha = built ? 1 : 0.15 + progress * 0.8; atlas.cell(ctx, id, 1, r.x, r.y, r.w, r.h); ctx.globalAlpha = 1; }
-    }
-    if (m.status === 'building') {
-      ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(r.x + 20, r.y + r.h - 40, r.w - 40, 16);
-      ctx.fillStyle = '#FFB000'; ctx.fillRect(r.x + 20, r.y + r.h - 40, (r.w - 40) * m.progress, 16);
-    }
-    if (m.status === 'unbuilt') {
-      // The outdoor garage has a transparent curved outline; keep the sky outside it clear.
-      if (id !== 'garage') { ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(r.x, r.y, r.w, r.h); }
-      atlas.cell(ctx, 'icons', ICON.lock, r.x + r.w - 76, r.y + 14, 56, 56);
-    }
-    if (m.tier === 2) { ctx.fillStyle = '#FFB000'; ctx.font = 'bold 34px sans-serif'; ctx.textAlign = 'right'; ctx.fillText('T2', r.x + r.w - 16, r.y + 44); }
+    surfacePaint(`module:${id}`, r, (g) => {
+      if (id in FRAME) {
+        atlas.cell(g, 'unfinished', FRAME[id], r.x, r.y, r.w, r.h);
+        if (progress > 0) { g.globalAlpha = built ? 1 : 0.15 + progress * 0.8; atlas.cell(g, 'finished', FRAME[id], r.x, r.y, r.w, r.h); g.globalAlpha = 1; }
+      } else {
+        // Greenhouse, Recreation and the surface Garage each have unfinished | finished frames.
+        atlas.cell(g, id, 0, r.x, r.y, r.w, r.h);
+        if (progress > 0) { g.globalAlpha = built ? 1 : 0.15 + progress * 0.8; atlas.cell(g, id, 1, r.x, r.y, r.w, r.h); g.globalAlpha = 1; }
+      }
+      if (m.status === 'building') {
+        g.fillStyle = 'rgba(0,0,0,0.55)'; g.fillRect(r.x + 20, r.y + r.h - 40, r.w - 40, 16);
+        g.fillStyle = '#FFB000'; g.fillRect(r.x + 20, r.y + r.h - 40, (r.w - 40) * m.progress, 16);
+      }
+      if (m.status === 'unbuilt') {
+        // The outdoor garage has a transparent curved outline; keep the sky outside it clear.
+        if (id !== 'garage') { g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(r.x, r.y, r.w, r.h); }
+        atlas.cell(g, 'icons', ICON.lock, r.x + r.w - 76, r.y + 14, 56, 56);
+      }
+      if (m.tier === 2) { g.fillStyle = '#FFB000'; g.font = 'bold 34px sans-serif'; g.textAlign = 'right'; g.fillText('T2', r.x + r.w - 16, r.y + 44); }
+    }, LAYOUT.rooms[id].wing === 'surface');
     hits.push({ id: `module:${id}`, ...r });
   }
   // power shortage: rooms go dark
@@ -166,7 +184,7 @@ export function drawCampaign(ctx, atlas, S) {
   const garage = garageSpots();
   const rp = roverPose(S.rover?.phase ?? (s.away ? 'gone' : 'parked'), S.rover?.k ?? 0);
   if (online(s, 'garage') && rp.visible && !cut) {
-    atlas.sprite(ctx, 'rover', rp.driving ? 1 + (Math.floor(wm / 130) % 2) : 0, rp.x, GROUND_Y, { w: ROVER.width });
+    surfaceSprite('module:garage', 'rover', rp.driving ? 1 + (Math.floor(wm / 130) % 2) : 0, rp.x, GROUND_Y, { w: ROVER.width });
     hits.push({ id: 'module:garage', x: rp.x - ROVER.width / 2, y: GROUND_Y - 90, w: ROVER.width, h: 90 });
   }
 
@@ -194,10 +212,12 @@ export function drawCampaign(ctx, atlas, S) {
     else if (working) frame = 12 + (Math.floor(wm / 180) % 4); // welding, by day and by night: drones never sleep
     else if (!day) frame = 18 + (Math.floor(wm / 800) % 2); // idle at night: powered down for the dark
     else frame = 6 + (Math.floor(wm / 500) % 2);
-    atlas.sprite(ctx, 'drone', frame, a.x, a.y, { h: DRONE_H, box: union, flip: mv.moving && !mv.climbing && mv.faceLeft });
-    ctx.fillStyle = DRONE_BUMPERS[d.id]; ctx.fillRect(a.x - 13, a.y - 9, 26, 4);
-    ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center'; ctx.lineJoin = 'round'; ctx.lineWidth = 6; ctx.strokeStyle = '#1a0c10';
-    ctx.strokeText(NICK[d.id], a.x, a.y - DRONE_H - 6); ctx.fillStyle = '#fff'; ctx.fillText(NICK[d.id], a.x, a.y - DRONE_H - 6);
+    surfacePaint(`drone:${d.id}`, { x: a.x - 50, y: a.y - DRONE_H - 24, w: 100, h: DRONE_H + 34 }, (g) => {
+      atlas.sprite(g, 'drone', frame, a.x, a.y, { h: DRONE_H, box: union, flip: mv.moving && !mv.climbing && mv.faceLeft });
+      g.fillStyle = DRONE_BUMPERS[d.id]; g.fillRect(a.x - 13, a.y - 9, 26, 4);
+      g.font = 'bold 22px sans-serif'; g.textAlign = 'center'; g.lineJoin = 'round'; g.lineWidth = 6; g.strokeStyle = '#1a0c10';
+      g.strokeText(NICK[d.id], a.x, a.y - DRONE_H - 6); g.fillStyle = '#fff'; g.fillText(NICK[d.id], a.x, a.y - DRONE_H - 6);
+    }, onSurface(a));
     hits.push({ id: `drone:${d.id}`, x: a.x - 50, y: a.y - DRONE_H - 24, w: 100, h: DRONE_H + 34 });
   });
 
@@ -234,7 +254,7 @@ export function drawCampaign(ctx, atlas, S) {
         // on the ladder he hangs on its right rail: he slides there when the climb starts and back when it ends (render only)
         w.grip = Math.min(1, Math.max(0, (w.grip ?? 0) + (w.climbing ? dt : -dt) / LADDER.easeMs));
         const x = w.pos.x + (w.grip > 0 ? climbShift(atlas, sheet, box) * w.grip : 0);
-        atlas.sprite(ctx, sheet, frame, x, w.pos.y, { h: PERSON_H, box, flip: !still && !w.climbing && Boolean(w.faceLeft), sheet: tinted });
+        surfacePaint('crew:cmdr', { x: x - 45, y: w.pos.y - PERSON_H - 25, w: 90, h: PERSON_H + 35 }, (g) => atlas.sprite(g, sheet, frame, x, w.pos.y, { h: PERSON_H, box, flip: !still && !w.climbing && Boolean(w.faceLeft), sheet: tinted }), eva);
         hits.push({ id: 'crew:cmdr', x: w.pos.x - 45, y: w.pos.y - PERSON_H - 25, w: 90, h: PERSON_H + 35 });
       }
     }
@@ -247,6 +267,12 @@ export function drawCampaign(ctx, atlas, S) {
       const x = A.x + (A.grip ? climbShift(atlas, sheet, box) * A.grip : 0); // on the ladder, hands on its right rail (A36)
       atlas.sprite(ctx, sheet, A.frame, x, A.y, { h: PERSON_H, box, flip: A.flip, sheet: atlas.tinted(sheet, CREW_COLORS.cmdr) });
     }
+  }
+
+  // Dust streaks pass in front of the Garage and surface bodies too; interface markers stay on top.
+  if (s.storm) {
+    ctx.fillStyle = 'rgba(235,165,95,0.42)';
+    for (let i = 0; i < 70; i++) ctx.fillRect(-1250 + ((i * 313 + wm * (0.55 + (i % 5) * 0.18)) % 4500), 540 + ((i * 131) % 500), 70 + (i % 4) * 40, 5);
   }
 
   // ---- hazard markers over the places that are in trouble

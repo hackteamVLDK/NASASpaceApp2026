@@ -50,6 +50,15 @@ Updated: 2026-11-14 (UTC+1), after the backend was aligned with SCENARIO.md
   SCENARIO.md.
 
 ## DONE
+- Surface weather effects follow-up integrated: night, dust storm, sunset and flare affect the
+  Garage, Rover, drones and Commander; only selected/hovered objects bypass the tint. Weather
+  fades into one tile of soil below the feet; underground rooms stay unchanged. Dust streaks
+  pass in front of the Garage too. No scenario or simulation changes; user screenshots preserved.
+  Checked main in Edge: 15/15 pixel checks (including combined events, focus isolation and soil depth).
+  Project tests: 270/270 pass. Files: src/render/campaign-world.js, src/render/surface-lighting.js,
+  src/data/surface-lighting.js. Reviewed in .codex-worktrees/night-lighting before integration.
+  No ongoing edits to the renderer. User requested publication of all changes, including the supplied
+  screenshots, to origin/main. Browser screenshots/audit: assets/incoming/_night-preview/.
 - All surface Garage changes committed on main; merged origin/main through 6f392e8 without conflicts.
   Combined game checked in Edge; npm test 273/273 pass. Ready for the user-requested push to origin/main.
 - Surface Garage art: generated raw reference + processed two-state sheet + prompt/manifest, visual preview checked;
