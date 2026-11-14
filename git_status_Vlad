@@ -11,6 +11,7 @@
 - `AstraGuidePanel` takes a `lineId`, not a message string. All English text lives in one strings module.
 - `DroneRepairMiniGame` is dropped. The battery step has a single cable snap instead.
 - Answers to the open questions in git_status_Mykhailo: Dining Room -> Kitchen; Greenhouse added; solo = Commander + 3 drones; drone wake-up = SCENARIO Section 1 tutorial + Section 3.8.
+- Merging this makes 3 tests in `tests/flow.test.mjs` fail, because they check the old scenario: "state machine uses the states named in SCENARIO.md", "intro lines match SCENARIO.md word for word, with the stated pauses", "tutorial dialogue and hand-off match SCENARIO.md section 5". `src/flow/` and `tests/` are owned by Mykhailo, so they are not changed here. On `main` today: 88/88 pass; with this PR merged: 85/88.
 
 ## DONE
 - SCENARIO.md created as the binding scenario; agents must check against it (AGENTS.md, CLAUDE.md).
