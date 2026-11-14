@@ -7,7 +7,10 @@ import assert from 'node:assert/strict';
 import { createCampaign, step, command } from '../src/campaign/engine.js';
 import { EXPEDITIONS, durationMinutes, expectedLoot, finaleBlock } from '../src/campaign/expeditions.js';
 import { play } from '../tools/balance/strategy-lab.mjs';
-import { hasString } from '../src/flow/strings.js';
+import { readFileSync } from 'node:fs';
+import { setStrings, hasString } from '../src/flow/strings.js';
+
+setStrings(JSON.parse(readFileSync(new URL('../content/data/strings.en.json', import.meta.url), 'utf8')));
 
 /** A base where every room stands and the Rover has what a trip needs. */
 function readyBase(extra = {}) {
