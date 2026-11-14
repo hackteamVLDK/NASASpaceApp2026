@@ -73,6 +73,7 @@ button:hover { background:#1a4668; } button:disabled { opacity:.45; cursor:defau
 #hud { zoom: calc(var(--ui) * 0.9); height: 84px; } #hud #gauges { gap: 10px; }
 #hud .gauge .val { font-size: 19px; } #hud .gauge canvas { width: 34px; height: 34px; }
 #uisize { display: flex; gap: 4px; } #uisize button { padding: 5px 9px; font-size: 16px; }
+#muteBtn { padding: 5px 9px; font-size: 18px; line-height: 1; }
 .mod { font-size: 16px; } .mod button { font-size: 15px; } .why { font-size: 14px; } .cardbtn { font-size: 14px; }
 .modal .card { zoom: calc(var(--ui) * 0.85); }
 #mgWrap { zoom: calc(var(--ui) * 0.85); }

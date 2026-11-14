@@ -5,7 +5,7 @@
  *   air_filter (4.2)  antenna (4.9)         wheel_vacuum (4.7) suit_seal (4.8)
  * Solar Wipe (4.1) and the tutorial battery step are in minigames.js.
  */
-import { play } from './audio.js';
+import { play, director } from './audio.js';
 import { LAYOUTS, scramble, reach, tap, canTurn, ROWS, COLS, N, E, S, W as WEST } from './pipes.js';
 
 const W = 1100;
@@ -41,10 +41,11 @@ function scaffold({ canvas, game, onWin, onFail, onTitle, onHint, title, hint, m
   const reset = () => { g = make(); started = performance.now(); held = 0; };
   reset();
   const api = { win() { if (!finished) { finished = true; play('win'); setTimeout(() => { destroy(); onWin(); }, 600); } }, elapsed: () => performance.now() - started };
+  let pressed = false; // sounds for dragging play only while the pointer is down
   const handlers = {
-    pointerdown: (e) => { canvas.setPointerCapture?.(e.pointerId); g.down?.(pt(canvas, e), api); },
-    pointermove: (e) => g.move?.(pt(canvas, e), api),
-    pointerup: (e) => g.up?.(pt(canvas, e), api),
+    pointerdown: (e) => { pressed = true; canvas.setPointerCapture?.(e.pointerId); director.minigame(game, 'down'); g.down?.(pt(canvas, e), api); },
+    pointermove: (e) => { if (pressed) director.minigame(game, 'move'); g.move?.(pt(canvas, e), api); },
+    pointerup: (e) => { pressed = false; g.up?.(pt(canvas, e), api); },
   };
   for (const [k, f] of Object.entries(handlers)) canvas.addEventListener(k, f);
   function frame(now) {
@@ -93,7 +94,7 @@ function heatPump() {
   return {
     down(p) {
       const col = Math.floor((p.x - X) / T), row = Math.floor((p.y - Y) / RH);
-      if (tap(tiles, row, col)) { play('click'); first = false; }
+      if (tap(tiles, row, col)) { director.minigame('heat_pump', 'rotate'); first = false; }
     },
     draw(c, now) {
       const { seen, rooms } = reach(tiles);
@@ -169,6 +170,7 @@ function waterSort() {
   return {
     down(p) {
       if (inR(p, 480, 130, 140, 60)) { // the tap
+        director.minigame('water_sort', 'tap');
         const ok = slots.every((s, i) => s === order[i]);
         if (ok) flowing = performance.now(); else { const bad = slots.findIndex((s, i) => s !== order[i]); wobble = { i: bad, at: performance.now() }; slots.fill(null); pos.forEach((m, i) => { m.x = [200, 500, 800][i]; m.y = 500; }); }
         return;
@@ -180,7 +182,7 @@ function waterSort() {
     up(p) {
       if (!drag) return;
       const i = [0, 1, 2].find((k) => inR(p, slotRect(k).x, slotRect(k).y, slotRect(k).w, slotRect(k).h) && slots[k] === null);
-      if (i !== undefined) { slots[i] = drag.id; drag.x = slotRect(i).x + 100; drag.y = slotRect(i).y + 55; play('click'); } else { const k = pos.indexOf(drag); drag.x = [200, 500, 800][k]; drag.y = 500; }
+      if (i !== undefined) { slots[i] = drag.id; drag.x = slotRect(i).x + 100; drag.y = slotRect(i).y + 55; director.minigame('water_sort', 'place'); } else { const k = pos.indexOf(drag); drag.x = [200, 500, 800][k]; drag.y = 500; }
       drag = null;
     },
     draw(c, now) {
@@ -203,14 +205,14 @@ function nutrientMatch() {
   let drag = null, led = false;
   return {
     down(p) {
-      if (inR(p, 960, 480, 100, 90)) { led = trays.every((t) => t.filled); play('click'); return; }
+      if (inR(p, 960, 480, 100, 90)) { led = trays.every((t) => t.filled); director.minigame('nutrient_match', 'led'); return; }
       drag = bottles.find((b) => Math.hypot(p.x - b.x, p.y - b.y) < 50 && !b.used) ?? null;
     },
     move(p) { if (drag) { drag.x = p.x; drag.y = p.y; } },
     up(p) {
       if (!drag) return;
       const t = trays.find((q) => Math.abs(p.x - q.x) < 130 && p.y > 230);
-      if (t && !t.filled && t.tag === drag.c) { t.filled = true; drag.used = true; play('click'); } else if (t) t.bad = performance.now();
+      if (t && !t.filled && t.tag === drag.c) { t.filled = true; drag.used = true; director.minigame('nutrient_match', 'drop'); } else if (t) t.bad = performance.now();
       drag.x = drag.hx; drag.y = drag.hy; drag = null;
     },
     draw(c, now) {
@@ -237,9 +239,9 @@ function airFilter() {
   const X = 340, Y = 130, C = 100;
   return {
     down(p) {
-      if (step === 0 && inR(p, X - 100, Y, 80, 200)) { step = 1; play('click'); return; }
+      if (step === 0 && inR(p, X - 100, Y, 80, 200)) { step = 1; director.minigame('air_filter', 'pull'); return; }
       if (step === 1) rub = { last: p, dir: 0 };
-      if (step === 2 && inR(p, 820, 300, 120, 100)) this._ok = true;
+      if (step === 2 && inR(p, 820, 300, 120, 100)) { this._ok = true; director.minigame('air_filter', 'lock'); }
     },
     move(p) {
       if (step !== 1 || !rub) return;
@@ -284,7 +286,7 @@ function antenna() {
       for (let i = 0; i < 5; i++) { c.fillStyle = i < bars ? (bars >= 4 ? '#43e060' : '#ffd600') : '#333'; c.fillRect(40 + i * 40, 60 - i * 8, 28, 20 + i * 8); }
       label(c, 'Keep 4+ bars for 3 seconds', W / 2, 60, 26, '#ffb000');
       [['Left / Right', 120, sl.lr], ['Up / Down', 600, sl.ud]].forEach(([n, x, v]) => { c.fillStyle = '#394b5d'; rr(c, x, 530, 400, 30, 15); c.fill(); c.fillStyle = '#ffb000'; c.beginPath(); c.arc(x + 400 * v, 545, 26, 0, Math.PI * 2); c.fill(); label(c, n, x + 200, 600, 20); });
-      if (bars >= 4) { good ??= now; c.fillStyle = '#43e060'; c.fillRect(300, 490, Math.min(500, ((now - good) / 3000) * 500), 10); } else good = null;
+      if (bars >= 4) { if (good === null) director.minigame('antenna', 'lock'); good ??= now; c.fillStyle = '#43e060'; c.fillRect(300, 490, Math.min(500, ((now - good) / 3000) * 500), 10); } else good = null;
       this._since = good; this._now = now;
     },
     done() { return this._since !== null && this._now - this._since >= 3000; },
@@ -301,7 +303,7 @@ function wheelVacuum() {
     down(p) { nozzle = p; pressed = true; this._tap(p); },
     move(p) { nozzle = p; if (!pressed) return; wheels.forEach((w) => { if (Math.hypot(p.x - w.x, p.y - w.y) < 75) w.dust = Math.max(0, w.dust - 0.03); }); }, // the vacuum works only while the finger or the mouse button is down
     up() { nozzle = null; pressed = false; },
-    _tap(p) { pebbles.forEach((q) => { const w = wheels[q.w]; if (!q.out && Math.hypot(p.x - (w.x + q.ox), p.y - (w.y + q.oy)) < 30) { q.out = true; play('zap'); } }); },
+    _tap(p) { pebbles.forEach((q) => { const w = wheels[q.w]; if (!q.out && Math.hypot(p.x - (w.x + q.ox), p.y - (w.y + q.oy)) < 30) { q.out = true; director.minigame('wheel_vacuum', 'pebble'); } }); },
     draw(c, now) {
       label(c, 'Vacuum every wheel, then pop the 2 sparkling pebbles', W / 2, 60, 26, '#ffb000');
       c.fillStyle = '#c9b9a0'; rr(c, 60, 140, 980, 140, 20); c.fill(); c.fillRect(60, 300, 980, 6);
@@ -320,13 +322,13 @@ function suitSeal() {
   let badge = { x: 880, y: 220, on: false }, drag = false, hold = null, pressure = 0, pressed = false;
   return {
     down(p) {
-      leaks.forEach((l) => { if (!l.sealed && Math.hypot(p.x - l.x, p.y - l.y) < 50) { l.sealed = true; play('click'); } });
+      leaks.forEach((l) => { if (!l.sealed && Math.hypot(p.x - l.x, p.y - l.y) < 50) { l.sealed = true; director.minigame('suit_seal', 'clamp'); } });
       if (!badge.on && Math.hypot(p.x - badge.x, p.y - badge.y) < 50) drag = true;
       if (inR(p, 120, 470, 220, 80)) { hold = performance.now(); pressed = false; }
     },
     move(p) { if (drag) { badge.x = p.x; badge.y = p.y; } },
     up(p) {
-      if (drag) { drag = false; if (Math.hypot(p.x - 550, p.y - 280) < 90) { badge = { x: 550, y: 280, on: true }; play('click'); } else badge = { x: 880, y: 220, on: false }; }
+      if (drag) { drag = false; if (Math.hypot(p.x - 550, p.y - 280) < 90) { badge = { x: 550, y: 280, on: true }; director.minigame('suit_seal', 'badge'); } else badge = { x: 880, y: 220, on: false }; }
       if (hold) { hold = null; if (pressure > 0.62 && pressure < 0.82) pressed = true; pressure = 0; }
     },
     draw(c, now) {

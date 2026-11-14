@@ -70,6 +70,18 @@ function applyUiScale() {
 applyUiScale();
 for (const b of document.querySelectorAll('#uisize button')) b.addEventListener('click', () => { uiScale += Number(b.dataset.ui) * 0.1; applyUiScale(); });
 
+// ------------------------------------------------------------------ sound on / off (HUD)
+
+const muteBtn = $('muteBtn');
+function showMute() {
+  const muted = audio.director.settings.muted;
+  muteBtn.textContent = muted ? '🔇' : '🔊';
+  muteBtn.title = muted ? 'Sound off (click to turn on)' : 'Sound on (click to turn off)';
+  muteBtn.classList.toggle('on', !muted);
+}
+muteBtn?.addEventListener('click', () => { audio.unlock(); audio.director.toggleMute(); showMute(); });
+if (muteBtn) showMute();
+
 // ------------------------------------------------------------------ helpers
 
 let toastShowing = null; // { prio, until } of the message on the screen
@@ -113,6 +125,7 @@ function checkAllBadges() {
 
 /** Turn campaign events into what the player sees and hears. */
 function handleEvents(events) {
+  audio.director.campaignEvents(events); // sounds and music state (src/audio/audioDirector.js)
   for (const e of events) {
     switch (e.type) {
       case 'astra': sayLine(e.lineId, e.mood); break;
@@ -123,16 +136,14 @@ function handleEvents(events) {
       case 'chosen': trigger(`C:${e.id}${e.choice}`); break;
       case 'log': say(guide, { lineId: e.lineId, mood: 'calm' }); break;
       case 'launched': rover.phase = 'boarding'; rover.boardAt = worldMs; break;
-      case 'returned': rover.phase = 'in'; rover.t0 = worldMs; ui.showLoot(e); audio.play('chirp'); break;
+      case 'returned': rover.phase = 'in'; rover.t0 = worldMs; ui.showLoot(e); break;
       case 'queued': toast(`${NICK[e.drone] ?? 'The drone'} will do that next.`); break;
       case 'ordered': break;
       case 'finale': checkAllBadges(); ui.showFinale(); break;
       case 'toast': toast(e.text); break;
-      case 'emergency': toast(`Emergency: ${e.kind}!`, 4000); audio.play('alert'); break;
-      case 'built': toast('Room finished!'); audio.play('win'); break;
-      case 'upgraded': toast('Upgrade installed!'); audio.play('win'); break;
-      case 'drone-awake': audio.play('chirp'); break;
-      case 'storm': audio.play(e.on ? 'alert' : 'chirp'); break;
+      case 'emergency': toast(`Emergency: ${e.kind}!`, 4000); break;
+      case 'built': toast('Room finished!'); break;
+      case 'upgraded': toast('Upgrade installed!'); break;
       default:
     }
   }
@@ -441,7 +452,7 @@ function loop(now) {
       prevFlowT = flowT;
       flowT += dt;
       for (const cue of cuesBetween(prevFlowT, flowT)) {
-        if (cue.type === 'sfx') audio.play(cue.id);
+        if (cue.type === 'sfx') audio.director.flowCue(cue);
         else if (cue.type === 'astra') sayLine(cue.lineId, 'cheerful');
       }
       astra.setAuto(true);
@@ -469,6 +480,7 @@ function loop(now) {
       }
     }
     if (mode === 'play' && Math.floor(now / 1000) !== loop.lastSec) { loop.lastSec = Math.floor(now / 1000); checkAllBadges(); }
+    audio.director.tick({ s, mode });
     if (extras) extras.update(mode === 'play');
     if (ui && (mode === 'tutorial' || mode === 'play')) { ui.update(); $('hud').hidden = false; if (mode === 'play') $('side').hidden = false; }
     astra.update(now);
@@ -509,6 +521,7 @@ async function boot() {
     cont.addEventListener('click', () => {
       audio.unlock();
       Object.assign(s, saved); // the UI and the renderer hold this same object
+      audio.director.reset(s); // music state that one-time events would have set (finale)
       rover.phase = s.away ? 'gone' : 'parked';
       for (const d of s.drones) d.queue ??= []; // saves made before Drone Link have no queue
       s.order ??= null;
