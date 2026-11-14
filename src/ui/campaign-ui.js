@@ -9,8 +9,9 @@ import { moduleInfo, clockAt, online } from '../campaign/engine.js';
 import { EXPEDITIONS, hpCost, durationMinutes, awayProgress } from '../campaign/expeditions.js';
 import { t, hasString } from '../flow/strings.js';
 import { ICON } from '../render/atlas.js';
-import { play } from './audio.js';
+import { play, director } from './audio.js';
 import { CARDS, BADGES, buildReport } from '../campaign/logbook.js';
+import { LOW_LIMITS } from '../campaign/hazards.js';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
@@ -54,7 +55,7 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
   for (const id of tabs) {
     const b = el('button', '', { base: 'Base', workshop: 'Workshop', drones: 'Drones', tasks: 'Tasks', logbook: 'Logbook' }[id]);
     b.dataset.tab = id;
-    b.addEventListener('click', () => { tab = id; sig = ''; play('click'); });
+    b.addEventListener('click', () => { tab = id; sig = ''; play('uiTabSwitch'); });
     tabBar.append(b);
   }
   let sig = '';
@@ -231,13 +232,13 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
       const labelId = radio ? `${prefix}.${c}.label` : `ui.${id}.${c}.label`;
       const b = el('button', 'choice', `<span class="k">${c.toUpperCase()}</span>${t(labelId)}`);
       b.dataset.choice = c;
-      b.addEventListener('click', () => { play('click'); send(radio ? { type: 'radio', choice: c } : { type: 'choose', choice: c }); closeModal(); });
+      b.addEventListener('click', () => { play('dilemmaChoice'); send(radio ? { type: 'radio', choice: c } : { type: 'choose', choice: c }); closeModal(); });
       box.append(b);
     }
     void warm;
     modalRoot.innerHTML = '';
     modalRoot.append(card);
-    play('alert');
+    director.decisionShown(id); // urgent (e1, d5) -> emergency alert
   }
 
   function showActCard(lineId) {
@@ -319,10 +320,17 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
       $('clock').textContent = `Sol ${c.sol} · ${String(c.hour).padStart(2, '0')}:${String(c.minute).padStart(2, '0')}${s.storm ? ' · DUST STORM' : ''}`;
       for (const [k, e] of Object.entries(G)) {
         const v = k === 'hp' ? s.hp : s.res[k];
-        const f = Math.max(0, Math.min(1, v / e.d.max()));
+        const cap = e.d.max();
+        const f = Math.max(0, Math.min(1, v / cap));
         e.bar.style.width = `${f * 100}%`;
-        e.val.textContent = Math.round(v);
-        e.g.classList.toggle('low', f < 0.25 && k !== 'sp');
+        // Power holds more than 100 once there is a battery: show "88 / 250" so the bar and the number agree
+        e.val.textContent = cap !== 100 && k !== 'sp' ? `${Math.round(v)}/${cap}` : Math.round(v);
+        const limit = LOW_LIMITS[k];
+        const empty = k !== 'sp' && (v <= 0 || (k !== 'hp' && Boolean(s.emergency[k]))); // a boolean: classList.toggle(name, undefined) would TOGGLE
+        e.g.classList.toggle('low', empty); // red and pulsing: empty or in an emergency
+        e.g.classList.toggle('warn', Boolean(!empty && limit != null && v < limit && !(k === 'hp' && s.medRest))); // amber: running low
+        const name = k === 'hp' ? t('ui.res.astronaut_hp.name') : k === 'sp' ? t('ui.res.spare_parts.name') : t(`ui.res.${k}.name`);
+        e.g.title = k === 'sp' ? `${name}: ${Math.round(v)}` : k === 'power' ? `${Math.round(v)} power stored out of ${cap}. A bigger battery holds more. Below ${limit} is low.` : `${name}: ${Math.round(v)} of ${cap}.${limit != null ? ` Below ${limit} is low.` : ''}`;
         const prev = lastRes[k];
         if (prev !== undefined && Math.abs(prev - v) > 0.001) e.g.dataset.trend = v > prev ? 'up' : 'down';
         lastRes[k] = v;

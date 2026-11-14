@@ -19,6 +19,7 @@
       <div id="gauges"></div>
       <div id="speed"><button data-speed="0" title="Pause">II</button><button data-speed="1" class="on">1x</button><button data-speed="3">3x</button><button data-speed="8">8x</button></div>
       <div id="uisize" title="Interface size"><button data-ui="-1">A-</button><button data-ui="1">A+</button></div>
+      <button id="muteBtn" title="Sound on / off">🔊</button>
     </div>
 
     <div id="side" hidden>
@@ -34,7 +35,7 @@
     </div>
 
     <div id="toast" hidden></div>
-    <div id="mgWrap" hidden><div class="mgTitle"></div><canvas id="mg" width="1100" height="620"></canvas><div class="mgHint"></div></div>
+    <div id="mgWrap" hidden><button id="mgBack" type="button" title="Leave this job (Esc)">&larr; Back</button><div class="mgTitle"></div><canvas id="mg" width="1100" height="620"></canvas><div class="mgHint"></div></div>
     <div id="summary" hidden></div>
   </div>
   <script type="module" src="src/main.js"></script>

@@ -192,7 +192,7 @@ State `INTRO_TEXT`, `0.0s – 19.0s`.
 | astra.intro.status | Tutorial hand-off, camera shows both wings | Good news: the Bedroom, Kitchen and Life Support work. Bad news: everything on the right is just steel frames, and our solar panels are buried in dust. |
 | astra.tut.hp_intro | HP bar highlights | This green bar is your HP, your health and energy. Hard work and radiation lower it. Sleep and fresh food restore your energy. Real radiation adds up over time, so astronauts limit their time outside. |
 | astra.tut.drone01_click | Drone #01 clicked | That's Drone #01, fast asleep. Its battery is empty, and our solar panels are buried in dust. Let's clean them first! |
-| astra.tut.solar_prompt | Solar Wipe opens | First job: clean the solar panels. Tap the sparkly clumps to zap the static, then wipe! |
+| astra.tut.solar_prompt | Solar Wipe opens | First job: clean the solar panels. Mars dust is sticky with static, so wipe it off! |
 | astra.tut.solar_done | Solar Wipe won | Sunlight is flowing! Mars gets less than half the sunlight Earth does, so every clean panel matters. |
 | astra.tut.drone01_prompt | Battery step starts | Panels are working! Now drag the charged battery into Drone #01's back hatch and snap the cable in. |
 | astra.tut.drone01_wake | Drone #01 wakes | Beep-boop! Drone #01 is awake. Drones can't talk, but they never get tired. Let's give it a job: the base is getting cold. |
@@ -810,14 +810,13 @@ Nine mini-games, each 10–20 seconds, each tied to a real Mars problem. They op
 
 **Trigger & real cause:** Sol 1 tutorial; after every dust storm or dust devil; every 5 Sols, panels lose 20% output. Mars dust carries static electricity, so it clings to panels.
 
-**UI & interaction:** Surface view through a drone camera: 3 panels under a butterscotch sky, covered in red dust. Some clumps throw tiny blue sparks.
-1. Tap each sparking clump to zap its static. It stops sparking.
+**UI & interaction:** Surface view through a drone camera: 3 panels under a butterscotch sky, covered in red dust. Some clumps throw tiny blue sparks: a visual hint only, they are not tapped.
 1. Swipe the wiper across the panels.
-1. A clump that wasn't zapped smears back; tap it, then wipe again.
+1. Sticky clumps need 1–2 extra swipes; a small spark pops when one comes off.
 
 **Win / fail:** Win at 90% clean within 20 s (a sun meter fills). On fail, output equals the % cleaned until retried.
 
-**Role modifiers:** Engineer: one zap clears 2 neighboring clumps. Pilot: clumps are outlined (knows surface dust). Botanist, Comms: standard.
+**Role modifiers:** Engineer: the wiper is 2× wider. Pilot: dusty clumps are outlined (knows surface dust). Botanist, Comms: standard.
 
 **ASTRA:** "Mars dust is full of static electricity, so it clings to panels like socks to a sweater. Dust on its solar panels is what ended NASA's InSight lander mission in 2022."
 

@@ -4,7 +4,7 @@
  * `auto` mode (cutscenes) advances by itself: a line stays at least 1.5 s after it finished typing.
  */
 import { guideProps, currentMessage, dismiss, ASTRA } from '../flow/astra.js';
-import { play } from './audio.js';
+import { play, director } from './audio.js';
 
 const CPS = 70; // typewriter speed, characters per second
 
@@ -18,6 +18,7 @@ export function createAstraPanel(guide, atlas, { onDismiss = () => {} } = {}) {
   let startedAt = 0;
   let finishedAt = 0;
   let auto = false;
+  let typedCount = 0;
 
   function advance() {
     const gone = guide.current;
@@ -42,12 +43,14 @@ export function createAstraPanel(guide, atlas, { onDismiss = () => {} } = {}) {
         shownId = props.lineId;
         startedAt = nowMs;
         finishedAt = 0;
-        if (root.dataset.opened !== '1') play('astra-chime');
+        director.astraLine(shownId, { slideIn: root.dataset.opened !== '1' }); // chime + lore cues
         root.dataset.opened = '1';
+        typedCount = 0;
       }
       const msg = currentMessage(guide);
       const shown = Math.min(msg.length, Math.floor(((nowMs - startedAt) / 1000) * CPS));
       if (text.textContent !== msg.slice(0, shown)) text.textContent = msg.slice(0, shown);
+      if (shown > typedCount) { director.typed(msg[shown - 1]); typedCount = shown; } // blips are rate-capped in the engine
       const typing = shown < msg.length;
       if (!typing && !finishedAt) finishedAt = nowMs;
       btn.textContent = typing ? ASTRA.buttons.next : guide.queue.length ? ASTRA.buttons.next : guide.current.button;
