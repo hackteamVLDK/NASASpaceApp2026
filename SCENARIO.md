@@ -537,6 +537,8 @@ Extra power rules: each drone actively building uses −5 Power per Sol. During 
 
 Tier 2 recipes are in Section 5.4.
 
+**Emergency refill (note, 2026-11-15).** The Recreation & Storage refill is automatic: when Water, Food or Oxygen drops below 10, the lowest of them gets +30 from the spare stores and ASTRA says `astra.res.storage_save`; then the stores are closed for 5 Sols (Tier 2: 3 Sols). Values are `gameplay`.
+
 ### 3.4 Solo balance snapshots (net change per Sol)
 
 | Stage | Power | Heat | Oxygen | Food | Water | Morale | SP | HP (in base) |

@@ -32,7 +32,15 @@ export const HP = Object.freeze({
   radiationPerSol: 20, // x shielding factor
   freshCropsT1: 4, freshCropsT2: 6, highMorale: 2, moraleThreshold: 70,
   medRestHp: 50,
+  roverSleepPerHour: 0.75, // 8 h camping in the Rover = +6 HP a night (SCENARIO 3.6 "Sleep", 2.10 Solo); `gameplay`
 });
+
+/**
+ * Recreation & Storage emergency stores (SCENARIO 3.3 table, line `astra.res.storage_save`). `gameplay` values:
+ * when Water, Food or Oxygen falls under `below`, the lowest of them gets `amount`; then the stores close for
+ * `cooldownSols` (T1 5 Sols, T2 3 Sols).
+ */
+export const STORAGE_REFILL = Object.freeze({ below: 10, amount: 30, cooldownSols: { 1: 5, 2: 3 }, res: Object.freeze(['water', 'food', 'oxygen']) });
 
 /** Shielding factors of rooms (3.6). */
 export const SHIELD = Object.freeze({ surface: 1.0, rightBeforeRoof: 0.3, left: 0.05, bedroom: 0.02 });

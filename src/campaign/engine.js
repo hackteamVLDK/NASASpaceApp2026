@@ -13,7 +13,7 @@
 import { seedFrom, nextRandom } from '../sim/rng.js';
 import {
   SOL, START_MINUTE, RES, START_RES, CAP, NEEDS, BASE_HEAT_LOSS, RECYCLER, HP, SHIELD, SLEEP_FROM, SLEEP_TO, MEALS,
-  MODULES, BUILD_SOLS, UPGRADE_SOLS, DRONE_BUILD_POWER, STORM, RECIPES, UPGRADES, MODULE_LINES, BREAKDOWN_RULES, RULES,
+  MODULES, BUILD_SOLS, UPGRADE_SOLS, DRONE_BUILD_POWER, STORM, RECIPES, UPGRADES, MODULE_LINES, BREAKDOWN_RULES, RULES, STORAGE_REFILL,
 } from './data.js';
 import { clockAt, isNight, online } from './util.js';
 import { storyMinute, onSol, applyChoice, choiceBlock, onModuleStart, onModuleBuilt, onKit, onMini, miniBlock, runTimer, onDroneAwake, onMove, startSoilWash, soilWashBlock } from './story.js';
@@ -272,6 +272,7 @@ function stepHp(s, emit, now) {
   if (s.medRest) return;
   let d = 0;
   if (s.where === 'bedroom' && isNight(now.hourFloat) && !s.away) d += HP.sleepPerHour / 60;
+  if (s.away && isNight(now.hourFloat)) d += HP.roverSleepPerHour / 60; // camping in the Rover (3.6: +6 a night)
   if (!s.away) d -= (HP.radiationPerSol * shieldFactor(s, s.where) * (s.flags.flare ? 3 : 1)) * dt;
   if (online(s, 'greenhouse') && s.res.food >= 30 && !s.flags.freshOff) d += (s.modules.greenhouse.tier === 2 ? HP.freshCropsT2 : HP.freshCropsT1) * dt + (s.flags.soilBeds ? dt : 0);
   if (s.res.morale >= HP.moraleThreshold) d += HP.highMorale * dt;
@@ -297,7 +298,23 @@ function hpLines(s, emit) {
   if (s.hp < 80) s.low.hpFullReady = true;
 }
 
+/** Recreation & Storage opens its emergency stores when Water, Food or Oxygen runs very low (3.3, once per 5 / 3 Sols). */
+function storageRefill(s, emit) {
+  if (!online(s, 'recreation')) return;
+  const R = STORAGE_REFILL;
+  if (s.minute < (s.flags.storageReadyAt ?? 0)) return;
+  const low = R.res.filter((k) => s.res[k] < R.below).sort((a, b) => s.res[a] - s.res[b]);
+  if (!low.length) return;
+  const k = low[0];
+  s.res[k] = Math.min(CAP[k], s.res[k] + R.amount);
+  s.flags.storageReadyAt = s.minute + R.cooldownSols[s.modules.recreation.tier] * SOL;
+  s.stats.storageRefills = (s.stats.storageRefills ?? 0) + 1;
+  emit({ type: 'astra', lineId: 'astra.res.storage_save', mood: 'cheerful' });
+  emit({ type: 'storageRefill', res: k, amount: R.amount });
+}
+
 function checkMeters(s, emit) {
+  storageRefill(s, emit);
   const lines = { oxygen: ['astra.res.oxygen_low', 25], water: ['astra.res.water_low', 25], food: ['astra.res.food_low', 25], morale: ['astra.res.morale_low', 30] };
   for (const [k, [line, limit]] of Object.entries(lines)) {
     if (s.res[k] < limit && !s.low[k]) { s.low[k] = true; emit({ type: 'astra', lineId: line, mood: 'alert' }); }
