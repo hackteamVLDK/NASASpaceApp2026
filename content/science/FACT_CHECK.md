@@ -9,7 +9,7 @@ Method: for each claim a NASA page, a peer-reviewed paper, or a major science or
 page was **opened** (not just a search snippet). Where a PDF was the source, its text was
 extracted and the quoted sentence was found in it. Line numbers refer to `SCENARIO.md`.
 
-**Result: 98 claims checked. 82 correct, 16 needed a fix (all fixed), 0 unverifiable.**
+**Result: 100 claims checked. 84 correct, 16 needed a fix (all fixed), 0 unverifiable.**
 Rows F10–F16 and the six rows marked "added after Codex review" came from the independent Codex review.
 The 23 rows marked "added with the open-items specs" cover new claims in SCENARIO.md Sections 3.10, 3.11 and 8;
 the other Science Logbook cards restate claims already checked above. The team's decisions on the
@@ -139,6 +139,8 @@ Data label: the label the claim should carry in `src/data/*.js` and in docs:
 | card.hidden_ice | NASA maps buried ice to choose landing sites for astronauts | correct | https://www.jpl.nasa.gov/news/nasa-is-locating-ice-on-mars-with-this-new-map/ | approximation | — (added with the open-items specs) |
 | card.ingenuity | Ingenuity first flew on April 19, 2021; mission ended 2024 | correct | https://www.nasa.gov/news-release/after-three-years-on-mars-nasas-ingenuity-helicopter-mission-ends/ | nasa_measurement | — (added with the open-items specs) |
 | badge.first_contact.text | A message to Earth crosses millions of kilometers | correct (54.6 to 401.4 million km) | https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html | nasa_measurement | — (added with the open-items specs) |
+| astra.intro.why_underground (readability pass) | Space radiation is invisible energy that zooms in from the Sun and deep space | correct (galactic cosmic rays from outside the solar system, solar particle events from the Sun) | https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-020-radiation-protection.pdf | approximation | — (added with the readability pass) |
+| card.perchlorates (readability pass) | The thyroid is a small gland in the neck that helps the body grow | correct (thyroid hormones matter for metabolism, growth and development) | https://www.epa.gov/sdwa/perchlorate-drinking-water-frequent-questions | approximation | — (added with the readability pass) |
 
 ## Other observations (outside the science scope)
 
@@ -185,4 +187,12 @@ describe Veggie as "plant pillows with clay and fertilizer", never as hydroponic
 | — | C3 | accepted as verdict wording only (F2/F3 rows); no text change | — |
 | — | C4 | not applied: team keeps "a lot of methane" (F5) | — |
 | — | C5, C13 | not applied (see the Codex record for reasons) | — |
+
+### Readability pass (2026-11-14, branch content/readability)
+
+35 player-facing lines were reworded for ages 7–8 (shorter sentences, hard words explained or
+replaced). Every reworded science line was re-checked against its row above; meaning and numbers
+are unchanged. Two precision fixes came with it: "The base is safe under the soil" and "Our
+underground rooms are safe" now say "well shielded" (radiation underground is reduced, never zero).
+Two new explanatory claims were added as rows above.
 
