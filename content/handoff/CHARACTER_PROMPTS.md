@@ -10,7 +10,7 @@ How they fit the existing pipeline:
   `crew.heads` sheet gives each person their own head, drawn on top of that body.
 - **Drones are shared.** `drone.builder` stays one robot; `drone.bumpers` adds a coloured bumper
   stripe overlay per drone.
-- Attach `style.anchor` (and `crew.indoor` for heads and portraits) as reference.
+- Attach `style.anchor` (and `crew.indoor` for heads and portraits; `crew.eva` stays unchanged) as reference.
 - Save each result as `assets/incoming/<id>.png`.
 
 ## Shared prompt frame
@@ -54,13 +54,14 @@ expression, with skin tones and hair drawn respectfully and without caricature.
 ## crew.heads — heads for the shared crew sprite
 
 - **WHAT IT SHOWS:** the five crew heads above (not Rosa), each as a separate head-and-hair piece
-  that sits on the shared `crew.indoor` body. For each person: side view facing right, and the
-  same head inside a clear helmet bubble for `crew.eva`.
+  that sits on the shared `crew.indoor` body, side view facing right.
+- **Outside (EVA):** no head overlay. `crew.eva` keeps its round helmet with the dark gold-tinted
+  visor; crew members are told apart outside by their recoloured arm stripe, helmet band and
+  backpack panel.
 - **VIEW:** side view, facing right (the game mirrors it).
-- **LAYOUT:** a strict grid of 5 columns x 2 rows: columns = Amara, Kenji, Sofía, Leo, Noor;
-  row 1 = head without helmet, row 2 = the same head inside the helmet. Each cell 16 x 16
-  logical px, the neck at the same point in every cell.
-- **OUTPUT:** 5:2 (e.g. 2000x800). Logical size 80 x 32 px.
+- **LAYOUT:** a strict grid of 5 columns x 1 row: Amara, Kenji, Sofía, Leo, Noor. Each cell
+  16 x 16 logical px, the neck at the same point in every cell.
+- **OUTPUT:** 5:1 (e.g. 2000x400). Logical size 80 x 16 px.
 
 ## drone.bumpers — drone personality overlays
 

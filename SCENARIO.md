@@ -111,7 +111,7 @@ science. She speaks like a kind older sibling who happens to know a lot about Ma
 
 | # | Situation | Bad | Good | Why |
 |---|---|---|---|---|
-| 1 | Oxygen runs out | "WARNING: Oxygen depleted. Crew will suffocate in minutes!" | "Oxygen emergency! Everyone into the Bedroom, it has backup air tanks. Fix the scrubber valves to get us breathing easy again." | Calm, gives a safe action, no death talk. |
+| 1 | Oxygen runs out | "WARNING: Oxygen depleted. Crew will suffocate in minutes!" | "Oxygen emergency! Everyone into the Bedroom, it has backup air tanks. Once we're safe, I'll show you how to fix the scrubber." | Calm, gives a safe action, no death talk. |
 | 2 | Player skipped the storm prep | "You ignored my warning and drained the batteries. Bad call." | "Oops, the storm drained our batteries. On Mars, the weather decides how much power we get. Next storm, let's prepare!" | No blame; explains cause and the lesson. |
 | 3 | Underground radiation | "Underground, we're 100% safe from radiation." | "The soil above us blocks most of the radiation. A little still gets through, so we keep trips outside short." | Never round to "all" or "safe"; radiation is reduced, not zero. |
 | 4 | Mini-game failed | "Failed. Try again." | "Close! The valves need a gentle touch. Try once more, I'll keep the air flowing." | Praises effort, offers help. |
@@ -262,7 +262,7 @@ State `INTRO_TEXT`, `0.0s – 19.0s`.
 | astra.act3.blackbox_react2 | After playback | And methane! On Earth, a lot of methane comes from living things, like microbes, tiny life too small to see. But it can also come from water reacting with certain rocks. NASA's Curiosity rover has sniffed methane on Mars too, and scientists are still working out where it comes from. |
 | astra.act3.earth_reply | First Earth contact succeeds | Message from Earth, sent 14 minutes ago: "Ares-Kids, this is Mission Control. We heard Pathfinder-X's log. Go find that signal, and stay safe!" (fiction) |
 | astra.act3.roof_built | Regolith Roof Layer built (Sol 16) | Regolith Roof Layer finished! Every room is now under thick soil, so it blocks most of the radiation. Scientists think a few meters of soil could protect real Mars bases. |
-| astra.act3.ls_t2 | Life Support Tier 2 (Sol 16) | Life Support upgraded! Mars air is mostly carbon dioxide, the gas we breathe out, and our new unit pulls oxygen out of it. NASA's MOXIE made 122 grams of oxygen on Mars, about what a small dog breathes in 10 hours! And we melt ice to top up our water loop. |
+| astra.act3.ls_t2 | Life Support Tier 2 (Sol 16) | Life Support upgraded! Mars air is mostly carbon dioxide, the gas we breathe out, and our new unit pulls oxygen from it. NASA's MOXIE made 122 grams of oxygen on Mars, about what a small dog breathes in 10 hours! And we melt ice to top up our water loop. |
 | astra.act3.deep_scan | Lab Tier 2 Deep Scan (Sol 19) | Deep Scan complete! The pulse comes from a pocket under the canyon floor. My readings say: salty liquid water. Salt helps water stay liquid even when it's very cold. (the canyon pocket is fiction) |
 | astra.act3.final_prep | Expedition 5 unlocked | This is it, Commander. The Rover is charged, your suit is sealed, and Earth is listening. Let's go find the Jezero Signal. |
 
@@ -315,7 +315,7 @@ Sandbox rules: random events (Section 6) keep firing, the repeatable runs stay o
 | Line ID | Trigger | Line |
 |---|---|---|
 | astra.res.oxygen_low | Oxygen below 25 | Oxygen is getting low. Let's check the air scrubbers, the machines that clean our air! |
-| astra.res.oxygen_zero | Oxygen hits 0 | Oxygen emergency! Everyone into the Bedroom, it has backup air tanks. Fix the scrubber valves to get us breathing easy again. |
+| astra.res.oxygen_zero | Oxygen hits 0 | Oxygen emergency! Everyone into the Bedroom, it has backup air tanks. Once we're safe, I'll show you how to fix the scrubber. |
 | astra.res.heat_zero | Heat hits 0 | Heat emergency! The pipes are freezing. Reroute the heat pump now, and grab a blanket! |
 | astra.res.power_zero | Power hits 0 | Power emergency! I've switched off everything except life support. Let's get the panels clean. |
 | astra.res.water_low | Water below 25 | Water is running low. Our water recycler cleans and reuses 98%, but we still lose a little every day. Time for an Ice Run! |
@@ -459,8 +459,9 @@ The co-op lobby uses these bios next to the role cards; the `lobbyBlurb` texts i
 as the one-line role summaries.
 
 **Mission Control's voice.** Rosa speaks only in Earth messages (`astra.act3.earth_reply`,
-`astra.finale.earth`, and future Earth-window messages). Her style: warm, calm, short; she starts
-with "Ares-Kids, this is Mission Control" and never gives orders the player cannot follow. Every
+`astra.finale.earth`, and future Earth-window messages). Her style: warm, calm, short. Her first message starts
+with "Ares-Kids, this is Mission Control"; later ones start with "Ares-Kids,". She never gives
+orders the player cannot follow. Every
 message reminds players of the light delay ("sent 14 minutes ago" is shown by ASTRA, not by Rosa).
 
 **The three drones.** Drones cannot talk; they "speak" in beeps (sound effects) and LED blinks.
@@ -1498,7 +1499,7 @@ There is a kid-friendly Mission Rating (stars, never zero) but no "lose" state.
 | sharp_rocks | core | astra.act2.garage_built | Sharp Rocks | Sharp Martian rocks punched holes in the thin aluminum skin of Curiosity's wheels. Drivers now choose smoother routes. | Curiosity | logbook.sharp_rocks | https://jpl.nasa.gov/news/news.php?release=2014-028 |
 | space_salad | core | astra.act2.first_harvest | Space Salad | On August 10, 2015, astronauts on the space station ate red romaine lettuce grown on board. It was the first station-grown crop on the menu. | Veggie (space station) | logbook.space_salad | https://www.nasa.gov/blogs/spacestation/2015/08/10/cosmonauts-complete-russian-spacewalk/ |
 | surface_dose | core | astra.act3.radiation_lesson | A Day of Radiation | Curiosity measured how much radiation reaches the Martian surface each day. People in the US get about that much from nature in three months. | Curiosity RAD; US NRC | logbook.surface_dose | https://www.nasa.gov/news-release/nasa-rover-results-include-first-age-measurement-on-mars-and-help-for-human-exploration/ · https://www.nrc.gov/about-nrc/radiation/around-us/doses-daily-lives.html |
-| slow_messages | core | astra.act3.lab_built | Slow Messages | Radio waves are as fast as light, yet a message takes about 3 to 22 minutes between Mars and Earth. It depends on where the planets are. | NASA Mars Fact Sheet | logbook.slow_messages | https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html |
+| slow_messages | core | astra.act3.lab_built | Slow Messages | Radio waves are as fast as light. Still, a message between Mars and Earth takes about 3 to 22 minutes, depending on where the planets are. | NASA Mars Fact Sheet | logbook.slow_messages | https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html |
 | chapea | bonus | astra.act3.rec_built | Pretend Mars Home | In NASA's CHAPEA test, four volunteers lived 378 days in a 3D-printed habitat in Houston. They practised life on Mars. | CHAPEA | logbook.cat.earth | https://www.nasa.gov/missions/analog-field-testing/chapea/first-mars-crew-completes-yearlong-simulated-red-planet-nasa-mission/ |
 | marsquakes | core | astra.act3.blackbox_react1 | Marsquakes | NASA's InSight lander detected 1,319 marsquakes. Some were caused by space rocks hitting Mars. | InSight | logbook.marsquakes | https://www.jpl.nasa.gov/news/nasa-retires-insight-mars-lander-mission-after-years-of-science/ |
 | methane | bonus | astra.act3.blackbox_react2 | Mystery Gas | Curiosity has detected methane in Mars's air, and the amount changes. It could come from rocks and water, or from life, and nobody knows yet. | Curiosity | logbook.cat.rover | https://www.nasa.gov/solar-system/curiositys-mars-methane-mystery-continues/ |
