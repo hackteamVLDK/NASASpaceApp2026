@@ -74,26 +74,45 @@ export function powerCap(s) {
   return online(s, 'battery') ? b.powerCap[s.modules.battery.tier - 1] : CAP.power;
 }
 
-/** Net change per Sol of every meter, from the current state (3.2, 3.3, 3.4). */
-export function rates(s) {
-  const r = { power: NEEDS.power, heat: BASE_HEAT_LOSS, water: -NEEDS.waterUsed * (1 - s.recycleEta), oxygen: NEEDS.oxygen, food: NEEDS.food, morale: NEEDS.morale, sp: 0 };
+/**
+ * Every contribution to every meter, per Sol, with a label: the Resources screen shows these
+ * lines and `rates` is their sum, so the screen can never disagree with the simulation.
+ * Each line: { res, label, nameId?, amount }. `nameId` is a module name string ID.
+ */
+export function contributions(s) {
+  const lines = [];
+  const add = (res, label, amount, nameId = null) => { if (amount) lines.push({ res, label, amount, nameId }); };
+  add('power', 'Crew needs', NEEDS.power);
+  add('heat', 'Base heat loss', BASE_HEAT_LOSS);
+  add('water', 'Water the recycler cannot save', -NEEDS.waterUsed * (1 - s.recycleEta));
+  add('oxygen', 'Crew breathing', NEEDS.oxygen);
+  add('food', 'Crew meals', NEEDS.food);
+  add('morale', 'Crew needs', NEEDS.morale);
   const blackout = s.res.power <= 0;
   for (const id of Object.keys(MODULES)) {
     if (!online(s, id)) continue;
     if (blackout && id !== 'lifesupport' && id !== 'solar') continue; // non-life-support modules switch off
     for (const [k, v0] of Object.entries(tierFx(s, id))) {
-      if (!has(r, k)) continue;
+      if (!RES.includes(k)) continue;
       let v = v0;
       if (id === 'solar' && k === 'power') v = v0 * s.mult.solar * (s.storm ? (s.modules.solar.tier === 2 ? STORM.solarT2 : STORM.solarT1) : 1);
       if (id === 'battery' && k === 'power' && s.storm) v = v0 * STORM.batteryPowerMult;
       if (id === 'greenhouse' && k === 'food') v = v0 * s.mult.food;
-      r[k] += v;
+      add(k, null, v, MODULES[id].nameId);
     }
   }
   const building = s.drones.filter((d) => d.task && (d.task.type === 'build' || d.task.type === 'upgrade')).length;
-  r.power += DRONE_BUILD_POWER * building;
-  if (s.drones.some((d) => d.status === 'awake' && !d.task)) r.sp += 2; // idle-drone salvage
-  for (const m of s.mods) if (has(r, m.res) && (m.untilMinute == null || s.minute < m.untilMinute)) r[m.res] += m.perSol;
+  add('power', `Drones working (${building})`, DRONE_BUILD_POWER * building);
+  if (s.drones.some((d) => d.status === 'awake' && !d.task)) add('sp', 'A free drone salvages parts', 2);
+  const names = { d1a_saver: 'Power Saver (lights and stove off)', d1a_cold: 'Cold meals, dark rooms', d2c_ration: 'Water rationing', d2c_tired: 'Thirsty and tired', d3b_beds: 'Soil Beds', d4c_food: 'Trays in the Kitchen', leak: 'Airlock leak', leak_w: 'Airlock leak' };
+  for (const m of s.mods) if (RES.includes(m.res) && (m.untilMinute == null || s.minute < m.untilMinute)) add(m.res, names[m.id] ?? 'A temporary effect', m.perSol);
+  return lines;
+}
+
+/** Net change per Sol of every meter, from the current state (3.2, 3.3, 3.4). */
+export function rates(s) {
+  const r = { power: 0, heat: 0, water: 0, oxygen: 0, food: 0, morale: 0, sp: 0 };
+  for (const l of contributions(s)) r[l.res] += l.amount;
   return r;
 }
 

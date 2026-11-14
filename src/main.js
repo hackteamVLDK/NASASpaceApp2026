@@ -14,6 +14,8 @@ import { createGuide, say } from './flow/astra.js';
 import { createAstraPanel } from './ui/astra-panel.js';
 import { createUi, miniTitle } from './ui/campaign-ui.js';
 import { unlockFor, checkBadges } from './campaign/logbook.js';
+import { createExtras } from './ui/extras.js';
+import { shieldingByPlace } from './campaign/hazards.js';
 import { startSolarWipe, startBatteryStep } from './ui/minigames.js';
 import { startMini2, hasMini2 } from './ui/minigames2.js';
 import * as audio from './ui/audio.js';
@@ -33,7 +35,7 @@ function fit() {
 window.addEventListener('resize', fit);
 fit();
 
-let atlas, soil, s, guide, astra, ui;
+let atlas, soil, s, guide, astra, ui, extras;
 let mode = 'loading'; // loading | intro | tutorial | play
 let flowT = 0;
 let prevFlowT = 0;
@@ -319,6 +321,8 @@ function render(nowMs) {
       dimExcept: tut?.state === 'TUT_DRONE_CLICK' ? 'drone-01' : null,
       marker: tut?.state === 'TUT_DRONE_CLICK' ? 'drone-01' : null,
       highlight: tut?.state === 'TUT_BUILD' && tut.phase === 'pick' ? 'module:battery' : (ui?.selected ?? null),
+      hazards: mode === 'play' ? extras.hazards() : [],
+      radiation: mode === 'play' && extras.radiation ? shieldingByPlace(s) : null,
     };
   }
   hits = drawCampaign(ctx, atlas, S);
@@ -359,6 +363,7 @@ function loop(now) {
       }
     }
     if (mode === 'play' && Math.floor(now / 1000) !== loop.lastSec) { loop.lastSec = Math.floor(now / 1000); checkAllBadges(); }
+    if (extras) extras.update(mode === 'play');
     if (ui && (mode === 'tutorial' || mode === 'play')) { ui.update(); $('hud').hidden = false; if (mode === 'play') $('side').hidden = false; }
     astra.update(now);
     render(now);
@@ -381,6 +386,7 @@ async function boot() {
   astra = createAstraPanel(guide, atlas);
   ui = createUi({ atlas, s, send, openMini });
   ui.launch = launchWithPrep;
+  extras = createExtras({ s, ui, openMap: () => ui.showMap(launchWithPrep) });
   void savedSol;
   const saved = loadSave();
   $('startBtn').hidden = false;

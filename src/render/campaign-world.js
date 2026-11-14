@@ -196,6 +196,24 @@ export function drawCampaign(ctx, atlas, S) {
     atlas.sprite(ctx, 'crewIndoor', cut.astronaut.helmetOn ? 22 : 23, p.x, p.y, { h: 185, box: atlas.unionBox('crewIndoor', [0, 1, 2, 3, 4, 5, 6, 7]), sheet: atlas.tinted('crewIndoor', CREW_COLORS.cmdr) });
   }
 
+  // ---- hazard markers over the places that are in trouble
+  if (S.hazards?.length) {
+    const pulse = 0.6 + Math.sin(nowMs / 220) * 0.4;
+    S.hazards.filter((hz) => hz.place && hz.severity !== 'info').forEach((hz, i) => {
+      const at = hz.place === 'surface' ? { x: 960 + 480 + i * 70, y: LAYOUT.groundY - 260 } : (() => { const r = roomRect(hz.place); return r ? { x: r.x + r.w - 46 - i * 8, y: r.y + 46 } : null; })();
+      if (!at) return;
+      ctx.globalAlpha = pulse;
+      atlas.cell(ctx, 'icons', hz.severity === 'alarm' ? ICON.alert : ICON.warning, at.x - 36, at.y - 36, 72, 72);
+      ctx.globalAlpha = 1;
+    });
+  }
+  // ---- radiation view: how much radiation reaches each place (docs/GAMEPLAY_PLAN.md 3.7)
+  if (S.radiation) {
+    const place = (id, r) => { const f = S.radiation[id]; if (f === undefined) return; ctx.fillStyle = `rgba(${Math.round(80 + 175 * f)},${Math.round(220 - 170 * f)},60,${0.22 + 0.45 * f})`; ctx.fillRect(r.x, r.y, r.w, r.h); ctx.fillStyle = '#fff'; ctx.font = 'bold 40px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(`${Math.round(f * 100)}%`, r.x + r.w / 2, r.y + r.h / 2 + 14); };
+    for (const id of Object.keys(LAYOUT.rooms)) place(id, roomRect(id));
+    place('surface', { x: 130, y: LAYOUT.groundY - 330, w: 1700, h: 330 });
+  }
+
   // ---- tutorial dimming, highlight and marker
   if (S.dimExcept) {
     const h = hits.find((x) => x.id === `drone:${S.dimExcept}`);

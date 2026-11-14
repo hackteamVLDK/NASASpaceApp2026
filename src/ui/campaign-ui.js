@@ -202,6 +202,7 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
   $('stage').append(modalRoot);
   let modalKey = null;
   const closeModal = () => { modalRoot.hidden = true; modalRoot.innerHTML = ''; modalKey = null; closeModalHook(); };
+  const openModal = (html, key) => { modalKey = key; modalRoot.hidden = false; modalRoot.innerHTML = html; };
 
   function showChoice(kind, id) {
     const key = `choice:${id}`;
@@ -301,7 +302,9 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
     get selected() { return selected; },
     highlight(id) { for (const e of Object.values(G)) e.g.classList.toggle('pulse', e.d.id === id); },
     pushRadio(id) { radioLines.push(hasString(id) ? t(id) : id); if (radioLines.length > 6) radioLines.shift(); sig = ''; },
-    showChoice, showActCard, showLoot, showFinale, closeModal, showReport,
+    showChoice, showActCard, showLoot, showFinale, closeModal, openModal, showReport,
+    setTab(id) { tab = id; sig = ''; },
+    showMap: (launch) => showMap(launch ?? ui.launch),
     get modalOpen() { return !modalRoot.hidden; },
     update() {
       const c = clockAt(s.minute);
