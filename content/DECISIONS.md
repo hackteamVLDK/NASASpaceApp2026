@@ -23,3 +23,7 @@ files, so every task branch can add to it without merge conflicts.
 - 2026-11-14 · EVA art keeps the existing gold-tinted visor; no helmet head overlay · consistent with crew.eva; crew told apart by stripe colour.
 - 2026-11-14 · No PRs opened or merged: gh still not logged in · user's rule; branches are pushed and ready.
 - 2026-11-14 · gh logged in; no new PRs opened · the user had already merged #2–#4 into main, which (stacked) brought in all 5 branches; main tests 85/88 as expected.
+- 2026-11-14 · Lines without IDs get derived IDs by documented rules (astra.d1.alert, radio.exp1.30, ui.module.*...) instead of adding ID columns to every table · keeps SCENARIO.md readable; rules extend the conventions already used in Section 7.
+- 2026-11-14 · Expedition 2 radio decision: table prompt aligned with the Section 7 JSON; Dilemma 5 JSON labels aligned with the table · same ID had two texts; the table is the source of truth.
+- 2026-11-14 · content/tools tests run with `node --test content/tools/*.test.mjs`, not npm test · package.json belongs to Mykhailo.
+- 2026-11-14 · PR #5 (strings) merged by me: only SCENARIO.md + content/, mergeable, tests 85/88 unchanged.

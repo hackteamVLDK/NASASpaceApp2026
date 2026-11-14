@@ -1,11 +1,15 @@
 # git_status_Vlad
 
 ## DOING NOW
-- Nothing in progress. All five SCENARIO branches are merged into main (PRs #2-#4; fact-check and
-  open-items came in with them). main tests: 85/88 (the 3 old flow tests).
+- Done: content/data/strings.en.json (583 line IDs) from SCENARIO.md, PR #5 merged.
+- Next (not started): content/game-data (dilemmas, events, expeditions, roles, modules, logbook JSON),
+  then content/tools/balance-sim.mjs.
 - content/space-apps-submission: parked until the end of the hackathon.
 
 ## FOR MYKHAILO (sim / flow / assets)
+- STRINGS: import content/data/strings.en.json ({ "line.id": "English" }) instead of hard-coding text.
+  Regenerate with `node content/tools/extract-strings.mjs`; check with `node --test content/tools/*.test.mjs`.
+  Derived-ID rules are in SCENARIO.md ("How to use this file"). Game data JSON will follow in content/data/.
 - New in SCENARIO.md after PR 2: per-astronaut Sol Plans with presets (sim has one DEFAULT_SCHEDULE),
   Fitness gains by room (Bedroom +10, Recreation +20, Rec T2 +25 per hour), expedition multiplier
   M_fit (1.10 below Fitness 40, 1.25 at 15 or less, capped), new line-ID prefixes card.*, report.*, badge.*.
