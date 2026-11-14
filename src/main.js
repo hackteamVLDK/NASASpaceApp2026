@@ -639,7 +639,12 @@ async function boot() {
   const raw = loadSave();
   const restored = raw && raw.status !== 'over' ? restoreSave(raw) : null; // B4: check and upgrade before loading
   const saved = restored?.ok ? restored.state : null;
-  if (restored && !restored.ok) toast(`Your saved mission could not be loaded (${restored.reason}). Start a new mission!`, 6000);
+  if (restored && !restored.ok) {
+    toast(`Your saved mission could not be loaded (${restored.reason}). Start a new mission!`, 6000);
+    if (!restored.newer) { // B4: keep a copy of the damaged save, and do not complain again on every visit; a save from a newer build stays where it is
+      try { localStorage.setItem(`${SAVE_KEY}-damaged`, localStorage.getItem(SAVE_KEY)); localStorage.removeItem(SAVE_KEY); } catch { /* storage may be blocked */ }
+    }
+  }
   $('startBtn').hidden = false;
   if (saved) {
     const cont = document.createElement('button');

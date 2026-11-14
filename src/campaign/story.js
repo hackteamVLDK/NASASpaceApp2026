@@ -391,7 +391,9 @@ export function runTimer(s, id, emit) {
 
 // ------------------------------------------------------------------ mini-game results
 
+/** The nine mini-games (SCENARIO section 4); a save may list any of them on the Tasks list. */
 const MINI_LINES = { solar_wipe: 'astra.mg.solar_wipe', heat_pump: 'astra.mg.heat_pump_reroute', valve_balance: 'astra.mg.valve_balance', water_sort: 'astra.mg.water_sort', nutrient_match: 'astra.mg.nutrient_match', air_filter: 'astra.mg.air_filter_scrub', antenna: 'astra.mg.dish_antenna_alignment', wheel_vacuum: 'astra.mg.wheel_pebble_vacuum', suit_seal: 'astra.mg.suit_seal_check' };
+export const MINI_GAMES = Object.freeze(Object.keys(MINI_LINES));
 
 const PREP_GAMES = ['wheel_vacuum', 'suit_seal']; // before every trip (5.1)
 const TUTORIAL_GAMES = ['solar_wipe', 'battery']; // the Sol 1 tutorial plays these once without a task
