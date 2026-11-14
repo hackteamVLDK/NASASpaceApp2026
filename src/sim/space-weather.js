@@ -8,6 +8,7 @@
  */
 import { STORM_CLASSES, TUNING, EARTH_HOURS_PER_SIM_MINUTE, SOL_MINUTES, SOL_SECONDS } from './constants.js';
 import { PROVENANCE } from '../data/nasa/reference.js';
+import { has } from './util.js';
 
 const SIM_MINUTE_SECONDS = SOL_SECONDS / SOL_MINUTES;
 
@@ -23,7 +24,7 @@ export function stormDurationMinutes(stormClass) {
 export function stormRateMsvPerHour(storm, minute) {
   const span = storm.endMinute - storm.startMinute;
   const u = (minute - storm.startMinute) / span;
-  if (u < 0 || u >= 1) return 0;
+  if (!(u >= 0 && u < 1) || !has(STORM_CLASSES, storm.class)) return 0;
   const cls = STORM_CLASSES[storm.class];
   const peak = (2 * cls.surfaceDoseMsv) / cls.hours;
   const rise = TUNING.stormRiseFraction;
@@ -68,8 +69,17 @@ export function stormsFromDonki(dataset, { startDateUtc, sols }) {
         id: `donki-${day}`,
         startMinute,
         class: stormClass,
-        label: `Solar particle event of ${day}`,
-        timing: { provenance: PROVENANCE.NASA, source: dataset.source, detections: events.length, instruments, firstDetectionUtc: first.time, link: first.link },
+        label: `Solar storm (scenario from ${niceDate(day)})`,
+        about: `Game scenario. On ${niceDate(day)} spacecraft near Earth really did detect a burst of solar particles (NASA DONKI). The game imagines that burst arriving at Mars at the same moment; whether it reached Mars, and how strongly, is not in the data.`,
+        timing: {
+          provenance: PROVENANCE.NASA,
+          source: dataset.source,
+          note: 'Time of the first detection near Earth. Using it as the arrival time at Mars is a game assumption.',
+          detections: events.length,
+          instruments,
+          firstDetectionUtc: first.time,
+          link: first.link,
+        },
         strength: { provenance: PROVENANCE.GAME, note: 'Strength at Mars is a game value. These detections were made near Earth, not at Mars.' },
       }),
     );
@@ -85,13 +95,22 @@ export function minuteFromUtc(utc, startDateUtc) {
   return Math.round((t - t0) / 1000 / SIM_MINUTE_SECONDS);
 }
 
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+/** "2024-05-09" -> "9 May 2024" */
+export function niceDate(isoDay) {
+  const [y, m, d] = isoDay.split('-').map(Number);
+  return `${d} ${MONTHS[m - 1]} ${y}`;
+}
+
 /** Build a storm object with its end time filled in. */
-export function makeStorm({ id, startMinute, class: stormClass, label, timing, strength }) {
-  if (!STORM_CLASSES[stormClass]) throw new Error(`unknown storm class: ${stormClass}`);
+export function makeStorm({ id, startMinute, class: stormClass, label, about, timing, strength }) {
+  if (!has(STORM_CLASSES, stormClass)) throw new Error(`unknown storm class: ${stormClass}`);
   return {
     id,
     class: stormClass,
     label: label || STORM_CLASSES[stormClass].label,
+    about: about || 'Scripted for this level: a game scenario, not a real event.',
     startMinute,
     endMinute: startMinute + stormDurationMinutes(stormClass),
     status: 'pending', // pending -> warned -> active -> done

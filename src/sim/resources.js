@@ -23,6 +23,12 @@ export function sunFactor(hourFloat) {
  * the greenhouse lights, then the water recycler, then the oxygen generator. This keeps
  * the last part of the battery for heating and air through the night, and it means a
  * drained battery recharges before the optional systems come back.
+ *
+ * Exception: when the oxygen tank (or the water tank) is nearly empty, the oxygen generator
+ * (or the recycler) ignores its reserve and runs on whatever energy is left.
+ *
+ * Must be called after the crew have decided what they are doing this minute, so that the
+ * lab draws power in exactly the minutes someone works in it.
  */
 export function stepPower(state, clock) {
   const T = TUNING;
@@ -35,11 +41,15 @@ export function stepPower(state, clock) {
 
   const labInUse = state.crew.some((c) => c.activity === 'work' && c.job === 'research' && c.location === 'lab');
   const o2Wanted = res.o2Kg < T.o2TankKg && res.waterL > 0;
+  // When air or water is nearly gone, that system stops respecting its battery reserve:
+  // there is no point saving power for the night if nobody can breathe until then.
+  const o2Critical = res.o2Kg < T.o2CriticalKg;
+  const waterCritical = res.waterL < T.waterCriticalL;
   // [name, kW wanted, battery fraction that must remain after serving it]
   const loads = [
     ['base', T.baseLoadKw + (clock.isDay ? T.heatingDayKw : T.heatingNightKw), 0],
-    ['o2gen', o2Wanted ? T.o2GenKw : 0, T.reserveO2gen],
-    ['recycler', T.recyclerKw, T.reserveRecycler],
+    ['o2gen', o2Wanted ? T.o2GenKw : 0, o2Critical ? 0 : T.reserveO2gen],
+    ['recycler', T.recyclerKw, waterCritical ? 0 : T.reserveRecycler],
     ['greenhouse', T.greenhouseKw, T.reserveGreenhouse],
     ['lab', labInUse ? T.labKw : 0, T.reserveLab],
   ];
@@ -74,18 +84,25 @@ export function stepLifeSupport(state) {
   const crew = state.crew.length;
   const perSol = 1 / SOL_MINUTES;
 
-  // Oxygen: the crew breathe it; the generator splits water to make more.
-  res.o2Kg -= crew * T.o2KgPerCrewDay * EARTH_DAYS_PER_SIM_MINUTE;
+  // Oxygen: the generator splits water to make it; then the crew breathe.
+  // If the tank cannot cover a minute of breathing, `shortfall.o2` is the missing fraction:
+  // an empty tank with the generator covering 95% of demand is thin air, not vacuum.
+  const breathed = crew * T.o2KgPerCrewDay * EARTH_DAYS_PER_SIM_MINUTE;
   if (powered.o2gen) {
-    const make = Math.max(0, Math.min(T.o2GenKgPerSol * perSol * sys.o2GenEff, T.o2TankKg - res.o2Kg, res.waterL / T.electrolysisWaterPerO2));
+    const make = Math.max(0, Math.min(T.o2GenKgPerSol * perSol * sys.o2GenEff, T.o2TankKg + breathed - res.o2Kg, res.waterL / T.electrolysisWaterPerO2));
     res.o2Kg += make;
     res.waterL -= make * T.electrolysisWaterPerO2;
   }
+  const o2Got = Math.min(res.o2Kg, breathed);
+  res.o2Kg -= o2Got;
 
   // Water: used by the crew, mostly won back by the recycler when it has power.
+  // What the crew can drink this minute is what is in the tank plus what was just recovered.
   const used = crew * T.waterLPerCrewDay * EARTH_DAYS_PER_SIM_MINUTE;
   const recovered = powered.recycler ? T.waterRecoveryMax * sys.recyclerEff : 0;
+  const waterGot = Math.min(used, Math.max(0, res.waterL) + used * recovered);
   res.waterL -= used * (1 - recovered);
+  state.shortfall = { o2: 1 - o2Got / breathed, water: 1 - waterGot / used };
 
   // Greenhouse: grows a little by itself when lit and watered.
   if (powered.greenhouse && res.waterL > 0) {

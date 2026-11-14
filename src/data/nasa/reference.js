@@ -22,7 +22,7 @@ const nasa = (value, unit, source, extra = {}) => Object.freeze({ value, unit, s
 export const NASA = Object.freeze({
   // --- Mars as a planet
   solSeconds: nasa(88775.244, 's', 'NASA Mars Fact Sheet / NASA GISS Mars24: one sol is 24 h 39 min 35.244 s'),
-  surfaceGravity: nasa(3.71, 'm/s^2', 'NASA Mars Fact Sheet (about 38% of Earth gravity)'),
+  surfaceGravity: nasa(3.73, 'm/s^2', 'NASA Mars Fact Sheet, "Surface gravity (mean)": 3.73 m/s^2, against 9.82 on Earth (38%)'),
   solarIrradiance: nasa(586.2, 'W/m^2', 'NASA Mars Fact Sheet: mean sunlight at Mars orbit (Earth gets 1361)'),
   atmosphereCo2Percent: nasa(95.1, '%', 'NASA Mars Fact Sheet: atmosphere by volume'),
   surfacePressurePa: nasa(636, 'Pa', 'NASA Mars Fact Sheet: 6.36 mb at mean radius, varying about 4.0 to 8.7 mb (Earth: 101,325 Pa)'),
@@ -37,10 +37,10 @@ export const NASA = Object.freeze({
   careerDoseLimit: nasa(600, 'mSv', 'NASA-STD-3001 Vol. 1 Rev. B (2022): career radiation limit for astronauts'),
 
   // --- Keeping a crew alive (International Space Station experience)
-  crewOxygenPerDay: nasa(0.84, 'kg/person/day', 'NASA life-support figures for one crew member'),
+  crewOxygenPerDay: nasa(0.84, 'kg/person/day', 'NASA Marshall Space Flight Center life-support planning value for one crew member; real use varies with activity, roughly 0.6 to 1.0 kg'),
   crewWaterPerDay: nasa(3.8, 'L/person/day', 'NASA (2023): about one gallon per crew member per day for drinking, food preparation and hygiene'),
   waterRecovery: nasa(0.98, 'fraction', 'NASA (June 2023): the ISS life-support system demonstrated 98% water recovery'),
-  crewFoodPerDay: nasa(1.27, 'kg/person/day', 'NASA "Food for Space Flight": 3.8 lb of food per person per day including 1 lb of packaging, so about 2.8 lb (1.27 kg) eaten'),
+  crewFoodPerDay: nasa(1.27, 'kg/person/day', 'NASA Facts "Food for Space Flight" (1996, Space Shuttle era): 3.8 lb per person per day including 1 lb of packaging. The 2.8 lb (1.27 kg) of food is our subtraction, not a separately published figure', { derived: true }),
   issExerciseHours: nasa(2, 'h/day', 'NASA: ISS astronauts exercise about two hours a day to limit muscle and bone loss'),
 
   // --- Living off the land

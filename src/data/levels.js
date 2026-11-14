@@ -71,7 +71,7 @@ export const LEVELS = Object.freeze([
     order: 2,
     status: 'playable',
     title: 'Storm Season',
-    tagline: 'May 2024: the Sun is restless. The storm dates in this level are real.',
+    tagline: 'May 2024: the Sun is restless. The storm dates in this level come from real NASA records.',
     lore: { loreTbd: true, intro: 'PLACEHOLDER — the Sun wakes up. Replace with the lore text.', outro: 'PLACEHOLDER — the crew came through the storms.' },
     teaches: ['Radiation budget', 'Shielding thickness and material', 'Depth as protection', 'Trade-off: time outside versus dose', 'Building upgrades'],
     lengthSols: 14,
@@ -86,7 +86,7 @@ export const LEVELS = Object.freeze([
       systems: { o2GenEff: 0.9, recyclerEff: 0.9, solarClean: 0.95 },
     },
     spaceWeather: {
-      // Real dates and times: NASA DONKI solar energetic particle detections (near Earth).
+      // Real dates and times of detections near Earth (NASA DONKI). The game imagines them at Mars.
       donki: { startDateUtc: '2024-05-08T00:00Z' },
       scripted: [
         {
@@ -94,8 +94,9 @@ export const LEVELS = Object.freeze([
           utc: '2024-05-20T06:00Z',
           class: 'strong',
           label: 'Solar storm of 20 May 2024 (measured on Mars by Curiosity)',
-          timing: { provenance: 'nasa-measurement', source: 'NASA/JPL news, 10 June 2024. The date is real; the hour of day used here is approximate.' },
-          strength: { provenance: 'approximation', source: 'Scaled from the 8,100 micrograys measured by MSL RAD.' },
+          about: 'A real storm at Mars. On 20 May 2024 the Curiosity rover measured the biggest radiation surge of its 12 years on the surface. The date is real; the hour of day in the game is our choice.',
+          timing: { provenance: 'approximation', note: 'The date is a NASA measurement (NASA/JPL news, 10 June 2024). The hour of day is not published and was chosen for the game.' },
+          strength: { provenance: 'approximation', note: 'Scaled from the 8,100 micrograys measured by MSL RAD.' },
         },
       ],
     },

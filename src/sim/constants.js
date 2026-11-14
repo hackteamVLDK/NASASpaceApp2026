@@ -61,6 +61,8 @@ export const TUNING = {
   reserveRecycler: 0.28,
   reserveGreenhouse: 0.32,
   reserveLab: 0.4,
+  o2CriticalKg: 3,
+  waterCriticalL: 20,
   emergencyGraceMinutes: 120,
   foodEmergencyKg: 0.5,
   sunriseHour: 6,
@@ -152,6 +154,8 @@ export const TUNING_PROVENANCE = {
   reserveGreenhouse: p(G, 'Battery level below which the greenhouse lights go off.'),
   reserveLab: p(G, 'Battery level below which the lab is switched off: science is the first thing to wait.'),
   foodEmergencyKg: p(G, 'Less than half a kilogram in the pantry counts as out of food: the greenhouse trickle alone cannot feed four people.'),
+  o2CriticalKg: p(G, 'With less than about a sol of air left, the oxygen generator ignores its battery reserve: breathing comes before saving power.'),
+  waterCriticalL: p(G, 'With this little water left, the recycler ignores its battery reserve.'),
   emergencyGraceMinutes: p(G, 'A shortage that comes back within two hours counts as the same emergency, not a new one.'),
   sunriseHour: p(A, 'Equinox at the equator: 12 hours of daylight. Real day length changes with latitude and season.'),
   sunsetHour: p(A, 'See sunriseHour.'),
@@ -222,12 +226,17 @@ export const STORM_CLASSES = {
 
 // ---------------------------------------------------------------- shielding materials
 
-/** density in g/cm^3; effectiveness is shielding per g/cm^2 relative to regolith. */
+/**
+ * density in g/cm^3.
+ * effectiveness: how well a material stops particles, per g/cm^2, relative to regolith.
+ * secondaries:   how many secondary particles it makes when hit, per g/cm^2, relative to regolith.
+ *                Heavy nuclei (metal) make more; hydrogen-rich materials make fewer.
+ */
 export const MATERIALS = {
-  regolith: { label: 'Martian regolith', density: 1.5, effectiveness: 1.0, tag: A, note: 'Loose Martian soil. Bulk density varies from about 1.0 to 1.8 g/cm^3.' },
-  water: { label: 'Water', density: 1.0, effectiveness: 1.3, tag: A, note: 'Hydrogen-rich materials stop particles better per kilogram and make fewer secondaries.' },
-  polyethylene: { label: 'Polyethylene', density: 0.95, effectiveness: 1.5, tag: A, note: 'Plastic rich in hydrogen; used for radiation shielding on the ISS.' },
-  aluminum: { label: 'Aluminium hull', density: 2.7, effectiveness: 0.8, tag: A, note: 'Structural metal. Heavier nuclei make more secondary particles, so it shields less per kilogram.' },
+  regolith: { label: 'Martian regolith', density: 1.5, effectiveness: 1.0, secondaries: 1.0, tag: A, note: 'Loose Martian soil. Bulk density varies from about 1.0 to 1.8 g/cm^3.' },
+  water: { label: 'Water', density: 1.0, effectiveness: 1.3, secondaries: 0.6, tag: A, note: 'Hydrogen-rich materials stop particles better per kilogram and make fewer secondaries.' },
+  polyethylene: { label: 'Polyethylene', density: 0.95, effectiveness: 1.5, secondaries: 0.5, tag: A, note: 'Plastic rich in hydrogen; used for radiation shielding on the ISS.' },
+  aluminum: { label: 'Aluminium hull', density: 2.7, effectiveness: 0.8, secondaries: 1.3, tag: A, note: 'Structural metal. Heavier nuclei make more secondary particles, so it shields less per kilogram.' },
 };
 
 // ---------------------------------------------------------------- schedule, jobs, roles

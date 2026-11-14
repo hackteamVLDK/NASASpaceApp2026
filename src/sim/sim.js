@@ -6,25 +6,27 @@
  *
  * One minute, in order:
  *   1. environment   — solar storms, dust storms, sunlight
- *   2. power         — panels, battery, load shedding
- *   3. crew          — decide, walk, work, eat, sleep, absorb radiation
- *   4. life support  — oxygen, water, greenhouse, wear
- *   5. vitals        — morale and health
- *   6. bookkeeping   — achievements, hints, mission log, end of level
+ *   2. crew plan     — everyone decides what to do and takes a step toward it
+ *   3. power         — panels, battery, load shedding (knows who is working where)
+ *   4. crew act      — work, eat, sleep, tire, absorb radiation
+ *   5. life support  — oxygen, water, greenhouse, wear
+ *   6. vitals        — morale and health
+ *   7. bookkeeping   — achievements, hints, mission log, end of level
  */
 import { LEVEL_BY_ID } from '../data/levels.js';
 import { ROOMS, ZONE_LABEL } from '../data/base-layout.js';
 import donkiSep2024 from '../data/nasa/donki-sep-2024.js';
 import { TUNING, SOL_MINUTES, JOBS, PROJECTS } from './constants.js';
 import { seedFrom, nextRandom } from './rng.js';
-import { createCrewMember, stepCrewMember, stepVitals } from './crew.js';
+import { createCrewMember, planCrewMember, actCrewMember, stepVitals } from './crew.js';
 import { stepPower, stepLifeSupport, updateAlerts, sunFactor, reserves } from './resources.js';
 import { QUIET_GCR_MSV_PER_HOUR, roomShielding, shieldingReport, doseRateMsvPerHour } from './radiation.js';
 import { stormsFromDonki, makeStorm, minuteAt, minuteFromUtc, stormRateMsvPerHour } from './space-weather.js';
 import { checkAchievements, evaluateObjectives, scoreBreakdown, starRating, stormWasSheltered } from './objectives.js';
 import { describeEvent } from './messages.js';
+import { has } from './util.js';
 
-export const STATE_VERSION = 1;
+export const STATE_VERSION = 2;
 const LOG_LIMIT = 120;
 
 // ---------------------------------------------------------------- clock
@@ -49,10 +51,13 @@ function buildStorms(level) {
   const sw = level.spaceWeather;
   const storms = sw.donki ? stormsFromDonki(donkiSep2024, { startDateUtc: sw.donki.startDateUtc, sols: level.lengthSols }) : [];
   sw.scripted.forEach((s, i) => {
+    if (s.utc && !sw.donki) throw new Error(`level ${level.id}: a storm placed by UTC time needs spaceWeather.donki.startDateUtc`);
     const startMinute = s.utc ? minuteFromUtc(s.utc, sw.donki.startDateUtc) : minuteAt(s.sol, s.hour ?? 0);
-    storms.push(makeStorm({ id: `scripted-${i + 1}`, startMinute, class: s.class, label: s.label, timing: s.timing, strength: s.strength }));
+    storms.push(makeStorm({ id: `scripted-${i + 1}`, startMinute, class: s.class, label: s.label, about: s.about, timing: s.timing, strength: s.strength }));
   });
-  return storms.sort((a, b) => a.startMinute - b.startMinute);
+  // A storm that was completely over before the level begins never happens in the game.
+  const firstMinute = level.startHour * 60;
+  return storms.filter((s) => s.endMinute > firstMinute).sort((a, b) => a.startMinute - b.startMinute);
 }
 
 /**
@@ -61,9 +66,9 @@ function buildStorms(level) {
  * @param {{ seed?: number | string }} [options]
  */
 export function createGame(levelId, { seed = 1 } = {}) {
+  if (!has(LEVEL_BY_ID, levelId)) throw new Error(`unknown level: ${levelId}`);
   const level = LEVEL_BY_ID[levelId];
-  if (!level) throw new Error(`unknown level: ${levelId}`);
-  const state = {
+  return {
     version: STATE_VERSION,
     levelId,
     seed,
@@ -79,12 +84,14 @@ export function createGame(levelId, { seed = 1 } = {}) {
     systems: { ...level.start.systems },
     power: { genKw: 0, loadKw: 0, demandKw: 0, powered: { base: true, o2gen: false, recycler: true, greenhouse: true, lab: false }, shed: [] },
     alerts: { noO2: false, noWater: false, noFood: false, blackout: false },
+    shortfall: { o2: 0, water: 0 }, // fraction of this minute's air and water the crew did not get
     emergencies: Object.fromEntries(['noO2', 'noWater', 'noFood', 'blackout'].map((k) => [k, { open: false, clearMinutes: 0 }])),
     env: { gcrMsvPerHour: QUIET_GCR_MSV_PER_HOUR, speMsvPerHour: 0, stormActive: false, dustStorm: null, sun: 0 },
     crew: Object.entries(level.crew).map(([id, job]) => createCrewMember(id, job)),
     projects: Object.fromEntries(level.projects.map((id) => [id, { status: 'available', hoursDone: 0, paid: false }])),
     extraShielding: {},
     storms: buildStorms(level),
+    stormEpisode: false, // true from the first storm starting until the last overlapping one ends
     dustStorms: level.dustStorms.map((d) => {
       const startMinute = minuteAt(d.startSol, d.startHour ?? 0);
       return { startMinute, endMinute: startMinute + d.durationSols * SOL_MINUTES, solarFactor: d.solarFactor, dustFactor: d.dustFactor, status: 'pending' };
@@ -96,38 +103,73 @@ export function createGame(levelId, { seed = 1 } = {}) {
     hintsShown: [],
     log: [],
   };
-  return state;
 }
 
 // ---------------------------------------------------------------- environment
 
-function updateEnvironment(state, level, clock, events) {
-  const lead = level.warningLeadMinutes * (state.projects.stormWatch?.status === 'done' ? 2 : 1);
-  let spe = 0;
-  let active = false;
-
+/**
+ * Advance every storm's status and return the surface storm dose rate for this minute.
+ * Two passes, so that decisions about the episode (reset doses, all-clear) are made from
+ * the complete picture rather than half-way through the list.
+ */
+function updateStorms(state, lead, events) {
+  // Pass 1 — warnings and starts.
   for (const s of state.storms) {
-    if (s.status === 'done') continue;
-    if (s.status === 'pending' && state.minute >= s.startMinute - lead && state.minute < s.startMinute) {
-      s.status = 'warned';
-      events.push({ type: 'storm-warning', storm: s.id, class: s.class, label: s.label, minutesUntil: s.startMinute - state.minute, timing: s.timing, strength: s.strength });
-    }
-    if ((s.status === 'pending' || s.status === 'warned') && state.minute >= s.startMinute) {
-      const episodeInProgress = state.storms.some((o) => o.status === 'active');
+    if (s.status !== 'pending' && s.status !== 'warned') continue;
+    if (state.minute >= s.endMinute) {
+      s.status = 'done'; // its whole duration is already behind us: it never ran, no credit
+    } else if (state.minute >= s.startMinute) {
       s.status = 'active';
-      if (!episodeInProgress) for (const c of state.crew) c.stormDoseMsv = 0;
-      events.push({ type: 'storm-start', storm: s.id, class: s.class, label: s.label });
-    }
-    if (s.status === 'active') {
-      if (state.minute >= s.endMinute) {
-        s.status = 'done';
-        if (!state.storms.some((o) => o.status === 'active')) endStormEpisode(state, s, events);
-      } else {
-        spe += stormRateMsvPerHour(s, state.minute);
-        active = true;
+      if (!state.stormEpisode) {
+        state.stormEpisode = true;
+        for (const c of state.crew) c.stormDoseMsv = 0;
       }
+      events.push({ type: 'storm-start', storm: s.id, class: s.class, label: s.label, about: s.about });
+    } else if (s.status === 'pending' && state.minute >= s.startMinute - lead) {
+      s.status = 'warned';
+      events.push({ type: 'storm-warning', storm: s.id, class: s.class, label: s.label, about: s.about, minutesUntil: s.startMinute - state.minute, timing: s.timing, strength: s.strength });
     }
   }
+  // Pass 2 — ends.
+  let ended = null;
+  for (const s of state.storms) {
+    if (s.status === 'active' && state.minute >= s.endMinute) {
+      s.status = 'done';
+      ended = s;
+    }
+  }
+  const active = state.storms.filter((s) => s.status === 'active');
+  if (ended && active.length === 0) endStormEpisode(state, ended, events);
+  let rate = 0;
+  for (const s of active) rate += stormRateMsvPerHour(s, state.minute);
+  return { rate, active: active.length > 0 };
+}
+
+/** The last overlapping storm has ended: score the episode and lift the shelter order if allowed. */
+function endStormEpisode(state, storm, events) {
+  const worst = state.crew.reduce((a, b) => (a.stormDoseMsv >= b.stormDoseMsv ? a : b));
+  const sheltered = stormWasSheltered(state);
+  state.stormEpisode = false;
+  state.stats.stormsTotal += 1;
+  if (sheltered) state.stats.stormsSheltered += 1;
+  events.push({
+    type: 'storm-end',
+    storm: storm.id,
+    sheltered,
+    maxDoseMsv: worst.stormDoseMsv,
+    maxDoseName: worst.name,
+    doses: state.crew.map((c) => ({ crew: c.id, name: c.name, doseMsv: c.stormDoseMsv })),
+  });
+  const moreComing = state.storms.some((o) => o.status === 'warned' || o.status === 'active');
+  if (state.shelterOrder && state.autoAllClear && !moreComing) {
+    state.shelterOrder = false;
+    events.push({ type: 'all-clear' });
+  }
+}
+
+function updateEnvironment(state, level, clock, events) {
+  const lead = level.warningLeadMinutes * (state.projects.stormWatch?.status === 'done' ? 2 : 1);
+  const storm = updateStorms(state, lead, events);
 
   let dustStorm = null;
   for (const d of state.dustStorms) {
@@ -154,35 +196,16 @@ function updateEnvironment(state, level, clock, events) {
     }
   }
 
-  state.env = { gcrMsvPerHour: QUIET_GCR_MSV_PER_HOUR, speMsvPerHour: spe, stormActive: active, dustStorm, sun: sunFactor(clock.hourFloat) };
+  state.env = { gcrMsvPerHour: QUIET_GCR_MSV_PER_HOUR, speMsvPerHour: storm.rate, stormActive: storm.active, dustStorm, sun: sunFactor(clock.hourFloat) };
 }
 
-function endStormEpisode(state, storm, events) {
-  const worst = state.crew.reduce((a, b) => (a.stormDoseMsv >= b.stormDoseMsv ? a : b));
-  const sheltered = stormWasSheltered(state);
-  state.stats.stormsTotal += 1;
-  if (sheltered) state.stats.stormsSheltered += 1;
-  events.push({
-    type: 'storm-end',
-    storm: storm.id,
-    sheltered,
-    maxDoseMsv: worst.stormDoseMsv,
-    maxDoseName: worst.name,
-    doses: state.crew.map((c) => ({ crew: c.id, name: c.name, doseMsv: c.stormDoseMsv })),
-  });
-  const moreComing = state.storms.some((o) => o.status === 'warned' || o.status === 'active');
-  if (state.shelterOrder && state.autoAllClear && !moreComing) {
-    state.shelterOrder = false;
-    events.push({ type: 'all-clear' });
-  }
-}
-
-/** Extra shielding layers per zone, from finished projects (newest layer outermost). */
-function extraShieldingFrom(projects) {
+/** Extra shielding layers per zone, from finished projects (newest layer outermost). Derived data. */
+export function extraShieldingFrom(projects) {
   const extra = {};
   for (const [id, p] of Object.entries(projects)) {
+    if (!has(PROJECTS, id) || p.status !== 'done') continue;
     const shielding = PROJECTS[id].shielding;
-    if (p.status !== 'done' || !shielding) continue;
+    if (!shielding) continue;
     for (const zone of shielding.zones) (extra[zone] ??= []).push({ ...shielding.layer });
   }
   return extra;
@@ -216,6 +239,13 @@ function writeLog(state, events, firstNewEvent, minute) {
 }
 
 function finish(state, status, reason, events) {
+  // A storm still under way when the level ends is settled on the dose received so far,
+  // so riding it out underground still counts.
+  const raging = state.storms.filter((s) => s.status === 'active');
+  if (raging.length) {
+    for (const s of raging) s.status = 'done';
+    endStormEpisode(state, raging[raging.length - 1], events);
+  }
   state.status = status;
   state.result = {
     status,
@@ -240,8 +270,9 @@ function stepOneMinute(state, events) {
 
   if (clock.minuteOfSol === 0) events.push({ type: 'sol-start', sol: clock.sol });
   updateEnvironment(state, level, clock, events);
+  for (const c of state.crew) planCrewMember(state, c, clock);
   stepPower(state, clock);
-  for (const c of state.crew) stepCrewMember(state, c, clock, events);
+  for (const c of state.crew) actCrewMember(state, c, clock, events);
   if (events.slice(firstNewEvent).some((e) => e.type === 'project-done')) state.extraShielding = extraShieldingFrom(state.projects);
   stepLifeSupport(state);
   updateAlerts(state, events);
@@ -277,6 +308,7 @@ export function step(state, minutes = 1) {
  *   { type: 'autoAllClear', on }        lift the shelter order automatically when storms end
  *   { type: 'startProject', project }   start a base upgrade (pays its costs)
  *   { type: 'pauseProject' }            put the active project on hold
+ * Never throws on bad input.
  * @returns {{ ok: true, events: object[] } | { ok: false, error: string }}
  */
 export function applyCommand(state, cmd) {
@@ -288,7 +320,7 @@ export function applyCommand(state, cmd) {
     case 'assign': {
       const c = state.crew.find((m) => m.id === cmd.crew);
       if (!c) return fail(`Unknown crew member: ${cmd.crew}`);
-      if (!level.jobs.includes(cmd.job)) return fail(`That job is not available in this level: ${cmd.job}`);
+      if (!has(JOBS, cmd.job) || !level.jobs.includes(cmd.job)) return fail(`That job is not available in this level: ${cmd.job}`);
       if (c.job !== cmd.job) {
         c.job = cmd.job;
         events.push({ type: 'assigned', crew: c.id, name: c.name, job: cmd.job, jobLabel: JOBS[cmd.job].label });
@@ -307,8 +339,8 @@ export function applyCommand(state, cmd) {
       state.autoAllClear = Boolean(cmd.on);
       break;
     case 'startProject': {
+      if (!has(state.projects, cmd.project) || !has(PROJECTS, cmd.project)) return fail(`That project is not available in this level: ${cmd.project}`);
       const p = state.projects[cmd.project];
-      if (!p) return fail(`That project is not available in this level: ${cmd.project}`);
       if (p.status === 'done') return fail('That project is already finished.');
       if (p.status === 'active') return fail('That project is already under way.');
       if (Object.values(state.projects).some((o) => o.status === 'active')) return fail('Finish or pause the current project first.');
@@ -342,8 +374,8 @@ export function applyCommand(state, cmd) {
 
 /** Everything the UI needs to explain one room, including why it is safe or not. */
 export function roomReport(state, roomId) {
+  if (!has(ROOMS, roomId)) throw new Error(`unknown room: ${roomId}`);
   const room = ROOMS[roomId];
-  if (!room) throw new Error(`unknown room: ${roomId}`);
   const layers = roomShielding(roomId, state.extraShielding);
   return {
     id: roomId,

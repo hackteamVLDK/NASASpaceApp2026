@@ -14,13 +14,13 @@ import { ROOMS } from '../data/base-layout.js';
 import { CREW } from '../data/crew.js';
 import { shortestPath, edgeMinutes, travelMinutes } from './pathfinding.js';
 import { doseForOneMinute, roomShielding } from './radiation.js';
+import { clamp, has } from './util.js';
 
-const clamp = (v, lo = 0, hi = 100) => Math.min(hi, Math.max(lo, v));
 const UNDERGROUND = new Set(['upper', 'deep']);
 
 export function createCrewMember(id, job) {
+  if (!has(CREW, id)) throw new Error(`unknown crew member: ${id}`);
   const def = CREW[id];
-  if (!def) throw new Error(`unknown crew member: ${id}`);
   return {
     id,
     name: def.name,
@@ -215,23 +215,31 @@ function eat(state, c, clock) {
 
 // ---------------------------------------------------------------- one minute of one life
 
-/** Advance one astronaut by one minute: decide, walk or act, tire, absorb radiation. */
-export function stepCrewMember(state, c, clock, events) {
+/**
+ * First half of an astronaut's minute: decide what to do and take a step toward it.
+ * Sets `c.activity`. Runs for the whole crew before power is allocated, so the power step
+ * knows who is really working where.
+ */
+export function planCrewMember(state, c, clock) {
   const T = TUNING;
-  const s = c.stats;
-  const slot = DEFAULT_SCHEDULE[clock.hour];
-
-  if (!c.forcedSleep && s.energy <= T.forcedSleepBelow) c.forcedSleep = true;
-  if (c.forcedSleep && s.energy >= T.forcedSleepUntil) c.forcedSleep = false;
-
+  if (!c.forcedSleep && c.stats.energy <= T.forcedSleepBelow) c.forcedSleep = true;
+  if (c.forcedSleep && c.stats.energy >= T.forcedSleepUntil) c.forcedSleep = false;
   const want = desiredActivity(state, c, clock);
   const walking = stepMovement(c, want.node);
   c.activity = walking ? 'walk' : want.activity;
+}
+
+/** Second half: do the activity, tire, get hungry, absorb radiation. */
+export function actCrewMember(state, c, clock, events) {
+  const T = TUNING;
+  const s = c.stats;
+  const slot = DEFAULT_SCHEDULE[clock.hour];
+  const walking = c.activity === 'walk';
   const outdoors = ROOMS[c.location].zone === 'outdoor';
 
   let resting = false;
   if (!walking) {
-    switch (want.activity) {
+    switch (c.activity) {
       case 'sleep':
         s.energy = clamp(s.energy + T.sleepGainPerMin);
         resting = true;
@@ -293,8 +301,9 @@ export function stepVitals(state, c) {
   s.morale = clamp(s.morale + (clamp(target) - s.morale) * T.moraleRatePerMin);
 
   let harm = 0;
-  if (a.noO2) harm += T.healthNoO2PerMin;
-  if (a.noWater) harm += T.healthNoWaterPerMin;
+  // Harm from thin air or thirst is proportional to how much is actually missing.
+  harm += T.healthNoO2PerMin * state.shortfall.o2;
+  harm += T.healthNoWaterPerMin * state.shortfall.water;
   if (s.nutrition <= 5) harm += T.healthStarvingPerMin;
   if (s.energy <= 5) harm += T.healthExhaustedPerMin;
   if (s.fitness <= 15) harm += T.healthUnfitPerMin;

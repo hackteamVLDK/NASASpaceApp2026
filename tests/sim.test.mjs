@@ -178,18 +178,26 @@ test('power: the battery drains at night and charges at noon', () => {
 
 test('power: when the battery runs low the lab stops first and basic life support last', () => {
   const g = createGame('L3-dust-and-darkness');
-  runTo(g, 1, 23); // night, scientist no longer in the lab
-  const order = [];
-  g.resources.o2Kg = 5; // keep the oxygen generator wanting power
-  for (const kwh of [120, 90, 78, 70, 50, 0.01]) {
+  runTo(g, 1, 10); // mid-morning: the scientist is working in the lab
+  assert.equal(crewOf(g, 'sci').activity, 'work');
+  const shedAt = (kwh) => {
     g.resources.batteryKwh = kwh;
-    g.crew[3].activity = 'work'; // pretend the lab is in use
-    g.crew[3].job = 'research';
-    g.crew[3].location = 'lab';
+    g.resources.o2Kg = 10; // the generator wants power, but the tank is not critically low
     step(g, 1);
-    order.push([...g.power.shed].sort().join('+') || 'none');
-  }
-  assert.deepEqual(order, ['none', 'lab', 'greenhouse+lab', 'greenhouse+lab+recycler', 'greenhouse+lab+o2gen+recycler', 'base+greenhouse+lab+o2gen+recycler']);
+    return [...g.power.shed].sort().join('+') || 'none';
+  };
+  const cap = TUNING.batteryKwh;
+  assert.equal(shedAt(cap * 0.5), 'none');
+  assert.equal(shedAt(cap * (TUNING.reserveLab - 0.03)), 'lab');
+  assert.equal(shedAt(cap * (TUNING.reserveGreenhouse - 0.02)), 'greenhouse+lab');
+  assert.equal(shedAt(cap * (TUNING.reserveRecycler - 0.015)), 'greenhouse+lab+recycler');
+  assert.equal(shedAt(cap * (TUNING.reserveO2gen - 0.05)), 'greenhouse+lab+o2gen+recycler');
+  assert.equal(g.alerts.blackout, false, 'basic life support keeps running on the reserve');
+
+  runTo(g, 2, 1); // night: no sun at all
+  g.resources.batteryKwh = 0;
+  step(g, 1);
+  assert.ok(g.power.shed.includes('base'));
   assert.equal(g.alerts.blackout, true);
 });
 

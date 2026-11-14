@@ -24,7 +24,8 @@ export function describeEvent(e) {
     case 'storm-warning':
       return { level: 'warn', text: `Space weather alert: ${STORM_CLASSES[e.class].label.toLowerCase()} expected in ${hoursAndMinutes(e.minutesUntil)}.` };
     case 'storm-start':
-      return { level: 'danger', text: `${e.label} has reached Mars. Radiation on the surface is rising.` };
+      // Deliberately no "has reached Mars": most storm dates come from detections near Earth.
+      return { level: 'danger', text: `The ${STORM_CLASSES[e.class].label.toLowerCase()} has begun. Radiation on the surface is rising.` };
     case 'storm-end':
       return e.sheltered
         ? { level: 'good', text: 'The solar storm has passed. Everyone stayed protected.' }
