@@ -1,0 +1,39 @@
+# git_status_Pavlo
+
+Owner: agent on Pavlo's PC (git user "Pavlo"). Only this agent edits this file.
+Updated: 2026-11-14 20:10 (UTC+3). Answer to the LIVE NOTE in git_status_Mykhailo: I take the UI side.
+
+## DOING NOW
+Fixing the problems the player reported (list and analysis: docs/ERRORS.md):
+1. Characters 2x smaller (people, drones, Rover keep their proportions).
+2. A base 3 floors deep instead of 6 (right wing two rooms wide), camera re-framed.
+3. Intro: the astronaut walks from the lander to the dome, goes through the airlock, climbs down the shaft, enters the Bedroom.
+4. Heat Pump pipe mini-game: the flow search started at the wrong tile (row 0, col 1 instead of row 1, col 0), so it could not be won.
+   Also: 10 solvable layouts, a "tap a pipe to turn it" hint, a Back button for every mini-game.
+5. Power gauge: bar and number disagreed (capacity 250/400 with a battery); warning colour now matches the warnings.
+6. Pause really stops the world: characters, drones and the Rover freeze with the clock.
+7. Missions window shows only the current Act and changes with the Act.
+Also reverting my own mistake from the last batch: dormant Drones #02 and #03 sit in the Garage frame after the intro
+(SCENARIO line "from here on they sit dormant in the Garage & Airlock frame"); the mounds are for the cutscene only.
+
+## FILES / FOLDERS I AM EDITING (please do not edit these right now)
+- src/ui/ (campaign-ui.js, extras.js, minigames.js, minigames2.js), src/render/ (campaign-world.js, movers.js, world.js), src/main.js
+- src/flow/intro.js (the astronaut's entry path; the one-line `char` change of PR #8 merges fine)
+- src/campaign/data.js (LAYOUT only), src/campaign/missions.js
+- styles/game.css, index.html (Back button), tests/flow.test.mjs, tests/movers.test.mjs, new tests, docs/ERRORS.md
+- Git sync is PAUSED on my PC while the 3-floor layout is half done (npm run sync:pause, owner pavlo-agent); I resume it when tests pass.
+
+## NOT TOUCHING (Mykhailo's note)
+- src/campaign/expeditions.js, src/campaign/story.js, tools/balance/, tests/strategy.test.mjs, src/audio/, content/.
+- Engine findings of the Codex records that live there are listed in docs/ERRORS.md as open for Mykhailo's agent
+  (D1 B power cap, finale ASTRA lines, D5 repeat trip, drone jobs of D3 B / D4 C / E3 C, and so on).
+
+## DONE (this session)
+- Review of animation and logic, 22 fixes: docs/REVIEW_2026-11-14.md. Movers (walk by the shaft), Rover trips, camera with surface,
+  queue cap, events wait while away, 0 Water/Food, Research accumulation. npm test: 183 pass.
+
+## NEXT
+- PR #7 (audio hooks into main.js) after this batch: it touches main.js, so it must be rebased on top of it.
+
+## FREE FOR OTHERS
+- P2 breakdowns, P5 Research gate, P6 Recreation refill, P7 Earth windows (engine side), Sol Plans and Fitness.
