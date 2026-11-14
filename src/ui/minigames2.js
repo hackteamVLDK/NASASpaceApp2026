@@ -6,6 +6,8 @@
  * Solar Wipe (4.1) and the tutorial battery step are in minigames.js.
  */
 import { play } from './audio.js';
+import { t } from '../flow/strings.js';
+import { formatDelay } from '../data/nasa/lightTime.js';
 
 const W = 1100;
 const H = 620;
@@ -29,16 +31,17 @@ function ring(c, frac) {
  * Shared scaffold. `make()` returns { down(p), move(p), up(p), draw(c, now, api), done() } where
  * `api.win()` ends the game; `done()` says whether the goal is reached each frame.
  */
-function scaffold({ canvas, game, onWin, onFail, onTitle, onHint, title, hint, make }) {
+function scaffold({ canvas, game, onWin, onFail, onTitle, onHint, title, hint, make, opts = {} }) {
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
   onTitle(title);
   onHint(hint);
   const limit = TIME[game] + SOLO_BONUS;
   let g, started, failures = 0, finished = false, msg = '', raf = 0, held = 0;
-  const reset = () => { g = make(); started = performance.now(); held = 0; };
+  const reset = () => { g = make(opts); started = performance.now(); held = 0; };
   reset();
-  const api = { win() { if (!finished) { finished = true; play('win'); setTimeout(() => { destroy(); onWin(); }, 600); } }, elapsed: () => performance.now() - started };
+  // A game may set `outroMs` and keep drawing after the win (g.wonAt), e.g. the antenna's message counter.
+  const api = { win() { if (!finished) { finished = true; g.wonAt = performance.now(); play('win'); setTimeout(() => { destroy(); onWin(); }, g.outroMs ?? 600); } }, elapsed: () => performance.now() - started };
   const handlers = {
     pointerdown: (e) => { canvas.setPointerCapture?.(e.pointerId); g.down?.(pt(canvas, e), api); },
     pointermove: (e) => g.move?.(pt(canvas, e), api),
@@ -268,7 +271,10 @@ function airFilter() {
 }
 
 // ------------------------------------------------------------------ 4.9 Earth Dish Antenna Alignment
-function antenna() {
+// On a win a message icon flies to Earth with "Arriving in {delay}...": {delay} starts at the real
+// one-way light time for the current Sol (lightTime.js) and counts down sped up (gameplay).
+const ANTENNA_OUTRO_MS = 2600;
+function antenna({ delaySeconds = 840 } = {}) {
   const sl = { lr: 0.15, ud: 0.85 };
   let drag = null, good = null;
   const earth = (now) => ({ x: 0.5 + 0.28 * Math.sin(now / 5200), y: 0.35 + 0.18 * Math.cos(now / 6800) });
@@ -290,7 +296,16 @@ function antenna() {
       [['Left / Right', 120, sl.lr], ['Up / Down', 600, sl.ud]].forEach(([n, x, v]) => { c.fillStyle = '#394b5d'; rr(c, x, 530, 400, 30, 15); c.fill(); c.fillStyle = '#ffb000'; c.beginPath(); c.arc(x + 400 * v, 545, 26, 0, Math.PI * 2); c.fill(); label(c, n, x + 200, 600, 20); });
       if (bars >= 4) { good ??= now; c.fillStyle = '#43e060'; c.fillRect(300, 490, Math.min(500, ((now - good) / 3000) * 500), 10); } else good = null;
       this._since = good; this._now = now;
+      if (this.wonAt != null) {
+        const f = Math.min(1, (now - this.wonAt) / (ANTENNA_OUTRO_MS - 400));
+        const ix = bx + (ex - bx) * f, iy = by + (ey - by) * f - Math.sin(f * Math.PI) * 60;
+        c.fillStyle = '#fff'; rr(c, ix - 16, iy - 11, 32, 22, 4); c.fill();
+        c.strokeStyle = '#3d8bff'; c.lineWidth = 2; c.beginPath(); c.moveTo(ix - 16, iy - 11); c.lineTo(ix, iy + 2); c.lineTo(ix + 16, iy - 11); c.stroke();
+        c.fillStyle = 'rgba(0,0,0,.6)'; rr(c, W / 2 - 260, 400, 520, 56); c.fill();
+        label(c, t('ui.mg.dish_antenna_alignment.counter', { delay: formatDelay(delaySeconds * (1 - f)) }), W / 2, 438, 28);
+      }
     },
+    outroMs: ANTENNA_OUTRO_MS,
     done() { return this._since !== null && this._now - this._since >= 3000; },
   };
 }
@@ -352,7 +367,7 @@ const GAMES = {
 };
 
 /** Start one of the mini-games above. */
-export function startMini2(game, { canvas, title, hint, onWin, onFail, onTitle, onHint }) {
-  return scaffold({ canvas, game, onWin, onFail, onTitle, onHint, title, hint, make: GAMES[game] });
+export function startMini2(game, { canvas, title, hint, onWin, onFail, onTitle, onHint, ...opts }) {
+  return scaffold({ canvas, game, onWin, onFail, onTitle, onHint, title, hint, make: GAMES[game], opts });
 }
 export const hasMini2 = (game) => Object.hasOwn(GAMES, game);
