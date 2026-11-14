@@ -63,7 +63,7 @@ async function main() {
     signal: AbortSignal.timeout(Number(opt('timeout', 600)) * 1000),
     body: JSON.stringify({
       model,
-      stream: false,
+      stream: true, // headers arrive at once; without streaming a slow answer hits Node's 5-minute header timeout
       format: argv.includes('--json') ? 'json' : undefined,
       options: { num_ctx: ctx, temperature: Number(opt('temp', 0.2)) },
       messages: [
@@ -76,12 +76,29 @@ async function main() {
     console.error(`local-llm: server answered ${res.status}: ${(await res.text()).slice(0, 300)}`);
     return 3;
   }
-  const data = await res.json();
-  const answer = data.message?.content ?? '';
+  // Ollama streams one JSON object per line; the last one carries the token counts.
+  let answer = '';
+  let data = {};
+  let buffer = '';
+  const decoder = new TextDecoder();
+  for await (const chunk of res.body) {
+    buffer += decoder.decode(chunk, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop();
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      const part = JSON.parse(line);
+      answer += part.message?.content ?? '';
+      if (part.done) data = part;
+    }
+  }
   if (opt('out')) fs.writeFileSync(path.resolve(opt('out')), answer);
   console.log(answer.trim());
   console.error(`\nlocal-llm: ${model}, ${((Date.now() - started) / 1000).toFixed(0)} s, in ${data.prompt_eval_count ?? '?'} / out ${data.eval_count ?? '?'} tokens${opt('out') ? `, saved to ${opt('out')}` : ''}`);
   return 0;
 }
 
-process.exitCode = await main();
+process.exitCode = await main().catch((e) => {
+  console.error(`local-llm: ${e.name === 'TimeoutError' ? 'timed out (raise --timeout or send less text)' : e.message}`);
+  return 3;
+});
