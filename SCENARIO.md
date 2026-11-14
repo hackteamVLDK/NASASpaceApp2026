@@ -361,6 +361,84 @@ Each player picks a unique role in the lobby. All four have the same controls; o
 
 Recommended 2-player pairs: Engineer + Pilot (fastest progress) or Botanist + Comms (safest, best HP).
 
+### 2.5 Characters
+
+The crew is international and invented: no character is based on a real person. Everyone is
+kind, competent and a little funny; nobody is a villain. Names are used on character cards and
+in the lobby; ASTRA always says "Commander" in solo and the role name in co-op (Section 1). In
+solo the player may rename the Commander (`ui.char.rename`); the default name is used otherwise.
+
+**Crew colours** match the recoloured stripe on the shared crew sprite: Commander red, Chief
+Engineer yellow, Astro-Botanist green, Rover Pilot blue, Comms Officer violet. The simulation's
+crew ids (`cmdr`, `eng`, `bot`, `sci`) map to Commander, Chief Engineer, Astro-Botanist and Rover
+Pilot & Geologist; the Comms Officer is new.
+
+| Character id | Name | Role | Look (for art) |
+|---|---|---|---|
+| commander | Amara Eze | Commander (solo) | Warm brown skin, short dark twists, calm smile, small gold stud earrings; red stripe. From Nigeria. |
+| chief_engineer | Kenji Mori | Chief Engineer (co-op) | Light skin, black hair in a short ponytail, round glasses pushed up, tool belt; yellow stripe. From Japan. |
+| astro_botanist | Sofía Ramírez | Astro-Botanist (co-op) | Tan skin, curly brown hair in a bun with a leaf clip, freckles; green stripe. From Chile. |
+| rover_pilot | Leo Petrenko | Rover Pilot & Geologist (co-op) | Fair skin, short sandy hair, big friendly grin, dusty knee pads, rock hammer on the belt; blue stripe. From Ukraine. |
+| comms_officer | Noor Haddad | Comms & Science Officer (co-op) | Olive skin, dark hair under a violet headscarf, headset with a small microphone; violet stripe. From Jordan. |
+| mission_control | Rosa Varga | CAPCOM, Mission Control on Earth (voice and video only) | Grey-streaked dark bob, reading glasses on a cord, mission headset, Earth control-room screens behind. From Hungary. |
+
+| Line ID | Line |
+|---|---|
+| char.commander.name | Amara Eze |
+| char.commander.role | Commander |
+| char.commander.bio | Amara flew cargo planes over the Sahara before training for Mars. She can fix a pump, cook a stew and calm a worried crew. Her favourite tool is a checklist. |
+| char.commander.trait | "We plan, we try, we learn. Then we try again." |
+| char.chief_engineer.name | Kenji Mori |
+| char.chief_engineer.role | Chief Engineer |
+| char.chief_engineer.bio | Kenji built robots in a Tokyo workshop as a teenager. He talks to machines while he fixes them. He has never met a plant that liked him. |
+| char.chief_engineer.trait | "If it's broken, it's just a puzzle." |
+| char.astro_botanist.name | Sofía Ramírez |
+| char.astro_botanist.role | Astro-Botanist |
+| char.astro_botanist.bio | Sofía grew up on a vineyard in Chile and studied plants in deserts. She names every lettuce in the Greenhouse. Wrenches are not her friends. |
+| char.astro_botanist.trait | "Happy plants, happy crew." |
+| char.rover_pilot.name | Leo Petrenko |
+| char.rover_pilot.role | Rover Pilot & Geologist |
+| char.rover_pilot.bio | Leo drove rally cars and studied rocks in the Carpathian Mountains. He can read a cliff like a storybook. He always comes home hungry. |
+| char.rover_pilot.trait | "Every rock has a story. Let's go find it!" |
+| char.comms_officer.name | Noor Haddad |
+| char.comms_officer.role | Comms & Science Officer |
+| char.comms_officer.bio | Noor tracked satellites from a desert radio station in Jordan. She hears space weather coming before anyone else. Outside, she would rather stay in the Rover. |
+| char.comms_officer.trait | "Listen first. The Sun always gives clues." |
+| char.mission_control.name | Rosa Varga |
+| char.mission_control.role | Mission Control, Earth |
+| char.mission_control.bio | Rosa is the CAPCOM: the one voice that talks to the crew from Earth. She has guided spacecraft for thirty years. Her messages arrive minutes late, but always with a smile. |
+| char.mission_control.trait | "Ares-Kids, Earth is with you." |
+| ui.char.rename | Rename your Commander |
+
+The co-op lobby uses these bios next to the role cards; the `lobbyBlurb` texts in Section 7 stay
+as the one-line role summaries.
+
+**Mission Control's voice.** Rosa speaks only in Earth messages (`astra.act3.earth_reply`,
+`astra.finale.earth`, and future Earth-window messages). Her style: warm, calm, short; she starts
+with "Ares-Kids, this is Mission Control" and never gives orders the player cannot follow. Every
+message reminds players of the light delay ("sent 14 minutes ago" is shown by ASTRA, not by Rosa).
+
+**The three drones.** Drones cannot talk; they "speak" in beeps (sound effects) and LED blinks.
+They share one body sprite; each has a coloured bumper stripe and its own beep pattern.
+
+| Drone | Nickname | Bumper | Personality | Beep pattern (SFX) |
+|---|---|---|---|---|
+| Drone #01 | Pip | cyan | Curious and eager; first to wake, first to explore. Tilts its camera at anything new. | Short rising chirps, "bip-bip-BEEP?" |
+| Drone #02 | Bumble | amber | Careful and steady; double-checks every weld. A bit slow, never sloppy. | Two low, slow boops, "boo-boop." |
+| Drone #03 | Zip | green | Fast and excitable; zooms between jobs. Spins in a circle when a build finishes. | Quick trills, "trrrip-trrrip!" |
+
+| Line ID | Trigger | Line |
+|---|---|---|
+| astra.char.pip | Right after astra.tut.drone01_wake | Listen to those happy beeps! Let's call Drone #01 "Pip". |
+| astra.char.bumble | Right after astra.act1.drone02_wake | Drone #02 likes to take its time and check everything. Meet "Bumble"! |
+| astra.char.zip | Right after astra.act2.drone03_wake | Whoa, Drone #03 is fast! We'll call it "Zip". |
+| ui.drone.01.name | Drone #01 label | Pip |
+| ui.drone.02.name | Drone #02 label | Bumble |
+| ui.drone.03.name | Drone #03 label | Zip |
+
+Existing lines keep saying "Drone #01/#02/#03"; the nicknames appear on drone labels and in later
+lines.
+
 ## Section 3: 20-Sol progression, HP & resource math
 
 A solo Commander finishes all six modules by Sol 15, all Tier 2 upgrades by Sol 19, and reaches the Canyon Anomaly on Sol 20. Power is the planned bottleneck (break-even on Sol 9), and Water slowly drains until ice arrives on Sol 14. All numbers are starting values for playtesting.
