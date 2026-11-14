@@ -24,6 +24,12 @@ export const PERSON_H = 92;
 export const DRONE_H = 66;
 
 export const SHAFT_X = LAYOUT.shaftX + LAYOUT.shaftWidth / 2; // the middle of the shaft
+/**
+ * The ladder drawn in the shaft (prop.shaft): its rails are about 12 units either side of the shaft's middle (columns 201-209 and 302-310 of a
+ * 512 px wide cell that is drawn LAYOUT.shaftWidth wide). A climber hangs on it: the right edge of his sprite, the reaching hands, is at `gripX`.
+ * `easeMs` is how long he takes to slide from the middle of the shaft to the ladder and back (render only).
+ */
+export const LADDER = Object.freeze({ rail: 12, gripX: SHAFT_X + 22, easeMs: 160 });
 export const GROUND_Y = LAYOUT.groundY + 8; // feet on the surface
 const FOOT = 16; // feet stand this far above the bottom of a room
 

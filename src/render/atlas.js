@@ -11,6 +11,8 @@
  * (SCENARIO section 6, rule 3).
  */
 
+import { patchBakedLadders } from './ladders.js';
+
 const DIR = 'assets/incoming/';
 
 /** id -> asset file name (assets/manifests/asset-manifest.json). */
@@ -109,6 +111,7 @@ export async function loadAtlas(onProgress = () => {}) {
     onProgress(++done / ids.length, id);
   }));
   if (sheets.finished) patchBakedRover(sheets.finished);
+  patchBakedLadders(sheets, GRIDS); // the climbing frames were painted with their own ladder; the shaft has one (A31)
   const missing = ids.filter((id) => !sheets[id]);
   if (missing.length) console.warn('missing art, using placeholders:', missing.join(', '));
 
@@ -149,6 +152,11 @@ export async function loadAtlas(onProgress = () => {}) {
   function unionBox(id, indices) {
     const boxes = indices.map((i) => bbox(id, i));
     return { x: 0, y: 0, w: Math.max(...boxes.map((b) => b.w)), h: Math.max(...boxes.map((b) => b.h)) };
+  }
+
+  /** How wide (world units) a frame is drawn by `sprite` when its shared box is `box` and the person is `h` units tall. */
+  function spriteWidth(id, index, { h, box = null }) {
+    return bbox(id, index).w * (h / (box ?? bbox(id, index)).h);
   }
 
   /** The sheet with the cyan marker recoloured (cached per colour). */
@@ -196,6 +204,7 @@ export async function loadAtlas(onProgress = () => {}) {
     cellRect,
     bbox,
     unionBox,
+    spriteWidth,
     tinted,
 
     /** Draw a whole grid cell (or a source rectangle) into a destination box, no cropping to the sprite. */
