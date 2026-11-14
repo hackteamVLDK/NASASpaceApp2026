@@ -13,6 +13,7 @@ import { play, director } from './audio.js';
 import { CARDS, BADGES, buildReport } from '../campaign/logbook.js';
 import { LOW_LIMITS } from '../campaign/hazards.js';
 import { missingItems, whereText } from '../campaign/sources.js';
+import { choiceBlock } from '../campaign/story.js';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
@@ -288,9 +289,18 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
     for (const c of choices) {
       if (id === 'e1' && c === 'c' && !s.flags.flareWarned) continue;
       const labelId = radio ? `${prefix}.${c}.label` : `ui.${id}.${c}.label`;
-      const b = el('button', 'choice', `<span class="k">${c.toUpperCase()}</span>${t(labelId)}`);
+      // D-T1 / A22: a choice the engine would refuse (not enough Spare Parts or Water, no Garage yet) is greyed out and says why.
+      // The sim is stopped while the card is open, so what is true now stays true until the player answers.
+      const why = !radio && s.pending?.id === id ? choiceBlock(s, s.pending, c) : null;
+      const b = el('button', `choice${why ? ' blocked' : ''}`, `<span class="k">${c.toUpperCase()}</span><span class="lbl">${t(labelId)}</span>${why ? `<small class="why">${why}</small>` : ''}`);
       b.dataset.choice = c;
-      b.addEventListener('click', () => { play('dilemmaChoice'); send(radio ? { type: 'radio', choice: c } : { type: 'choose', choice: c }); closeModal(); });
+      if (why) b.setAttribute('aria-disabled', 'true'); // not `disabled`: it stays focusable and a tap still explains itself
+      b.addEventListener('click', () => {
+        if (why) { play('actionDenied'); b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); return; } // the card stays open
+        play('dilemmaChoice');
+        const res = send(radio ? { type: 'radio', choice: c } : { type: 'choose', choice: c });
+        if (res?.ok !== false) closeModal(); // a refused answer must not close the card
+      });
       box.append(b);
     }
     void warm;
