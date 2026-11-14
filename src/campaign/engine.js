@@ -16,7 +16,7 @@ import {
   MODULES, BUILD_SOLS, UPGRADE_SOLS, DRONE_BUILD_POWER, STORM, RECIPES, UPGRADES, MODULE_LINES,
 } from './data.js';
 import { clockAt, isNight, online } from './util.js';
-import { storyMinute, onSol, applyChoice, onModuleStart, onModuleBuilt, onKit, onMini, runTimer, onDroneAwake, onMove } from './story.js';
+import { storyMinute, onSol, applyChoice, onModuleStart, onModuleBuilt, onKit, onMini, miniBlock, runTimer, onDroneAwake, onMove } from './story.js';
 import { expeditionMinute, startExpedition, radioChoice } from './expeditions.js';
 
 export const STATE_VERSION = 1;
@@ -508,6 +508,8 @@ export function command(s, cmd) {
       break;
     }
     case 'miniResult': {
+      const why = miniBlock(s, cmd.game);
+      if (why) return fail(why);
       onMini(s, cmd, emit);
       break;
     }
