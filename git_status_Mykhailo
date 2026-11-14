@@ -25,7 +25,6 @@ Updated: 2026-11-14 (UTC+1), after the backend was aligned with SCENARIO.md
   "in the same style"). The team generates images and drops them in assets/incoming/.
 
 ## DOING NOW
-- Merge recovery: combined both `src/campaign/sources.js` APIs and isolated breakdown tests from skipped story events. Full suite passes; merge is ready for final review/commit.
 - Done: the playable game on SCENARIO v2 (src/campaign = engine, story, expeditions, logbook; src/render, src/ui, src/main.js).
   npm run dev. The old src/sim is no longer used by the game. Review of animation and logic done (docs/REVIEW_2026-11-14.md):
   camera now shows the surface; Commander and drones walk by the shaft (src/render/movers.js); Rover drives out and in;
@@ -40,6 +39,7 @@ Updated: 2026-11-14 (UTC+1), after the backend was aligned with SCENARIO.md
   SCENARIO.md.
 
 ## DONE
+- 2026-11-14: Completed and pushed merge recovery; incorporated remote updates through A30. Full suite: 268/268 pass.
 - 2026-11-14 21:38: Resumed Git sync at the user's request; the daemon completed a cycle successfully.
 - tools/git-sync/: two-way sync every 15 s. Start with: npm run sync   (docs/GIT_SYNC.md)
 - tools/codex/delegate.mjs: read-only review tasks to the local Codex CLI; records in docs/ai-collaboration/.
