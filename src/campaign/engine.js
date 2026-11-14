@@ -13,7 +13,7 @@
 import { seedFrom, nextRandom } from '../sim/rng.js';
 import {
   SOL, START_MINUTE, RES, START_RES, CAP, NEEDS, BASE_HEAT_LOSS, RECYCLER, HP, SHIELD, SLEEP_FROM, SLEEP_TO, MEALS,
-  MODULES, BUILD_SOLS, UPGRADE_SOLS, DRONE_BUILD_POWER, STORM, RECIPES, UPGRADES, MODULE_LINES,
+  MODULES, BUILD_SOLS, UPGRADE_SOLS, DRONE_BUILD_POWER, STORM, RECIPES, UPGRADES, MODULE_LINES, RULES,
 } from './data.js';
 import { clockAt, isNight, online } from './util.js';
 import { storyMinute, onSol, applyChoice, onModuleStart, onModuleBuilt, onKit, onMini, miniBlock, runTimer, onDroneAwake, onMove } from './story.js';
@@ -25,14 +25,16 @@ const has = (o, k) => Object.hasOwn(o, k);
 
 export { clockAt, isNight, isDay, online } from './util.js';
 
-export function createCampaign({ seed = 1 } = {}) {
+export function createCampaign({ seed = 1, hpZeroEndsRun = RULES.hpZeroEndsRun } = {}) {
   const modules = {};
   for (const [id, m] of Object.entries(MODULES)) modules[id] = { status: m.prebuilt ? 'online' : 'unbuilt', tier: 1, progress: 0, drone: null, upgrading: null };
   return {
     version: STATE_VERSION,
     rng: seedFrom(seed),
     minute: START_MINUTE,
-    status: 'running', // running | complete
+    status: 'running', // running | over (the Commander ran out of HP, see `endRun`) | complete
+    rules: { hpZeroEndsRun }, // see RULES in data.js
+    over: null, // { reason: 'hp' | 'trip', sol, minute } once the mission is over
     res: { ...START_RES },
     hp: HP.commanderMax,
     hpMax: HP.commanderMax,
@@ -177,6 +179,7 @@ function tick(s, emit) {
   if (s.order && s.minute >= s.order.until) { s.order = null; s.flags.outside = false; }
   refreshWhere(s, emit);
   stepHp(s, emit, now);
+  if (s.status !== 'running') return; // the Commander ran out of HP: the mission is over
   trackStats(s, dt, now);
 
   // drones: building, upgrading
@@ -206,7 +209,18 @@ function tick(s, emit) {
   // timers, story, expedition
   for (const t of s.timers.filter((x) => s.minute >= x.at)) { onTimer(s, t, emit); }
   s.timers = s.timers.filter((x) => s.minute < x.at);
-  expeditionMinute(s, emit);
+  if (endsRunAtZeroHp(s)) {
+    // On a trip, a Commander at 0 HP does not come home: the rescue drone and the loot screen of SCENARIO 5.1 are not shown.
+    const trip = [];
+    expeditionMinute(s, (e) => trip.push(e));
+    if (s.hp <= 0) {
+      for (const e of trip) if (e.type !== 'returned' && !(e.type === 'astra' && e.lineId === 'astra.hp.zero_expedition')) emit(e);
+      if (!s.away && s.where === 'away') refreshWhere(s, emit);
+      endRun(s, emit, 'trip');
+      return;
+    }
+    trip.forEach(emit);
+  } else expeditionMinute(s, emit);
   if (!s.away && s.where === 'away') refreshWhere(s, emit); // the Rover just came home: the Commander is back in the base
   checkMeters(s, emit);
   storyMinute(s, emit, now);
@@ -232,6 +246,19 @@ function onTimer(s, t, emit) {
   runTimer(s, t.id, emit);
 }
 
+/** Does HP 0 end the run (the player's wish) or send the Commander to Med-Rest (SCENARIO)? Saves from before the rule use the default. */
+export const endsRunAtZeroHp = (s) => s.rules?.hpZeroEndsRun ?? RULES.hpZeroEndsRun;
+
+/** The mission is over: the Commander ran out of HP. Nothing moves after this; the screen offers a new start. */
+function endRun(s, emit, reason) {
+  if (s.status !== 'running') return;
+  s.status = 'over';
+  if (s.medRest) { s.medRest = null; s.stats.medRests = Math.max(0, s.stats.medRests - 1); } // the trip's rescue had started a Med-Rest: it does not count
+  s.pending = null;
+  s.over = { reason, sol: clockAt(s.minute).sol, minute: s.minute };
+  emit({ type: 'gameover', reason, sol: s.over.sol });
+}
+
 function stepHp(s, emit, now) {
   const dt = 1 / SOL;
   if (s.medRest && s.minute >= s.medRest.until) {
@@ -249,6 +276,7 @@ function stepHp(s, emit, now) {
   s.hp = clamp(s.hp + d, 0, s.hpMax);
   hpLines(s, emit);
   if (s.hp <= 0 && !s.away) {
+    if (endsRunAtZeroHp(s)) { endRun(s, emit, 'hp'); return; }
     s.medRest = { until: s.minute + SOL };
     s.stats.medRests += 1;
     emit({ type: 'astra', lineId: 'astra.hp.zero_base', mood: 'calm' });

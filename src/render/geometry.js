@@ -72,7 +72,9 @@ export function anchor(place, slot = 0) {
   if (place === 'outside') return { x: 330 + slot * 90, y: GROUND_Y };
   if (place === 'away') return null;
   if (place === 'solar') return { x: SURFACE.solar.x + 110 + (slot - 1) * 60, y: GROUND_Y }; // a drone upgrading the panels
-  if (place === 'roof') return { x: LAYOUT.rightX + rightWingWidth / 2 + (slot - 1) * 150, y: LAYOUT.firstFloorY - 6 }; // piling soil over the right wing
+  // The Regolith Roof Layer is soil piled over the right wing. The drone works on the GROUND above the wing (between the dome and the
+  // antenna, so it stands in the open), never inside the soil texture: it climbs the shaft and rolls along the surface to the pile.
+  if (place === 'roof') return { x: LAYOUT.rightX + 230 + (slot - 1) * 60, y: GROUND_Y };
   if (place === 'shaft') return { x: SHAFT_X, y: LAYOUT.firstFloorY + 100 };
   const r = LAYOUT.rooms[place];
   if (!r) return { x: SHAFT_X, y: LAYOUT.firstFloorY + 200 };

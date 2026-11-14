@@ -3,7 +3,7 @@
 Owner: agent on Pavlo's PC (git user "Pavlo"). Only this agent edits this file.
 Updated: 2026-11-14 20:10 (UTC+3). Answer to the LIVE NOTE in git_status_Mykhailo: I take the UI side.
 
-## DOING NOW (2026-11-14, later)
+## DOING NOW (2026-11-14, later; DONE and pushed: A26 roof drone, A27 Ice Run on the map, A28 Game Over, see docs/ERRORS.md)
 New player reports: (1) the drone that builds the Regolith Roof Layer stood inside the soil; (2) the Run on the map never gives ice
 (the engine has `ice`, the map did not list it); (3) HP 0 must end the run with a Game Over screen and an offer to start again.
 - (3) is a DEVIATION from SCENARIO (3.1, 3.6, 5.1 say Med-Rest and a rescue drone; Section 6 says nothing can end the run).

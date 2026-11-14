@@ -4,9 +4,9 @@
  * It reads campaign state and sends commands through `send`; it never edits state itself.
  * All player-facing text comes from line IDs (strings.js); a few short button labels are literal.
  */
-import { MODULES, RECIPES, UPGRADES, LAYOUT } from '../campaign/data.js';
+import { MODULES, RECIPES, UPGRADES, LAYOUT, RULES } from '../campaign/data.js';
 import { moduleInfo, clockAt, online } from '../campaign/engine.js';
-import { EXPEDITIONS, hpCost, durationMinutes, awayProgress } from '../campaign/expeditions.js';
+import { EXPEDITIONS, hpCost, durationMinutes, awayProgress, expectedLoot } from '../campaign/expeditions.js';
 import { t, hasString } from '../flow/strings.js';
 import { ICON } from '../render/atlas.js';
 import { play, director } from './audio.js';
@@ -256,6 +256,19 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
     $('lootOk').addEventListener('click', closeModal);
   }
 
+  /** HP ran out (docs/ERRORS.md A28): the mission stops and the screen offers a new start. Reopens until the player chooses. */
+  function showGameOver(onRestart) {
+    const o = s.over ?? { reason: 'hp', sol: clockAt(s.minute).sol };
+    const why = o.reason === 'trip'
+      ? 'The Commander ran out of HP on the Rover trip. Radiation adds up out there, so a long trip needs the shielding, the suit liner and a rested Commander.'
+      : 'The Commander ran out of HP. Radiation and hard work wear an astronaut out: sleep in the Bedroom, eat fresh food and keep trips outside short.';
+    modalKey = 'gameover';
+    modalRoot.hidden = false;
+    modalRoot.innerHTML = `<div class="card gameover"><div class="hd">MISSION OVER</div><h1>GAME OVER</h1><p>${why}</p><p class="stats">You reached Sol ${o.sol} \u00B7 ${s.stats.builds} rooms built \u00B7 ${s.stats.expeditions} trips \u00B7 ${s.logbook.length} Logbook cards</p><p>Real astronaut teams learn from every hard day. Do you want to try again from the beginning?</p><div class="choices"><button class="choice" id="goAgain">Start over</button><button class="choice" id="goReport">See the report</button></div></div>`;
+    $('goAgain').addEventListener('click', () => { play('click'); onRestart(); });
+    $('goReport').addEventListener('click', () => { play('click'); showReport(); });
+  }
+
   function showFinale() {
     modalKey = 'finale';
     modalRoot.hidden = false;
@@ -274,13 +287,21 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
     modalRoot.append(card);
     const grid = card.querySelector('.mapGrid');
     const info = card.querySelector('#mapCard');
-    const keys = [1, 2, 3, 4, 5, 'run'];
+    const keys = [1, 2, 3, 4, 5, 'run', 'ice'];
+    // the repeatable run has two modes with their own marker: Scrap (Spare Parts) and Ice (Ice Cores, needs the Deep Ice Drill)
+    const RUN = { run: { label: 'Scrap', title: 'Scrap Run' }, ice: { label: 'Ice', title: 'Ice Run' } };
+    const lootText = (loot) => [loot.sp ? `${loot.sp} Spare Parts` : null, ...Object.entries(loot.items).map(([i, n]) => `${n}\u00D7 ${itemName(i)}`)].filter(Boolean).join(', ');
+    const ends = s.rules?.hpZeroEndsRun ?? RULES.hpZeroEndsRun;
     const show = (k) => {
       const ex = EXPEDITIONS[k];
       const why = ex.requires(s);
       const days = durationMinutes(s, ex) / 1440;
-      info.innerHTML = `<h2>${name(ex.nameId)}</h2><p>Time: ${days} Sol · HP cost about ${Math.round(hpCost(s, ex))} · Risk: ${ex.scripted ? 'scripted' : ex.risk}</p><p>Possible loot: ${ex.loot.sp ? `${ex.loot.sp} SP` : ''}${Object.keys(ex.loot.items).length ? ', ' : ''}${Object.keys(ex.loot.items).map(itemName).join(', ')}</p>${why ? `<p class="why">Locked: ${why}</p>` : s.away ? '<p class="why">The Rover is already out.</p>' : ''}`;
-      if (!why && !s.away) {
+      const cost = hpCost(s, ex);
+      const margin = ex.id === 4 ? 20 : 6; // a Rough trip adds 5 HP; the space-weather choice on Expedition 4 costs up to 14
+      const sure = !why && !s.away && s.hp <= cost; // the Commander would not come back
+      const risky = !why && !s.away && !sure && s.hp <= cost + margin;
+      info.innerHTML = `<h2>${RUN[k]?.title ?? name(ex.nameId)}</h2><p>Time: ${days} Sol · HP cost about ${Math.round(cost)} · Risk: ${ex.scripted ? 'scripted' : ex.risk}</p><p>Brings home: ${lootText(expectedLoot(s, ex))}${k === 'ice' ? '. Each Ice Core melts into 25 Water.' : ''}</p>${why ? `<p class="why">Locked: ${why}</p>` : s.away ? '<p class="why">The Rover is already out.</p>' : ''}${sure ? `<p class="why danger">Too dangerous: the trip costs about ${Math.round(cost)} HP and the Commander has ${Math.round(s.hp)}. Rest first.</p>` : ''}${risky ? `<p class="why warn">Risky: the Commander has ${Math.round(s.hp)} HP and the trip costs about ${Math.round(cost)}. ${ends ? 'If HP reaches 0 the mission is over.' : 'At 0 HP a rescue drone brings the Commander home.'}</p>` : ''}`;
+      if (!why && !s.away && !sure) {
         const b = el('button', 'choice', 'Prepare and launch');
         b.dataset.launch = String(k);
         b.addEventListener('click', () => { closeModal(); launch(k); });
@@ -289,13 +310,13 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
     };
     for (const k of keys) {
       const ex = EXPEDITIONS[k];
-      const m = el('button', `marker ${ex.requires(s) ? 'locked' : ''}`, `${ex.requires(s) ? '\u{1F512} ' : ''}${k === 'run' ? 'Run' : `#${k}`}`);
+      const m = el('button', `marker ${ex.requires(s) ? 'locked' : ''}`, `${ex.requires(s) ? '\u{1F512} ' : ''}${RUN[k]?.label ?? `#${k}`}`);
       m.style.left = `${ex.mapPos[0] * 100}%`;
       m.style.top = `${ex.mapPos[1] * 100}%`;
       m.addEventListener('click', () => show(k));
       grid.append(m);
     }
-    show(online(s, 'garage') ? 1 : 1);
+    show(keys.find((k) => !EXPEDITIONS[k].requires(s)) ?? 1); // open on the first trip that can go now
     card.querySelector('#mapClose').addEventListener('click', closeModal);
     if (!s.flags._mapIntroSaid) { s.flags._mapIntroSaid = true; send({ type: 'say', lineId: 'astra.act2.map_intro' }); }
   }
@@ -310,7 +331,7 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
     get selected() { return selected; },
     highlight(id) { for (const e of Object.values(G)) e.g.classList.toggle('pulse', e.d.id === id); },
     pushRadio(id) { radioLines.push(hasString(id) ? t(id) : id); if (radioLines.length > 6) radioLines.shift(); sig = ''; },
-    showChoice, showActCard, showLoot, showFinale, closeModal, openModal, showReport,
+    showChoice, showActCard, showLoot, showFinale, showGameOver, closeModal, openModal, showReport,
     setTab(id) { tab = id; sig = ''; },
     showMap: (launch) => showMap(launch ?? ui.launch),
     get modalOpen() { return !modalRoot.hidden; },

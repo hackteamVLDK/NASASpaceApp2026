@@ -152,6 +152,7 @@ function handleEvents(events) {
       case 'queued': toast(`${NICK[e.drone] ?? 'The drone'} will do that next.`); break;
       case 'ordered': break;
       case 'finale': checkAllBadges(); ui.showFinale(); break;
+      case 'gameover': onGameOver(); break;
       case 'toast': toast(e.text); break;
       case 'emergency': toast(`Emergency: ${e.kind}!`, 4000); break;
       case 'built': toast('Room finished!'); break;
@@ -175,7 +176,7 @@ function send(cmd) {
 // ------------------------------------------------------------------ mini-games
 
 function openMini(game, { onDone = null } = {}) {
-  if (mini) return;
+  if (mini || s.status !== 'running') return;
   $('mgWrap').hidden = false;
   $('mgBack').hidden = mode === 'tutorial'; // the tutorial steps cannot be skipped; every other job can be left
   const c = $('mg');
@@ -263,7 +264,22 @@ function finishTutorial() {
 // ------------------------------------------------------------------ save and load
 
 function save() {
+  if (s.status === 'over') return; // a finished mission is not saved
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(s)); } catch { /* storage may be blocked */ }
+}
+
+/** The Commander ran out of HP (docs/ERRORS.md A28): the clock stops, the old save goes, the loop shows the Game Over screen. */
+function onGameOver() {
+  clearTimeout(saveTimer);
+  try { localStorage.removeItem(SAVE_KEY); } catch { /* storage may be blocked */ }
+  closeMini();
+  document.querySelector('#speed [data-speed="0"]')?.click();
+  audio.play('alert');
+}
+/** "Start over": forget the saved game and load the page again, which shows the start screen. */
+function restartGame() {
+  try { localStorage.removeItem(SAVE_KEY); } catch { /* storage may be blocked */ }
+  location.reload();
 }
 function loadSave() {
   try { const raw = localStorage.getItem(SAVE_KEY); return raw ? JSON.parse(raw) : null; } catch { return null; }
@@ -474,7 +490,9 @@ function loop(now) {
       updateTutorial();
     } else if (mode === 'play') {
       astra.setAuto(false);
-      if (s.pending) {
+      if (s.status === 'over') {
+        if (!ui.modalOpen) ui.showGameOver(restartGame); // the report can be read; closing it brings the screen back
+      } else if (s.pending) {
         if (!ui.modalOpen || ui.modalKey === `choice:${s.pending.id}`) ui.showChoice(s.pending.kind, s.pending.id); // the loot screen finishes first
         if (speed > 0) { speedBeforeDecision = speed; document.querySelector('#speed [data-speed="0"]').click(); }
       } else if (speedBeforeDecision && speed === 0 && !ui.modalOpen && !mini) {
@@ -527,7 +545,7 @@ async function boot() {
   void savedSol;
   const saved = loadSave();
   $('startBtn').hidden = false;
-  if (saved) {
+  if (saved && saved.status !== 'over') {
     const cont = document.createElement('button');
     cont.id = 'contBtn';
     cont.textContent = 'Continue mission';

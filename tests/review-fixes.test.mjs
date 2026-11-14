@@ -114,8 +114,9 @@ test('an order moves the Commander at once, even while the game is paused', () =
   assert.equal(t.where, 'outside');
 });
 
-test('a rescue after HP 0 on the trip counts as a Med-Rest', () => {
+test('SCENARIO rule (hpZeroEndsRun off): a rescue after HP 0 on the trip counts as a Med-Rest', () => {
   const s = ready();
+  s.rules.hpZeroEndsRun = false;
   s.upgrades.rover_shielding = true;
   s.hp = 30;
   assert.ok(command(s, { type: 'launch', expedition: 4 }).ok);

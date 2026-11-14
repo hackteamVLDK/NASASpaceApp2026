@@ -78,3 +78,16 @@ test('two bodies never share a place in the Garage: drones rest side by side and
   assert.ok(Math.abs(board.x - (park.x - ROVER.width / 2)) < 40, 'the Commander boards at the door of the Rover');
   assert.ok(park.x - ROVER.width / 2 - spots[2].x >= 45, 'the Rover does not overlap the drones (half a drone plus a gap)');
 });
+
+test('no place a body works at is inside the soil: every module is worked on from the ground or from the floor of its room', () => {
+  const underground = ids.filter((id) => LAYOUT.rooms[id].wing !== 'surface');
+  for (const id of Object.keys(MODULES)) {
+    const a = anchor(id, 0.35); // where a drone stands to build or upgrade it
+    const onGround = a.y === GROUND_Y;
+    const onAFloor = underground.some((rid) => { const r = roomRect(rid); return a.x >= r.x && a.x <= r.x + r.w && Math.abs(a.y - feetY(rid)) < 0.5; });
+    assert.ok(onGround || onAFloor, `${id}: a drone would stand at (${Math.round(a.x)}, ${Math.round(a.y)}), inside the soil`);
+  }
+  assert.equal(anchor('roof', 0.35).y, GROUND_Y, 'the Regolith Roof Layer is piled from the ground above the right wing');
+  const roof = anchor('roof', 0.35);
+  assert.ok(roof.x > LAYOUT.rightX && roof.x < LAYOUT.rightX + 2 * LAYOUT.roomWidth, 'above the right wing');
+});
