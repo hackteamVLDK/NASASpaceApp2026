@@ -3,10 +3,11 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { setStrings } from '../src/flow/strings.js';
-import { createCampaign, command, step, rates, contributions } from '../src/campaign/engine.js';
+import { createCampaign, command, step, rates, contributions, unlockReason } from '../src/campaign/engine.js';
 import { missions, tracker } from '../src/campaign/missions.js';
 import { hazards, meterReport, shieldingByPlace, METER_HELP } from '../src/campaign/hazards.js';
 import { autoplay } from '../tools/balance/campaign-bot.mjs';
+import { howTo } from '../src/ui/mission-hints.js';
 
 setStrings(JSON.parse(readFileSync(new URL('../content/data/strings.en.json', import.meta.url), 'utf8')));
 
@@ -111,4 +112,31 @@ test('A25: crafting a kit and waking the drone are two separate missions', () =>
   s.drones[1].status = 'awake';
   assert.equal(kit().done, true);
   assert.equal(wake().done, true);
+});
+
+test('A30: the first build mission says how to do it, in the words of ASTRA\'s build prompt', () => {
+  const s = createCampaign();
+  command(s, { type: 'wakeDrone', drone: 'drone-01' }); // the tutorial's "Drone #01 repaired" step
+  const battery = tracker(s)[0];
+  assert.equal(battery.id, 'battery');
+  assert.equal(howTo(s, battery), 'Tap the Battery & Heating frame, then tap Build.');
+  const strings = JSON.parse(readFileSync(new URL('../content/data/strings.en.json', import.meta.url), 'utf8'));
+  assert.ok(strings['astra.tut.build_prompt'].startsWith(howTo(s, battery)), 'the tracker and ASTRA must agree');
+  assert.equal(howTo(s, tracker(s)[2]), '', 'only the current mission gets the line');
+  command(s, { type: 'build', module: 'battery' });
+  assert.equal(howTo(s, missions(s).main.find((m) => m.id === 'battery')), '', 'no line once the room is being built');
+});
+
+test('A30: a room that cannot be built yet shows the engine\'s own reason; other missions get no line', () => {
+  const s = createCampaign();
+  const lab = { id: 'lab', state: 'current', focus: 'module:lab' };
+  assert.equal(howTo(s, lab), unlockReason(s, 'lab'), 'the same words as the engine, whatever they are');
+  assert.match(howTo(s, lab), /Garage/);
+  s.modules.garage.status = 'online';
+  assert.equal(howTo(s, lab), unlockReason(s, 'lab'));
+  assert.match(howTo(s, lab), /Dish Antenna/);
+  s.items.dish_antenna = 1;
+  assert.equal(howTo(s, lab), 'Tap the Research & Comms Lab frame, then tap Build.');
+  for (const focus of ['map', 'workshop', 'base', 'tasks', 'drone:drone-02', null]) assert.equal(howTo(s, { id: 'x', state: 'current', focus }), '', `focus ${focus}`);
+  assert.equal(howTo(s, { ...lab, state: 'next' }), '');
 });

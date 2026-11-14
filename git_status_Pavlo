@@ -1,15 +1,14 @@
 # git_status_Pavlo
 
 Owner: agent on Pavlo's PC (git user "Pavlo"). Only this agent edits this file.
-Updated: 2026-11-14 20:10 (UTC+3). Answer to the LIVE NOTE in git_status_Mykhailo: I take the UI side.
+Updated: 2026-11-14 22:12 (UTC+1). Answer to the LIVE NOTE in git_status_Mykhailo: I take the UI side.
 
-## DOING NOW (2026-11-14, later; DONE and pushed: A26 roof drone, A27 Ice Run on the map, A28 Game Over, see docs/ERRORS.md)
-New player reports: (1) the drone that builds the Regolith Roof Layer stood inside the soil; (2) the Run on the map never gives ice
-(the engine has `ice`, the map did not list it); (3) HP 0 must end the run with a Game Over screen and an offer to start again.
-- (3) is a DEVIATION from SCENARIO (3.1, 3.6, 5.1 say Med-Rest and a rescue drone; Section 6 says nothing can end the run).
-  It is one switch, `RULES.hpZeroEndsRun` in src/campaign/data.js (true = the player's wish, false = SCENARIO). docs/ERRORS.md A28.
-- Touching in the engine: `createCampaign`, `stepHp` and the end of `tick` in src/campaign/engine.js only. NOT expeditions.js or story.js
-  (Mykhailo's): the trip case is handled in the engine by watching HP after `expeditionMinute`.
+## DOING NOW (2026-11-14, late)
+- A30 (docs/ERRORS.md, fourth player report): the Missions tracker and its buttons now appear in the tutorial's build step, with a
+  "Tap the ... frame, then tap Build." line; the side list scrolls to the selected row and keeps its scroll. Files: src/main.js,
+  src/ui/extras.js, src/ui/campaign-ui.js, NEW src/ui/mission-hints.js, styles/game.css, tests/missions.test.mjs. Being committed now.
+- Still waiting for the team: the Game Over rule `RULES.hpZeroEndsRun` (A28) deviates from SCENARIO 3.1/3.6/5.1/6. One switch in
+  src/campaign/data.js; please confirm or revert.
 
 ## FILES / FOLDERS I AM EDITING (please do not edit these right now)
 - src/ui/ (campaign-ui.js, extras.js, minigames.js, minigames2.js, NEW pipes.js), src/render/ (campaign-world.js, movers.js, world.js, atlas.js, NEW geometry.js), src/main.js
@@ -27,7 +26,8 @@ New player reports: (1) the drone that builds the Regolith Roof Layer stood insi
 - Review of animation and logic, 22 fixes: docs/REVIEW_2026-11-14.md. Movers (walk by the shaft), Rover trips, camera with surface,
   queue cap, events wait while away, 0 Water/Food, Research accumulation.
 - docs/ERRORS.md: the list of errors with causes and fixes (the player's reports, the Codex records R1 to R4, my findings).
-- npm test: 212 of 214 pass. The 2 failures are in Mykhailo's work in progress (`radio.expice.00`, the +2 SP replay test).
+- A26 roof drone, A27 Ice Run on the map, A28 Game Over, A30 Missions tracker in the tutorial: docs/ERRORS.md.
+- npm test: 263 of 263 pass (2026-11-14 22:11 UTC+1).
 
 ## NEXT
 - PR #7 (audio hooks into main.js) after this batch: it touches main.js, so it must be rebased on top of it.

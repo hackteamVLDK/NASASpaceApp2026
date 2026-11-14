@@ -235,7 +235,7 @@ function updateTutorial() {
         tut.phase = 'pick';
         $('side').hidden = false;
         ui.setTab('base');
-        ui.select('module:battery'); // the Battery row, with its Build button, is scrolled into view (A29)
+        ui.select('module:battery'); // the Battery row, with its Build button, is scrolled into view (A30)
       }
       break;
     default:
@@ -541,7 +541,7 @@ function loop(now) {
     if (mode === 'play' && Math.floor(now / 1000) !== loop.lastSec) { loop.lastSec = Math.floor(now / 1000); checkAllBadges(); }
     if (s) updateLightTime();
     audio.director.tick({ s, mode });
-    // the Missions tracker appears when Drone #01 is repaired (the tutorial's build step) and stays for the whole game (A29)
+    // the Missions tracker appears when Drone #01 is repaired (the tutorial's build step) and stays for the whole game (A30)
     if (extras) extras.update(mode === 'play' || (mode === 'tutorial' && tut?.state === 'TUT_BUILD'), mode === 'play');
     if (ui && (mode === 'tutorial' || mode === 'play')) { ui.update(); $('hud').hidden = false; if (mode === 'play') $('side').hidden = false; }
     astra.update(now);
