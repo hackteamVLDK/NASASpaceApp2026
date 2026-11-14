@@ -56,9 +56,12 @@ const melt = (s, send) => {
 };
 const explore = ({ minHp = 60, runs = true } = {}) => (s, send) => {
   if (s.away || s.pending || s.hp <= minHp) return;
-  const want = [1, 2, 3, 4, 5].find((k) => !s.flags.done?.[k]);
-  if (want && send({ type: 'launch', expedition: want }).ok) return;
-  if (runs) send({ type: 'launch', expedition: 'run' });
+  // any story trip the map allows (a done place is locked; the Delta Cliffs reopen after Dilemma 5 A)
+  for (const k of [1, 2, 3, 4, 5]) if (send({ type: 'launch', expedition: k }).ok) return;
+  if (!runs) return;
+  // repeatable runs: ice when the tank is low and the drill exists, else scrap
+  if (s.res.water < 50 && send({ type: 'launch', expedition: 'ice' }).ok) return;
+  send({ type: 'launch', expedition: 'run' });
 };
 
 /** A strategy is a list of actions run every half hour of game time. */
