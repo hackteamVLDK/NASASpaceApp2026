@@ -1,6 +1,7 @@
 # git_status_Vlad
 
 ## DOING NOW
+- 2026-11-15: DONE C13, C14, C15, C16, C19 (playthrough + mini-game clarity) on main; new OPEN C20-C22. No deploy (C18 deploy part dropped). Files edited: src/campaign/{data,engine,hazards}.js, src/ui/{astra-panel,minigames2,campaign-ui,prefs}.js, src/audio/{soundManager,audioDirector}.js, src/main.js, index.html, styles/game.css, tests, SCENARIO.md (3.3 note), docs/ERRORS.md. Nothing in progress.
 - 2026-11-14: ERRORS.md C10-C18 added (role modifiers, Earth windows + bent dish, Research use, Recreation refill, Rover rest, settings/a11y, mobile check, missing portraits, submission + Pages deploy)
 - 2026-11-14: 55abe1a on main: Scrubber Valve rework (sliders, SAFE bands), Water Sort droplet fix, pointercancel (A38, A39); suit rework not taken, main's A37 kept
 - 2026-11-14: Big fix batch on main: music, A17, A20, B3, B4, B5, B11, B15, B16, B18, C9 (see docs/ERRORS.md)
