@@ -135,3 +135,5 @@ button:hover { background:#1a4668; } button:disabled { opacity:.45; cursor:defau
 .card > .xClose:hover { background: var(--orange); }
 /* A18: where to find a missing component */
 .why.where { color: #9fd8ff; }
+/* A30: the "what to do next" line under the current mission, in the tracker and in the Missions window */
+.tr small.how, .ms small.how { color: var(--amber); font-weight: 700; }

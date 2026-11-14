@@ -316,17 +316,24 @@ function checkMeters(s, emit) {
 
 // ------------------------------------------------------------------ building
 
-/** Why a module cannot be built yet, or null. (3.3 "Unlocks when") */
+/**
+ * Why a module cannot be built yet, or null. (3.3 "Unlocks when")
+ * docs/ERRORS.md A29: every lock says what to do AND why that comes first, in short kid-friendly words.
+ */
 export function unlockReason(s, id) {
   const started = (m) => ['building', 'online'].includes(s.modules[m].status);
   switch (id) {
     case 'battery': return null;
-    case 'workshop': return online(s, 'battery') ? null : 'Build Battery & Heating first.';
-    case 'greenhouse': return online(s, 'workshop') ? null : 'Build the Workshop first.';
-    case 'garage': return started('greenhouse') ? null : 'Start the Greenhouse first.';
-    case 'lab': return online(s, 'garage') ? ((s.items.dish_antenna ?? 0) > 0 ? null : 'Needs the Dish Antenna from Pathfinder-X.') : 'Build the Garage first.';
-    case 'recreation': return started('lab') ? null : 'Start the Lab first.';
-    case 'roof': return started('lab') ? ((s.items.titanium_plate ?? 0) > 0 ? null : 'Needs a Titanium Plate.') : 'Start the Lab first.';
+    case 'workshop': return online(s, 'battery') ? null : 'Build Battery & Heating first: the Workshop machines need steady power and warmth.';
+    case 'greenhouse': return online(s, 'workshop') ? null : 'Build the Workshop first: it makes the pumps, pipes and LED panels a Greenhouse needs.';
+    case 'garage': return started('greenhouse') ? null : 'Start the Greenhouse first: food must be growing before the crew drives far from home.';
+    case 'lab': return online(s, 'garage')
+      ? ((s.items.dish_antenna ?? 0) > 0 ? null : 'Needs the Dish Antenna from Pathfinder-X: send the Rover on Expedition 2 to bring it home.')
+      : 'Build the Garage first: the Lab needs a big dish antenna, and only the Rover can fetch one.';
+    case 'recreation': return started('lab') ? null : 'Start the Lab first: the drones finish the work rooms before the rest room.';
+    case 'roof': return started('lab')
+      ? ((s.items.titanium_plate ?? 0) > 0 ? null : 'Needs a Titanium Plate to hold up the soil: find one on Expedition 2 or a Scrap Run.')
+      : 'Start the Lab first: the roof covers the right-wing rooms, so their frames must stand first.';
     default: return 'Already built.';
   }
 }

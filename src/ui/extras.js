@@ -5,8 +5,9 @@
  * written in ASTRA's voice and are not yet in strings.en.json.
  */
 import { MODULES } from '../campaign/data.js';
-import { contributions, rates, moduleInfo } from '../campaign/engine.js';
+import { contributions, rates } from '../campaign/engine.js';
 import { missions, tracker } from '../campaign/missions.js';
+import { howTo } from './mission-hints.js';
 import { hazards, meterReport, METER_HELP } from '../campaign/hazards.js';
 import { t, hasString } from '../flow/strings.js';
 import { play } from './audio.js';
@@ -36,21 +37,8 @@ export function createExtras({ s, ui, openMap }) {
     ui.select(focus);
   };
 
-  /**
-   * What to do next, in one line, for the current mission that builds a room. The wording follows SCENARIO's
-   * `astra.tut.build_prompt` ("Tap the ... frame, then tap Build."), so ASTRA and the tracker agree. When the room cannot be
-   * built yet, the engine's own reason is shown instead ("Build the Workshop first."). Provenance: `gameplay` (UI hint text).
-   */
-  function howTo(m) {
-    const id = m.state === 'current' && m.focus?.startsWith('module:') ? m.focus.slice(7) : null;
-    const info = id && s.modules[id] ? moduleInfo(s, id) : null;
-    if (!info || info.status !== 'unbuilt') return '';
-    const nameId = MODULES[id].nameId;
-    return info.reason ?? `Tap the ${hasString(nameId) ? t(nameId) : id} frame, then tap Build.`;
-  }
-
   function renderTracker() {
-    const list = tracker(s).map((m) => ({ ...m, how: howTo(m) }));
+    const list = tracker(s).map((m) => ({ ...m, how: howTo(s, m) }));
     const sig = JSON.stringify(list.map((m) => [m.id, m.progress, m.state, m.how]));
     if (sig === trSig) return;
     trSig = sig;
@@ -78,8 +66,8 @@ export function createExtras({ s, ui, openMap }) {
     let html = `<div class="card missions"><div class="hd">MISSIONS</div><div class="acts">${[1, 2, 3].map(chip).join('')}</div>`;
     html += `<h3>${names[cur]} <small>${doneCount} of ${mine.length} done</small></h3><div class="cols"><div>`;
     for (const x of mine) {
-      const how = howTo(x);
-      html += `<div class="ms ${x.state}"><span class="chk">${x.done ? '✔' : x.state === 'current' ? '▶' : '○'}</span><div><b>${x.title}</b><br><small>${x.why}</small>${x.progress ? ` <small>(${x.progress[0]}/${x.progress[1]})</small>` : ''}${how ? `<br><small class="how">${how}</small>` : ''}<br><small class="rw">Reward: ${x.reward}</small></div>${x.focus && !x.done ? `<button data-focus="${x.focus}">Show me</button>` : ''}</div>`;
+      const how = howTo(s, x);
+      html += `<div class="ms ${x.state}"><span class="chk">${x.done ? '✔' : x.state === 'current' ? '▶' : '○'}</span><div><b>${x.title}</b><br><small>${x.why}</small>${x.progress ? ` <small>(${x.progress[1] === 100 ? `${x.progress[0]}%` : `${x.progress[0]}/${x.progress[1]}`})</small>` : ''}${how ? `<br><small class="how">${how}</small>` : ''}<br><small class="rw">Reward: ${x.reward}</small></div>${x.focus && !x.done ? `<button data-focus="${x.focus}">Show me</button>` : ''}</div>`;
     }
     if (m.finished) html += '<div class="ms done"><span class="chk">★</span><div><b>All story missions done!</b><br><small>Free-Play: keep the base thriving.</small></div></div>';
     // optional goals of this Act; once the story is finished, every goal that is still open
