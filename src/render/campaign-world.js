@@ -13,6 +13,7 @@ import { ICON } from './atlas.js';
 import { buildSoil, SCREEN, CREW_COLORS, DRONE_BUMPERS, SOIL } from './world.js';
 import { SURFACE, PERSON_H, DRONE_H, SHAFT_X, GROUND_Y, LADDER, roomRect, anchor, feetY, bedroomSpots, garageSpots, baseBottom, rightWingWidth } from './geometry.js';
 import { onSurface, createMover, setGoal, advance, place as placeAt, arrived, roverPose, ROVER } from './movers.js';
+import { CLIMB_FRAMES } from './ladders.js';
 
 export { SCREEN, buildSoil, roomRect, anchor };
 
@@ -30,10 +31,10 @@ const ROOMS_WITH_CONSOLE = ['workshop', 'lab', 'garage', 'battery', 'greenhouse'
 export const createWalker = createMover;
 
 /** The climbing frame whose reaching hands decide where a climber hangs on the ladder, per crew sheet (the painted ladder is cut out, see ladders.js). */
-const CLIMB_REF = { crewEva: 16, crewIndoor: 18 };
+const CLIMB_REF = { crewEva: CLIMB_FRAMES.crewEva[0], crewIndoor: CLIMB_FRAMES.crewIndoor[0] };
 
 /**
- * How far (world units) a climber moves from the middle of the shaft so that his reaching hands are on the shaft's ladder (A31).
+ * How far (world units) a climber moves from the middle of the shaft so that his reaching hands are on the shaft's ladder (A36).
  * The frames face right, the hands are the right edge of the sprite; `box` is the shared box that scales the person.
  */
 function climbShift(atlas, sheet, box) {
@@ -224,7 +225,7 @@ export function drawCampaign(ctx, atlas, S) {
       } else {
         let frame = Math.floor(wm / 700) % 2; // standing about
         let still = false; // frames drawn facing right with their own furniture (console, table)
-        if (w.climbing) frame = eva ? 16 + (tick % 2) : 18 + (tick % 4);
+        if (w.climbing) frame = CLIMB_FRAMES[sheet][tick % CLIMB_FRAMES[sheet].length];
         else if (w.moving) frame = 2 + (tick % 6);
         else if (eva) frame = s.where === 'outside' ? 8 + (tick % 4) : frame;
         else if (s.where === 'kitchen' && [6, 12, 18].includes(clock.hour)) { frame = 12 + (Math.floor(wm / 450) % 2); still = true; }
@@ -242,7 +243,7 @@ export function drawCampaign(ctx, atlas, S) {
     if (A.visible) {
       const sheet = A.sheet;
       const box = atlas.unionBox(sheet, [0, 1, 2, 3, 4, 5, 6, 7]);
-      const x = A.x + (A.grip ? climbShift(atlas, sheet, box) * A.grip : 0); // on the ladder, hands on its right rail (A31)
+      const x = A.x + (A.grip ? climbShift(atlas, sheet, box) * A.grip : 0); // on the ladder, hands on its right rail (A36)
       atlas.sprite(ctx, sheet, A.frame, x, A.y, { h: PERSON_H, box, flip: A.flip, sheet: atlas.tinted(sheet, CREW_COLORS.cmdr) });
     }
   }

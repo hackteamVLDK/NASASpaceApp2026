@@ -127,7 +127,7 @@ export async function loadAtlas(onProgress = () => {}) {
     onProgress(++done / ids.length, id);
   }));
   if (sheets.finished) patchBakedRover(sheets.finished);
-  patchBakedLadders(sheets, GRIDS); // the climbing frames were painted with their own ladder; the shaft has one (A31)
+  patchBakedLadders(sheets, GRIDS); // the climbing frames were painted with their own ladder; the shaft has one (A36)
   const missing = ids.filter((id) => !sheets[id]);
   if (missing.length) console.warn('missing art, using placeholders:', missing.join(', '));
 
