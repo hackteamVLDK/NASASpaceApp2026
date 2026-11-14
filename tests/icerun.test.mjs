@@ -26,17 +26,18 @@ test('the Ice Run needs the Deep Ice Drill and says so; the Scrap Run does not n
 test('the Ice Run brings two Ice Cores and no Spare Parts; the Scrap Run brings 15 Spare Parts and no ice', () => {
   const s = ready();
   s.upgrades.deep_ice_drill = true;
-  const sp = s.res.sp;
   assert.deepEqual(expectedLoot(s, EXPEDITIONS.ice), { sp: 0, items: { ice_core: 2 } });
   assert.ok(command(s, { type: 'launch', expedition: 'ice' }).ok);
-  const seen = finishTrip(s);
-  assert.equal(s.items.ice_core, 2, 'two Ice Cores came home');
-  assert.ok(seen.some((e) => e.type === 'returned' && e.expedition === 'ice' && e.loot.items.ice_core === 2));
-  assert.equal(s.res.sp, sp, 'no Spare Parts from the Ice Run');
+  const ice = finishTrip(s).find((e) => e.type === 'returned');
+  assert.equal(ice.expedition, 'ice');
+  assert.equal(ice.loot.items.ice_core, 2, 'two Ice Cores came home');
+  assert.equal(ice.loot.sp, 0, 'no Spare Parts from the Ice Run');
+  assert.equal(s.items.ice_core, 2);
   // and then the Scrap Run
   s.minute += 1440; s.hp = 100;
   assert.ok(command(s, { type: 'launch', expedition: 'run' }).ok);
-  finishTrip(s);
-  assert.equal(s.items.ice_core, 2, 'no ice from the Scrap Run');
-  assert.ok(s.res.sp >= sp + 15 - 1);
+  const scrap = finishTrip(s).find((e) => e.type === 'returned');
+  assert.equal(scrap.loot.sp, 15);
+  assert.equal(scrap.loot.items.ice_core ?? 0, 0, 'no ice from the Scrap Run');
+  assert.equal(s.items.ice_core, 2);
 });
