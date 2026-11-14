@@ -27,8 +27,9 @@ const UPGRADE_ORDER = ['solar', 'greenhouse', 'lifesupport', 'battery', 'worksho
 
 const decide = (choice) => (s, send) => {
   if (!s.pending) return;
-  if (s.pending.kind === 'radio') send({ type: 'radio', choice: choice === 'c' ? 'b' : choice });
-  else send({ type: 'choose', choice });
+  if (s.pending.kind === 'radio') { send({ type: 'radio', choice: choice === 'c' ? 'b' : choice }); return; }
+  // a choice the base cannot pay for is refused; like a player, fall back to another card
+  for (const c of [choice, 'c', 'a', 'b']) if (send({ type: 'choose', choice: c }).ok) return;
 };
 const playMinis = (win) => (s, send) => {
   for (const t of [...s.tasks]) send({ type: 'miniResult', game: t.game, win });
