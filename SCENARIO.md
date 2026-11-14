@@ -79,6 +79,51 @@ In 2038 a robot scout recorded a thump every 37 minutes and a methane spike in a
 - **Behavior:** appears smoothly from the left edge whenever a new module is built, a survival event triggers, or a scientific fact is unlocked, then slides back out when dismissed so it never blocks the base view. The first appearance (at touchdown) plays an energetic chime.
 - **Tone:** adventurous, educational sci-fi realism: accessible science without overwhelming complexity. Genre references: *Fallout Shelter*, *Oxygen Not Included*, *Among Us*.
 
+### ASTRA 6.7 voice guide
+
+Every ASTRA line, existing or new, follows this guide. Writers and agents check new lines
+against it, and against `content/science/FACT_CHECK.md` for any science claim.
+
+**Who ASTRA is.** The station's AI and the crew's friend: warm, curious, a little playful, never
+bossy. She is proud of the crew's effort, calm when things go wrong, and excited about real
+science. She speaks like a kind older sibling who happens to know a lot about Mars.
+
+**Do**
+- Keep it short: 2–4 sentences, each under 20 words (UI text under 15). One idea per line.
+- Say what happened, why, and what to do next, in that order.
+- Praise effort and smart choices ("Smart thinking!", "Good try!"), not luck.
+- Explain consequences calmly: what it cost and how to recover.
+- Tie science to a real mission or measurement, and use exact facts from `FACT_CHECK.md`.
+- Explain a hard word the first time, in kid words ("perchlorates, salty chemicals...").
+- Use "we" and "our": ASTRA is part of the team.
+- Mark invented story facts as (fiction) in this file, never present them as real.
+
+**Don't**
+- Never be scary: no death, dying, doom, "you will not survive", or graphic harm.
+- Never be wrong about science, and never round a claim into something false ("blocks all").
+- Never shame or blame the player ("You failed", "That was dumb").
+- Never give orders the player can't follow, or more than one task at a time.
+- No sarcasm, no jokes at someone's expense, no slang that dates quickly.
+- No exact numbers a child can't use, unless the number is the fun fact (122 grams, 1,319).
+- No walls of text: if it needs more than 4 sentences, split it into two lines.
+
+**Good vs. bad examples**
+
+| # | Situation | Bad | Good | Why |
+|---|---|---|---|---|
+| 1 | Oxygen runs out | "WARNING: Oxygen depleted. Crew will suffocate in minutes!" | "Oxygen emergency! Everyone into the Bedroom, it has backup air tanks. Fix the scrubber valves to get us breathing easy again." | Calm, gives a safe action, no death talk. |
+| 2 | Player skipped the storm prep | "You ignored my warning and drained the batteries. Bad call." | "Oops, the storm drained our batteries. On Mars, the weather decides how much power we get. Next storm, let's prepare!" | No blame; explains cause and the lesson. |
+| 3 | Underground radiation | "Underground, we're 100% safe from radiation." | "The soil above us blocks most of the radiation. A little still gets through, so we keep trips outside short." | Never round to "all" or "safe"; radiation is reduced, not zero. |
+| 4 | Mini-game failed | "Failed. Try again." | "Close! The valves need a gentle touch. Try once more, I'll keep the air flowing." | Praises effort, offers help. |
+| 5 | Teaching a hard word | "Perchlorates detected in regolith samples." | "Our scan found perchlorates, salty chemicals that are bad for people. Let's test the soil before we plant." | Explains the word once, in kid words. |
+| 6 | Real mission fact | "Rovers have had wheel problems before." | "Sharp Mars rocks poked holes in NASA's Curiosity rover's wheels. Careful driving keeps ours safe!" | Specific, real, checked. |
+| 7 | Solar flare warning | "A deadly solar storm is coming! Hide or you'll be hurt!" | "Solar flare! Its fastest particles can reach Mars in less than an hour. Everyone underground, please." | Urgent but not frightening; one clear action. |
+| 8 | Low HP | "Your HP is critical. You're about to collapse." | "HP is low! Let's get you somewhere safe. Rest and fresh food will restore your energy." | Reassuring; points to recovery. |
+| 9 | Too much at once | "Fix the filter, clean the panels, craft a Repair Kit and send the Rover before dusk." | "First, let's fix the air filter. I'll tell you the next job when it's done." | One task at a time. |
+| 10 | Good choice made | "Correct." | "Smart thinking! Saving power kept everyone warm through the storm." | Praises the choice and links it to the result. |
+
+New lines that break a rule above are rewritten before they go into this file.
+
 ### Intro: text crawl (fiction)
 
 State `INTRO_TEXT`, `0.0s – 19.0s`.

@@ -29,6 +29,9 @@ touches gameplay, story, UI, cutscenes, tutorial, art, or audio:
 
 If `SCENARIO.md` and another document disagree, `SCENARIO.md` wins.
 
+Any player-facing ASTRA 6.7 line must follow the **ASTRA 6.7 voice guide** in `SCENARIO.md`
+(Section 1): short, never scary, never wrong about science, praise effort, explain consequences calmly.
+
 ## Commands
 
 | Task | Command |
