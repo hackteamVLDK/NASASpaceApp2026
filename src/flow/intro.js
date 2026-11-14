@@ -121,10 +121,12 @@ const easeInOut = (u) => (u < 0.5 ? 2 * u * u : 1 - 2 * (1 - u) * (1 - u));
 const easeOut = (u) => 1 - (1 - u) * (1 - u);
 
 /**
- * Gameplay framing (PROPOSAL; the scenario leaves the zoom to the layout work): the whole base
- * width fits and a strip of surface stays visible at the top. Zoom is screen pixels per world unit.
+ * Gameplay framing (PROPOSAL; the scenario leaves the zoom to the layout work): the whole base fits,
+ * all six floors down to the Recreation room, and a strip of surface stays visible ABOVE the top
+ * bar of the interface (about 98 px), where the solar panels, the airlock and the Commander at work
+ * outside can be seen. Zoom is screen pixels per world unit; the top of the view is 516 world units.
  */
-export const GAMEPLAY_VIEW = Object.freeze({ zoom: 0.54, centerY: 1880, surfaceStripTopY: 880 });
+export const GAMEPLAY_VIEW = Object.freeze({ zoom: 0.46, centerY: 1690, surfaceStripTopY: 516 });
 
 /** Camera centre Y at time `sec`. Locked on the sky, follows the lander, then pans underground. */
 export function cameraYAt(sec) {

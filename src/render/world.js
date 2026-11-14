@@ -10,7 +10,7 @@ import { ICON } from './atlas.js';
 export const SCREEN = Object.freeze({ w: 1920, h: 1080 });
 export const CREW_COLORS = Object.freeze({ cmdr: '#E53935', eng: '#FDD835', bot: '#43A047', sci: '#1E88E5' });
 export const DRONE_BUMPERS = Object.freeze({ 'drone-01': '#00E5FF', 'drone-02': '#FFB000', 'drone-03': '#43E060' });
-const SOIL = { x0: -800, x1: 2720, scale: 0.5 };
+export const SOIL = { x0: -1250, x1: 3170, scale: 0.5 }; // wide enough to fill the screen at the gameplay zoom
 
 /** Surface props: positions are proposals (docs/LEVELS.md), all on the ground line. */
 export const SURFACE = Object.freeze({

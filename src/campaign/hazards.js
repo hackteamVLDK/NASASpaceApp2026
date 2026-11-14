@@ -6,6 +6,7 @@
  */
 import { clockAt } from './util.js';
 import { SOL, SHIELD } from './data.js';
+import { awayProgress } from './expeditions.js';
 
 const solsLeft = (s, minute) => Math.max(0, (minute - s.minute) / SOL);
 
@@ -29,7 +30,7 @@ export function hazards(s) {
   const meters = { oxygen: 25, water: 25, food: 25, morale: 30, power: 20 };
   for (const [k, limit] of Object.entries(meters)) if (s.res[k] < limit && s.res[k] > 0 && !s.emergency[k]) add(`low-${k}`, 'warn', `Low ${k}`, `${k[0].toUpperCase()}${k.slice(1)} is getting low.`, null, 'Open the Resources screen for what helps.');
   if (s.hp < 40 && !s.medRest) add('low-hp', 'warn', 'Low HP', 'Rest and fresh food bring energy back.', 'bedroom', 'Sleep in the Bedroom, or eat a fresh meal.');
-  if (s.away) add('away', 'info', 'Rover out', `The Rover is on its way (${Math.round(((s.minute - s.away.start) / (s.away.end - s.away.start)) * 100)}%).`, 'garage', 'Follow the radio log.');
+  if (s.away) add('away', 'info', 'Rover out', `The Rover is on its way (${Math.round(awayProgress(s.away, s.minute) * 100)}%).`, 'garage', 'Follow the radio log.');
   return h;
 }
 

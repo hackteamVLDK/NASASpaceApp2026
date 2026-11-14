@@ -6,7 +6,7 @@
  */
 import { MODULES, RECIPES, UPGRADES, LAYOUT } from '../campaign/data.js';
 import { moduleInfo, clockAt, online } from '../campaign/engine.js';
-import { EXPEDITIONS, hpCost, durationMinutes } from '../campaign/expeditions.js';
+import { EXPEDITIONS, hpCost, durationMinutes, awayProgress } from '../campaign/expeditions.js';
 import { t, hasString } from '../flow/strings.js';
 import { ICON } from '../render/atlas.js';
 import { play } from './audio.js';
@@ -313,6 +313,7 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
     setTab(id) { tab = id; sig = ''; },
     showMap: (launch) => showMap(launch ?? ui.launch),
     get modalOpen() { return !modalRoot.hidden; },
+    get modalKey() { return modalKey; },
     update() {
       const c = clockAt(s.minute);
       $('clock').textContent = `Sol ${c.sol} · ${String(c.hour).padStart(2, '0')}:${String(c.minute).padStart(2, '0')}${s.storm ? ' · DUST STORM' : ''}`;
@@ -329,12 +330,12 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
       const a = s.away;
       $('radioBox').hidden = !a;
       if (a) {
-        $('radioBar').firstElementChild.style.width = `${Math.min(100, ((s.minute - a.start) / (a.end - a.start)) * 100)}%`;
+        $('radioBar').firstElementChild.style.width = `${awayProgress(a, s.minute) * 100}%`;
         const html = radioLines.map((l) => `<p>${l}</p>`).join('');
         if ($('radioLines').innerHTML !== html) $('radioLines').innerHTML = html;
       } else radioLines.length = 0;
       $('mapBtn').disabled = !online(s, 'garage');
-      const next = `${tab}|${selected}|${JSON.stringify([s.drones.map((d) => (d.queue ?? []).length), s.logbook.length, s.badges.length, s.res.sp | 0, s.items, s.kits, s.upgrades, s.tasks.length, s.crafting?.recipe, s.away?.id, s.drones.map((d) => d.status + (d.task?.module ?? '')), Object.values(s.modules).map((m) => m.status + m.tier + (m.upgrading ? 'u' : '') + Math.floor(m.progress * 10))])}`;
+      const next = `${tab}|${selected}|${JSON.stringify([s.drones.map((d) => (d.queue ?? []).length), s.logbook.length, s.badges.length, s.res.sp | 0, s.items, s.kits, s.upgrades, s.tasks.length, s.crafting?.recipe, s.away?.id, s.drones.map((d) => d.status + (d.task?.module ?? '')), Object.values(s.modules).map((m) => m.status + m.tier + (m.upgrading ? `u${Math.floor(m.upgrading.progress * 20)}` : '') + (m.status === 'building' ? Math.floor(m.progress * 50) : Math.floor(m.progress * 10))), s.crafting ? Math.floor(s.crafting.progress * 20) : -1])}`;
       if (next !== sig) {
         sig = next;
         const body = $('tabBody');

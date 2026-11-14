@@ -12,8 +12,11 @@ Updated: 2026-11-14 (UTC+1), after the backend was aligned with SCENARIO.md
 
 ## DOING NOW
 - Done: the playable game on SCENARIO v2 (src/campaign = engine, story, expeditions, logbook; src/render, src/ui, src/main.js).
-  npm run dev. The old src/sim is no longer used by the game. Next: Fitness + Sol Plans (3.10/3.11), co-op roles, logbook images,
-  portraits/heads (Vlad's CHARACTER_PROMPTS), polish, sound files.
+  npm run dev. The old src/sim is no longer used by the game. Review of animation and logic done (docs/REVIEW_2026-11-14.md):
+  camera now shows the surface; Commander and drones walk by the shaft (src/render/movers.js); Rover drives out and in;
+  engine fixes (queue cap, events wait while away, 0 Water/Food, Research). npm test: 166 tests, all pass.
+  Next: plan step 4 gaps (breakdowns, Bumpy/Rough, Ice Run, Research gating, Earth windows), then Fitness + Sol Plans
+  (3.10/3.11), co-op roles, logbook images, portraits/heads (Vlad's CHARACTER_PROMPTS), sound files.
 
 ## I AM NOT BUILDING (free for others)
 - (UI now exists in src/ui and src/render; coordinate before editing) The screens themselves: intro text screen, landing cutscene rendering, AstraGuidePanel
@@ -35,7 +38,7 @@ Updated: 2026-11-14 (UTC+1), after the backend was aligned with SCENARIO.md
 - Assets: manifest rebuilt for the scenario world (384x640 art px, 5 units per pixel, 25 visual assets +
   8 sounds); NEW tools/assets/build-prompts.mjs -> assets/prompts/ (npm run assets:prompts / assets:check);
   NEW tests/assets.test.mjs. Nothing is generated yet; every asset is awaiting-generation / awaiting-lore.
-- npm test: 107 tests, all pass.
+- npm test: 107 tests at that time; now 166 (campaign, movers, review-fixes, fuzz), all pass.
 
 ## QUESTIONS FOR THE TEAM (SCENARIO.md does not say; marked defaults in code) — full table: docs/LEVELS.md
 1. Dining Room usable at the start? (section 4 yes, ASTRA's line no)  Default: yes.

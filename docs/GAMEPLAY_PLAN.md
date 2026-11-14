@@ -1,7 +1,8 @@
 # Gameplay plan: a crew you command, missions, jobs, resources, disasters
 
 Status: steps 1, 2, 3 and 5 below are **implemented for the solo Commander and the drones** (see section 5);
-step 6 (a crew of four) waits for the team's decision in section 2. [SCENARIO.md](../SCENARIO.md) stays
+step 6 (a crew of four) waits for the team's decision in section 2. A review of the animation and the logic
+found and fixed 22 problems on 2026-11-14: see [REVIEW_2026-11-14.md](REVIEW_2026-11-14.md). [SCENARIO.md](../SCENARIO.md) stays
 binding and is not edited by this file. Where this plan differs from it, the difference is marked
 **DEVIATION** and needs a team decision (section 2) before code is written.
 

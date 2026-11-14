@@ -12,7 +12,7 @@ const once = (s, id, cond, fn) => {
   const key = `_${id}`;
   if (!s.flags[key] && cond()) { s.flags[key] = true; fn(); }
 };
-const addTask = (s, game, why) => { if (!s.tasks.some((t) => t.game === game)) s.tasks.push({ game, why }); };
+export const addTask = (s, game, why) => { if (!s.tasks.some((t) => t.game === game)) s.tasks.push({ game, why }); };
 const dropTask = (s, game) => { s.tasks = s.tasks.filter((t) => t.game !== game); };
 const setRes = (s, k, delta) => { s.res[k] = clampTo(s.res[k] + delta, 0, k === 'sp' ? 999 : 100); };
 const hurt = (s, hp) => { s.hp = clampTo(s.hp - hp, 0, s.hpMax); };
@@ -103,6 +103,13 @@ export function onSol(s, emit, now, rand) {
 
 // ------------------------------------------------------------------ hooks from the engine
 
+const RIGHT_WING = ['workshop', 'lab', 'battery', 'garage', 'greenhouse', 'recreation'];
+
+/** The Commander moved to `where`: the first visit to a room without the Roof Layer gets ASTRA's warning. */
+export function onMove(s, emit, where) {
+  once(s, 'partialRoom', () => RIGHT_WING.includes(where) && !online(s, 'roof'), () => say(emit, 'astra.rad.partial_room', 'calm'));
+}
+
 export function onModuleStart(s, id, emit) {
   const l = MODULE_LINES[id]?.start;
   if (l) say(emit, l, 'cheerful');
@@ -142,6 +149,7 @@ export function onDroneAwake(s, id, emit) {
 
 export function startPending(s, emit, kind, id) {
   s.pending = { kind, id };
+  if (id === 'e1' || id === 'd5') s.flags.flare = true; // the sky shows the flare while the Commander decides
   emit({ type: kind, id });
 }
 
@@ -149,6 +157,7 @@ export function startPending(s, emit, kind, id) {
 export function applyChoice(s, pending, choice, emit, rand) {
   const key = `${pending.id}${choice}`;
   const { sol } = clockAt(s.minute);
+  if (pending.id === 'e1' || pending.id === 'd5') s.flags.flare = false;
   const follow = (lineId, mood = 'cheerful') => say(emit, lineId, mood);
   switch (key) {
     // ---- Dilemma 1: the dust storm
@@ -169,7 +178,7 @@ export function applyChoice(s, pending, choice, emit, rand) {
     case 'd2a':
       setRes(s, 'sp', -12);
       s.recycleEta = RECYCLER.cracked;
-      s.tasks.push({ game: 'water_sort', why: 'Fix the recycler filter.' });
+      addTask(s, 'water_sort', 'Fix the recycler filter.');
       follow('astra.d2.a');
       break;
     case 'd2b':
@@ -205,7 +214,7 @@ export function applyChoice(s, pending, choice, emit, rand) {
       follow('astra.d4.a');
       break;
     case 'd4b':
-      s.tasks.push({ game: 'antenna', why: 'Call Earth tonight.' });
+      addTask(s, 'antenna', 'Call Earth tonight.');
       s.flags.d4b = true;
       break;
     case 'd4c':
@@ -233,11 +242,11 @@ export function applyChoice(s, pending, choice, emit, rand) {
     case 'e2b': s.mult.solar = 0.5; after(s, at(sol + 1, 6), 'solar_normal'); follow('astra.e2.b'); break;
     case 'e2c': hurt(s, 5); s.mult.solar = 1.1; after(s, at(sol + 3, 6), 'solar_normal'); follow('astra.e2.c'); break;
     // ---- Event 3: airlock micro-leak
-    case 'e3a': s.tasks.push({ game: 'valve_balance', why: 'Hunt the leak.' }); break;
+    case 'e3a': addTask(s, 'valve_balance', 'Hunt the leak.'); break;
     case 'e3b': setRes(s, 'sp', -1); after(s, at(sol + 3, 6), 'leak_returns'); follow('astra.e3.b'); break;
     case 'e3c': s.flags.noLaunchUntil = at(sol + 1, 6); follow('astra.e3.c'); break;
     // ---- Event 4: nutrient drift
-    case 'e4a': s.tasks.push({ game: 'nutrient_match', why: 'Match the nutrients.' }); s.mult.food = 0.6; s.flags.freshOff = true; break;
+    case 'e4a': addTask(s, 'nutrient_match', 'Match the nutrients.'); s.mult.food = 0.6; s.flags.freshOff = true; break;
     case 'e4b': setRes(s, 'water', -10); s.mult.food = 0.6; after(s, at(sol + 1, 6), 'drift_fixed'); follow('astra.e4.b'); break;
     case 'e4c': s.mult.food = 0.6; s.flags.freshOff = true; after(s, at(sol + 2, 6), 'drift_wilt'); break;
     default:
@@ -264,13 +273,17 @@ export function runTimer(s, id, emit) {
     case 'solar_normal': s.mult.solar = 1; break;
     case 'leak_returns': addMod(s, 'leak', 'oxygen', -2); addMod(s, 'leak_w', 'water', -1); break;
     case 'drift_fixed': s.mult.food = 1; break;
-    case 'drift_wilt': setRes(s, 'food', -10); s.tasks.push({ game: 'nutrient_match', why: 'The plants wilted. Fix the mix.' }); break;
+    case 'drift_wilt': setRes(s, 'food', -10); addTask(s, 'nutrient_match', 'The plants wilted. Fix the mix.'); break;
     case 'harvest': say(emit, 'astra.act2.first_harvest', 'cheerful'); break;
     case 'd4_cold_end': s.flags.freshOff = false; s.mult.food = 1; break;
     case 'finale_earth': follow('astra.finale.earth'); after(s, s.minute + 60, 'finale_closing'); break;
     case 'finale_closing': follow('astra.finale.closing'); emit({ type: 'finale' }); break;
     default:
-      if (id.startsWith('event:')) startPending(s, emit, 'event', id.slice(6));
+      if (id.startsWith('event:')) {
+        // SCENARIO 2.1: dilemmas and random events wait until the Commander is home (and a little after, for the loot screen)
+        if (s.away || s.pending || s.minute - (s.flags.lastReturn ?? -1e9) < 90) { after(s, s.minute + 30, id); return; }
+        startPending(s, emit, 'event', id.slice(6));
+      }
   }
 }
 
@@ -322,7 +335,7 @@ export function onMini(s, { game, win }, emit) {
         s.mult.food = 0.5;
         after(s, s.minute + 2 * SOL, 'd4_cold_end');
         say(emit, 'astra.d4.b', 'calm');
-        s.tasks.push({ game: 'nutrient_match', why: 'The plants got chilly. Fix the mix.' });
+        addTask(s, 'nutrient_match', 'The plants got chilly. Fix the mix.');
       }
     } else if (s.flags.d4b) { s.flags.d4b = false; }
   } else if (game === 'wheel_vacuum') {

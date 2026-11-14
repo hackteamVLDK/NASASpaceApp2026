@@ -86,6 +86,26 @@ export function startExpedition(s, key, emit) {
   return null;
 }
 
+/**
+ * How far along the Rover trip is, 0..1. A decision that makes the trip longer or shorter moves
+ * `end`; the bar must never run backwards, so the new end is reached from the progress the trip
+ * had at that moment (`f0` at minute `m0`), not from the start.
+ */
+export function awayProgress(a, minute) {
+  if (!a) return 0;
+  const m0 = a.m0 ?? a.start;
+  const f0 = a.f0 ?? 0;
+  if (a.end <= m0) return minute >= a.end ? 1 : f0;
+  return clampTo(f0 + (1 - f0) * ((minute - m0) / (a.end - m0)), 0, 1);
+}
+
+/** Move the end of the trip (a radio decision, the weather, a rescue) without the progress bar jumping back. */
+function setTripEnd(a, minute, newEnd) {
+  a.f0 = awayProgress(a, minute);
+  a.m0 = minute;
+  a.end = newEnd;
+}
+
 /** Answer the radio decision of the running expedition. */
 export function radioChoice(s, choice, emit) {
   if (!s.pending || s.pending.kind !== 'radio' || !s.away) return 'Nothing to decide.';
@@ -93,9 +113,9 @@ export function radioChoice(s, choice, emit) {
   s.pending = null;
   a.decisionDone = true;
   if (a.id === 2) {
-    if (choice === 'a') a.end += 0.25 * SOL; else { a.hpTotal += 5; }
+    if (choice === 'a') setTripEnd(a, s.minute, a.end + 0.25 * SOL); else { a.hpTotal += 5; }
   } else if (a.id === 3) {
-    if (choice === 'a') { a.extraIce = 1; a.end += 0.25 * SOL; a.hpTotal += 4; }
+    if (choice === 'a') { a.extraIce = 1; setTripEnd(a, s.minute, a.end + 0.25 * SOL); a.hpTotal += 4; }
   }
   emit({ type: 'radio-chosen', choice });
   return null;
@@ -111,12 +131,12 @@ export function resolveD5(s, emit) {
     s.hp = clampTo(s.hp - 6, 0, s.hpMax);
     a.halfLoot = true;
     a.customLoot = { sp: 10, items: { rare_battery_cell: 2, lab_sensor_kit: 1, mineral_sample: 1 } };
-    a.end = Math.min(a.end, s.minute + 0.25 * SOL);
+    setTripEnd(a, s.minute, Math.min(a.end, s.minute + 0.25 * SOL));
     s.flags.exp4Repeat = true;
   } else if (c === 'b') {
     s.hp = clampTo(s.hp - 2, 0, s.hpMax);
     s.res.morale = clampTo(s.res.morale - 3, 0, 100);
-    a.end += SOL;
+    setTripEnd(a, s.minute, a.end + SOL);
   } else {
     s.hp = clampTo(s.hp - 14, 0, s.hpMax);
     s.res.morale = clampTo(s.res.morale - 3, 0, 100);
@@ -134,8 +154,7 @@ export function expeditionMinute(s, emit) {
   const ex = EXPEDITIONS[a.key];
   if (s.pending) return;
   if (s.flags.d5Choice) resolveD5(s, emit);
-  const total = a.end - a.start;
-  const frac = clampTo((s.minute - a.start) / total, 0, 1);
+  const frac = awayProgress(a, s.minute);
   // HP drains evenly across the trip
   const wantDone = a.hpTotal * frac;
   if (wantDone > a.hpDone) { s.hp = clampTo(s.hp - (wantDone - a.hpDone), 0, s.hpMax); a.hpDone = wantDone; }
@@ -148,7 +167,7 @@ export function expeditionMinute(s, emit) {
       emit({ type: 'radio', id: `radio.exp${ex.id}.${suffix}`, percent: mark });
       if (ex.astra?.[mark]) emit({ type: 'astra', lineId: ex.astra[mark], mood: 'cheerful' });
       if (ex.decision?.at === mark && !a.decisionDone) {
-        if (ex.decision.dilemma) { s.pending = { kind: 'dilemma', id: ex.decision.dilemma }; emit({ type: 'dilemma', id: ex.decision.dilemma }); } else { s.pending = { kind: 'radio', id: `exp${ex.id}.${mark}` }; emit({ type: 'radio-decision', id: `exp${ex.id}.${mark}` }); }
+        if (ex.decision.dilemma) { s.pending = { kind: 'dilemma', id: ex.decision.dilemma }; if (ex.decision.dilemma === 'd5') s.flags.flare = true; emit({ type: 'dilemma', id: ex.decision.dilemma }); } else { s.pending = { kind: 'radio', id: `exp${ex.id}.${mark}` }; emit({ type: 'radio-decision', id: `exp${ex.id}.${mark}` }); }
         return;
       }
     }
@@ -157,7 +176,7 @@ export function expeditionMinute(s, emit) {
   if (s.hp <= 0 && !a.rescued) {
     a.rescued = true;
     a.halfLoot = true;
-    a.end = s.minute;
+    setTripEnd(a, s.minute, s.minute);
     emit({ type: 'astra', lineId: 'astra.hp.zero_expedition', mood: 'calm' });
   }
   if (s.minute >= a.end) finish(s, ex, emit);
@@ -191,9 +210,10 @@ function finish(s, ex, emit) {
   s.res.sp = clampTo(s.res.sp + got.sp, 0, 999);
   for (const [it, n] of Object.entries(got.items)) s.items[it] = (s.items[it] ?? 0) + n;
   if (rough) { s.hp = clampTo(s.hp - 5, 0, s.hpMax); }
-  if (s.hp <= 0) { s.medRest = { until: s.minute + SOL }; }
+  if (s.hp <= 0) { s.medRest = { until: s.minute + SOL }; s.stats.medRests += 1; } // the rescue ends in Med-Rest, which counts
   s.flags.done ??= {};
   s.flags.done[ex.id] = true;
+  s.flags.lastReturn = s.minute;
   emit({ type: 'returned', expedition: ex.id, result, loot: got });
   if (ex.returnLine) emit({ type: 'astra', lineId: ex.returnLine, mood: 'cheerful' });
   if (ex.id === 5) {

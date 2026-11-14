@@ -7,8 +7,9 @@
 import { loadStrings, t } from './flow/strings.js';
 import { loadAtlas } from './render/atlas.js';
 import { drawCampaign, buildSoil, createWalker, SCREEN } from './render/campaign-world.js';
+import { ROVER, floorFeetY, arrived, place as placeBody } from './render/movers.js';
 import { createCampaign, step, command } from './campaign/engine.js';
-import { SECONDS_PER_SOL, SOL } from './campaign/data.js';
+import { SECONDS_PER_SOL, SOL, LAYOUT } from './campaign/data.js';
 import { openingFrameAt, cuesBetween, skipTarget, T, GAMEPLAY_VIEW, INTRO_TEXT, introTextAt, flowStateAt } from './flow/intro.js';
 import { createGuide, say } from './flow/astra.js';
 import { createAstraPanel } from './ui/astra-panel.js';
@@ -22,6 +23,7 @@ import * as audio from './ui/audio.js';
 
 const SIM_MINUTES_PER_SECOND = SOL / SECONDS_PER_SOL; // 1 Sol = 4 real minutes at 1x (SCENARIO 3.1)
 const SAVE_KEY = 'ares-kids-save-v1';
+const NICK = { 'drone-01': 'Pip', 'drone-02': 'Bumble', 'drone-03': 'Zip' };
 const $ = (id) => document.getElementById(id);
 
 const stage = $('stage');
@@ -45,7 +47,11 @@ let tut = null; // { state, phase }
 let hits = [];
 let hover = null;
 let mini = null;
-const walker = createWalker();
+const walker = createWalker(); // the Commander's body (movers.js)
+const droneMovers = {}; // one body per drone
+const rover = { phase: 'parked', t0: 0, k: 0, boardAt: 0 }; // parked | boarding | out | gone | in
+const boardSpot = () => ({ x: ROVER.parkX - 200, y: floorFeetY(LAYOUT.rooms.garage.floor) });
+let speedBeforeDecision = 0; // the game speed to come back to after a decision card
 
 // ------------------------------------------------------------------ interface size
 
@@ -98,7 +104,10 @@ function handleEvents(events) {
       case 'event': trigger(`E:${e.id}`); break;
       case 'chosen': trigger(`C:${e.id}${e.choice}`); break;
       case 'log': say(guide, { lineId: e.lineId, mood: 'calm' }); break;
-      case 'returned': ui.showLoot(e); audio.play('chirp'); break;
+      case 'launched': rover.phase = 'boarding'; rover.boardAt = performance.now(); break;
+      case 'returned': rover.phase = 'in'; rover.t0 = performance.now(); ui.showLoot(e); audio.play('chirp'); break;
+      case 'queued': toast(`${NICK[e.drone] ?? 'The drone'} will do that next.`); break;
+      case 'ordered': break;
       case 'finale': checkAllBadges(); ui.showFinale(); break;
       case 'toast': toast(e.text); break;
       case 'emergency': toast(`Emergency: ${e.kind}!`, 4000); audio.play('alert'); break;
@@ -320,6 +329,21 @@ function drawCrawl(nowMs) {
   ctx.fillStyle = vg; ctx.fillRect(0, 0, SCREEN.w, SCREEN.h);
 }
 
+/** The Commander boards, the Rover drives out and later rolls home; the Commander steps off. */
+function stepRover(nowMs) {
+  const spot = boardSpot();
+  const atRover = arrived(walker) && walker.goal && walker.goal.x === spot.x && walker.goal.y === spot.y; // not merely done with an earlier walk
+  if (rover.phase === 'boarding' && (atRover || nowMs - rover.boardAt > 9000)) { rover.phase = 'out'; rover.t0 = nowMs; }
+  if (rover.phase === 'out' || rover.phase === 'in') {
+    rover.k = Math.min(1, (nowMs - rover.t0) / ROVER.ms);
+    if (rover.k >= 1) {
+      if (rover.phase === 'out') rover.phase = 'gone';
+      else { rover.phase = 'parked'; rover.k = 0; placeBody(walker, boardSpot()); }
+    }
+  }
+  if (!s.away && (rover.phase === 'gone' || rover.phase === 'boarding')) { rover.phase = 'parked'; rover.k = 0; } // a loaded game, or a trip that was cancelled
+}
+
 let lastFrameMs = 0;
 function render(nowMs) {
   if (mode === 'loading') return;
@@ -330,12 +354,12 @@ function render(nowMs) {
   if (mode === 'intro') {
     const f = openingFrameAt(flowT);
     S = {
-      s, cy: f.cameraY, zoom: f.zoom, shake: f.shake, nowMs, soil, walker, dtMs,
+      s, cy: f.cameraY, zoom: f.zoom, shake: f.shake, nowMs, soil, walker, droneMovers, rover, dtMs,
       cut: { lander: f.lander, landed: f.lander.landed, dust: f.dustBurst ? { age: flowT - 25 } : null, astronaut: f.astronaut, droneLedOn: f.droneLedOn, showMound: true, parachuteDrift: Math.min(1, Math.max(0, (flowT - 22.2) / 3)) },
     };
   } else {
     S = {
-      s, cy: GAMEPLAY_VIEW.centerY, zoom: GAMEPLAY_VIEW.zoom, nowMs, soil, hover, walker, dtMs, cut: null,
+      s, cy: GAMEPLAY_VIEW.centerY, zoom: GAMEPLAY_VIEW.zoom, nowMs, soil, hover, walker, droneMovers, rover, pace: speed > 0 ? Math.min(4, speed) : 1, dtMs, cut: null,
       dimExcept: tut?.state === 'TUT_DRONE_CLICK' ? 'drone-01' : null,
       marker: tut?.state === 'TUT_DRONE_CLICK' ? 'drone-01' : null,
       highlight: tut?.state === 'TUT_BUILD' && tut.phase === 'pick' ? 'module:battery' : (ui?.selected ?? null),
@@ -367,8 +391,11 @@ function loop(now) {
     } else if (mode === 'play') {
       astra.setAuto(false);
       if (s.pending) {
-        ui.showChoice(s.pending.kind, s.pending.id);
-        if (speed > 0) document.querySelector('#speed [data-speed="0"]').click();
+        if (!ui.modalOpen || ui.modalKey === `choice:${s.pending.id}`) ui.showChoice(s.pending.kind, s.pending.id); // the loot screen finishes first
+        if (speed > 0) { speedBeforeDecision = speed; document.querySelector('#speed [data-speed="0"]').click(); }
+      } else if (speedBeforeDecision && speed === 0 && !ui.modalOpen && !mini) {
+        document.querySelector(`#speed [data-speed="${speedBeforeDecision}"]`)?.click(); // the decision is made: time runs on
+        speedBeforeDecision = 0;
       } else if (!mini && !ui.modalOpen && speed > 0) {
         simAccum += dt * speed * SIM_MINUTES_PER_SECOND;
         const whole = Math.min(60, Math.floor(simAccum));
@@ -384,6 +411,7 @@ function loop(now) {
     if (extras) extras.update(mode === 'play');
     if (ui && (mode === 'tutorial' || mode === 'play')) { ui.update(); $('hud').hidden = false; if (mode === 'play') $('side').hidden = false; }
     astra.update(now);
+    if (mode === 'play') stepRover(now);
     render(now);
   } catch (err) {
     console.error(err);
@@ -415,6 +443,7 @@ async function boot() {
     cont.addEventListener('click', () => {
       audio.unlock();
       Object.assign(s, saved); // the UI and the renderer hold this same object
+      rover.phase = s.away ? 'gone' : 'parked';
       for (const d of s.drones) d.queue ??= []; // saves made before Drone Link have no queue
       s.order ??= null;
       $('loading').hidden = true;
@@ -432,6 +461,7 @@ async function boot() {
   const q = new URLSearchParams(location.search);
   window.__ares = {
     get hits() { return hits; }, view: () => currentView(), get mode() { return mode; }, get tut() { return tut; }, get s() { return s; },
+    get rover() { return rover; }, get walker() { return walker; }, get droneMovers() { return droneMovers; },
     send, jump: (sec) => { flowT = sec; prevFlowT = sec; }, state: () => flowStateAt(flowT), openMini,
   };
   if (q.has('autostart')) { $('loading').hidden = true; mode = 'intro'; flowT = Number(q.get('autostart')) || 0; prevFlowT = flowT; }

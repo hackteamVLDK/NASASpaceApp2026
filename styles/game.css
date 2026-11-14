@@ -83,3 +83,9 @@ button:hover { background:#1a4668; } button:disabled { opacity:.45; cursor:defau
 .chip { font-size:15px; padding:5px 12px; border-radius:20px; background:rgba(8,12,24,.92); } .chip.warn { border-color:#ffb000; color:#ffd180; } .chip.alarm { border-color:#ff5252; color:#ff9a8a; animation:pulse 1s infinite; } .chip.info { border-color:#4db8ff; }
 .card.missions { max-height:92%; overflow:auto; } .cols { display:grid; grid-template-columns:1fr 1fr; gap:24px; } .card h3 { margin:10px 0 4px; color:var(--cyan); font-size:20px; } .ms { display:flex; gap:10px; align-items:flex-start; margin:6px 0; font-size:18px; } .ms .chk { width:24px; color:#43e060; } .ms.current { background:rgba(255,107,53,.15); border-radius:8px; padding:4px; } .ms.done { opacity:.6; } .ms.later { opacity:.5; } .ms button { margin-left:auto; padding:4px 10px; font-size:15px; } .rw { color:#ffd180; }
 .card table { width:100%; font-size:20px; } .card td.up { color:#9affb0; text-align:right; } .card td.down { color:#ff9a8a; text-align:right; } #radBtn.on, #missionsBtn:hover { background:var(--orange); }
+
+/* the right column always fits the screen: the tab list scrolls when the Rover radio is also showing */
+#side { max-height: calc(960px / var(--ui)); }
+#side #tabsBox { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; max-height: none; }
+#side #tabsBox #tabBody { max-height: none; flex: 1 1 auto; min-height: 140px; }
+#side section:not(#tabsBox) { flex: 0 0 auto; }
