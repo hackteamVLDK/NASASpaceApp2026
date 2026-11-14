@@ -83,6 +83,12 @@ export function powerCap(s) {
  * lines and `rates` is their sum, so the screen can never disagree with the simulation.
  * Each line: { res, label, nameId?, amount }. `nameId` is a module name string ID.
  */
+/** D-T17b: the Greenhouse grows only when it is online, has power and has water (3.1 "At 0", 3.6 fresh crops).
+ * Food output, fresh-crop HP, the Soil Beds bonus and the harvest count all use this one test. */
+export function greenhouseWorking(s) {
+  return online(s, 'greenhouse') && s.res.power > 0 && s.res.water > 0;
+}
+
 export function contributions(s) {
   const lines = [];
   const add = (res, label, amount, nameId = null) => { if (amount) lines.push({ res, label, amount, nameId }); };
@@ -115,7 +121,11 @@ export function contributions(s) {
   add('power', `Drones working (${building})`, DRONE_BUILD_POWER * building);
   if (s.drones.some((d) => d.status === 'awake' && !d.task)) add('sp', 'A free drone salvages parts', 2);
   const names = { d1a_saver: 'Power Saver (lights and stove off)', d1a_cold: 'Cold meals, dark rooms', d2c_ration: 'Water rationing', d2c_tired: 'Thirsty and tired', d3b_beds: 'Soil Beds', d4c_food: 'Trays in the Kitchen', leak: 'Airlock leak', leak_w: 'Airlock leak' };
-  for (const m of s.mods) if (RES.includes(m.res) && (m.untilMinute == null || s.minute < m.untilMinute)) add(m.res, names[m.id] ?? 'A temporary effect', m.perSol);
+  for (const m of s.mods) {
+    if (!RES.includes(m.res) || (m.untilMinute != null && s.minute >= m.untilMinute)) continue;
+    if (m.id === 'd3b_beds' && !greenhouseWorking(s)) continue; // the Soil Beds grow only in a working Greenhouse
+    add(m.res, names[m.id] ?? 'A temporary effect', m.perSol);
+  }
   return lines;
 }
 
@@ -232,7 +242,7 @@ function tick(s, emit) {
 function trackStats(s, dt, now) {
   const st = s.stats;
   if (s.where === 'outside' || s.where === 'away') st.outsideMin += 1;
-  if (online(s, 'greenhouse')) st.harvest += MODULES.greenhouse[s.modules.greenhouse.tier === 2 ? 't2' : 't1'].food * s.mult.food * dt;
+  if (greenhouseWorking(s)) st.harvest += MODULES.greenhouse[s.modules.greenhouse.tier === 2 ? 't2' : 't1'].food * s.mult.food * dt;
   st.lowestHp = Math.min(st.lowestHp, s.hp);
   if (now.minute === 0) { st.samples += 1; st.hpSum += s.hp; st.moraleSum += s.res.morale; }
 }
@@ -275,7 +285,7 @@ function stepHp(s, emit, now) {
   if (s.away && isNight(now.hourFloat)) d += HP.roverSleepPerHour / 60; // camping in the Rover (3.6: +6 a night)
   const liner = s.where === 'outside' && s.upgrades.suit_liner ? 0.75 : 1; // D-T17d: "Surface HP loss x0.75" (SCENARIO 5.4), also on foot
   if (!s.away) d -= (HP.radiationPerSol * shieldFactor(s, s.where) * (s.flags.flare ? 3 : 1) * liner) * dt;
-  if (online(s, 'greenhouse') && s.res.food >= 30 && !s.flags.freshOff) d += (s.modules.greenhouse.tier === 2 ? HP.freshCropsT2 : HP.freshCropsT1) * dt + (s.flags.soilBeds ? dt : 0);
+  if (greenhouseWorking(s) && s.res.food >= 30 && !s.flags.freshOff) d += (s.modules.greenhouse.tier === 2 ? HP.freshCropsT2 : HP.freshCropsT1) * dt + (s.flags.soilBeds ? dt : 0);
   if (s.res.morale >= HP.moraleThreshold) d += HP.highMorale * dt;
   for (const m of s.mods) if (m.res === 'hp') d += m.perSol * dt;
   s.hp = clamp(s.hp + d, 0, s.hpMax);

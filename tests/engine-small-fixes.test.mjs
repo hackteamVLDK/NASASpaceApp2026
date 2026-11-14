@@ -25,3 +25,21 @@ test('D-T17d: outside, the Suit Liner cuts the HP loss to 0.75', () => {
   assert.ok(a > 0);
   assert.ok(Math.abs(b / a - 0.75) < 1e-6, `${b} / ${a}`);
 });
+
+test('D-T17b: a dry Greenhouse gives no food, no fresh-crop HP, no Soil Beds bonus and no harvest', async () => {
+  const { greenhouseWorking, rates } = await import('../src/campaign/engine.js');
+  const s = createCampaign();
+  s.modules.greenhouse.status = 'online';
+  s.flags.soilBeds = true; s.mods.push({ id: 'd3b_beds', res: 'food', perSol: 3 });
+  s.res.food = 80; s.res.morale = 0; s.hp = 50;
+  assert.equal(greenhouseWorking(s), true);
+  const wet = rates(s).food;
+  s.res.water = 0;
+  assert.equal(greenhouseWorking(s), false);
+  assert.ok(rates(s).food < wet - 3 - 1e-9, 'food from the Greenhouse and the Soil Beds both stop');
+  command(s, { type: 'order', place: 'kitchen' });
+  const hp = s.hp, harvest = s.stats.harvest ?? 0;
+  step(s, 60);
+  assert.ok(s.hp <= hp, `no fresh-crop healing (${hp} -> ${s.hp})`);
+  assert.equal(s.stats.harvest ?? 0, harvest, 'nothing harvested');
+});
