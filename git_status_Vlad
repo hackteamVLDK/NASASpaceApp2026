@@ -5,6 +5,11 @@
   (content/science/FACT_CHECK.md) + agreed wording fixes in SCENARIO.md (text only, no numbers).
   Heads-up for sim/flow code: no state names, IDs or numbers changed; ASTRA line texts changed.
 
+## NOTE FOR MYKHAILO
+- tests/flow.test.mjs (3 failures) checks the old pre-PR#1 scenario. Please update it to the new
+  tutorial states in SCENARIO.md: TOUCHDOWN -> UNDERGROUND_PAN -> TUT_HP -> TUT_DRONE_CLICK ->
+  TUT_SOLAR_WIPE -> TUT_BATTERY -> TUT_BUILD -> PLAY.
+
 ## EARLIER HEADS-UP FOR MYKHAILO (PR #1 is now merged into main)
 - State `TUTORIAL_HANDOFF` is replaced by: `TOUCHDOWN -> UNDERGROUND_PAN -> TUT_HP -> TUT_DRONE_CLICK -> TUT_SOLAR_WIPE -> TUT_BATTERY -> TUT_BUILD -> PLAY`. `CUTSCENE_LANDING` and `TUTORIAL_STEP_1` are removed.
 - Room names: Dining Room -> Kitchen, Sleeping Quarters -> Bedroom, Rover Garage -> Garage & Airlock.
