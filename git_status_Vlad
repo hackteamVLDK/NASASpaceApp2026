@@ -1,6 +1,7 @@
 # git_status_Vlad
 
 ## DOING NOW
+- 2026-11-14: 55abe1a on main: Scrubber Valve rework (sliders, SAFE bands), Water Sort droplet fix, pointercancel (A38, A39); suit rework not taken, main's A37 kept
 - 2026-11-14: Big fix batch on main: music, A17, A20, B3, B4, B5, B11, B15, B16, B18, C9 (see docs/ERRORS.md)
 - 2026-11-14: soundManager.js + test replaced with the new engine (marimba/space-ambient); same API, director and hooks unchanged.
 - Done: audio engine + director in src/audio (PR #6 merged). Hooks for the game UI wait in PR #7 (Pavlo)
