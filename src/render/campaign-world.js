@@ -17,6 +17,7 @@ import { CLIMB_FRAMES } from './ladders.js';
 import { SURFACE_LIGHTING } from '../data/surface-lighting.js';
 import { surfaceEffects, paintSurfaceEffects } from './surface-lighting.js';
 import { flames } from './lander.js';
+import { prefs, wave } from '../ui/prefs.js'; // C15/C21: Reduce motion
 
 export { SCREEN, buildSoil, roomRect, anchor };
 
@@ -88,7 +89,7 @@ export function drawCampaign(ctx, atlas, S) {
   ctx.drawImage(S.soil, SOIL_X.x0, LAYOUT.groundY - 40, SOIL_X.x1 - SOIL_X.x0, S.soil.height / 0.5);
   if (dark > 0.25 && !s.storm) { // a few twinkling stars (the night overlay below dims them to match)
     ctx.fillStyle = '#fff';
-    for (let i = 0; i < 70; i++) { ctx.globalAlpha = 0.55 + 0.45 * Math.abs(Math.sin(wm / 650 + i * 1.7)); ctx.fillRect(-1100 + ((i * 977) % 4400), 735 + ((i * 619) % 125), 10, 10); }
+    for (let i = 0; i < 70; i++) { ctx.globalAlpha = prefs.reduceMotion ? 0.8 : 0.55 + 0.45 * Math.abs(Math.sin(wm / 650 + i * 1.7)); ctx.fillRect(-1100 + ((i * 977) % 4400), 735 + ((i * 619) % 125), 10, 10); }
     ctx.globalAlpha = 1;
   }
 
@@ -283,7 +284,7 @@ export function drawCampaign(ctx, atlas, S) {
 
   // ---- hazard markers over the places that are in trouble
   if (S.hazards?.length) {
-    const pulse = 0.6 + Math.sin(nowMs / 220) * 0.4;
+    const pulse = 0.2 + 0.8 * wave(nowMs, 220); // steady with Reduce motion (C21)
     S.hazards.filter((hz) => hz.place && hz.severity !== 'info').forEach((hz, i) => {
       const at = hz.place === 'surface' ? { x: SURFACE.antenna.x - 30 + i * 70, y: LAYOUT.groundY - 260 } : (() => { const r = LAYOUT.rooms[hz.place] ? roomRect(hz.place) : null; return r ? { x: r.x + r.w - 46 - i * 8, y: r.y + 46 } : null; })();
       if (!at) return;
@@ -313,14 +314,14 @@ export function drawCampaign(ctx, atlas, S) {
   if (S.marker) {
     const h = hits.find((x) => x.id === `drone:${S.marker}`);
     if (h) {
-      const bob = Math.sin(nowMs / 220) * 10;
-      const k = 90 + Math.sin(nowMs / 220) * 8;
+      const bob = prefs.reduceMotion ? 0 : Math.sin(nowMs / 220) * 10;
+      const k = prefs.reduceMotion ? 90 : 90 + Math.sin(nowMs / 220) * 8;
       atlas.cell(ctx, 'icons', ICON.wrench, h.x + h.w / 2 - k / 2, h.y - k - 22 + bob, k, k);
     }
   }
   // A15: a soft glow instead of a hard white frame. Rooms get a blurred rounded edge; drones and people get a
   // glowing ring at their feet plus a faint halo, like a selection light. Highlight (the "do this" pointer) pulses gold.
-  const pulse = 0.5 + Math.sin(nowMs / 200) * 0.5;
+  const pulse = wave(nowMs, 200); // steady with Reduce motion (C21)
   for (const [id, rgb, strength] of [[S.highlight, '255,214,0', 0.75 + pulse * 0.25], [S.hover, '160,235,255', 0.6]]) {
     const h = id && hits.find((x) => x.id === id);
     if (h && (h.id.startsWith('module:') || h.id.startsWith('drone:') || h.id.startsWith('crew:'))) drawGlow(ctx, h, rgb, strength);

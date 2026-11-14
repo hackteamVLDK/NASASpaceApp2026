@@ -4,7 +4,7 @@
  * line ID (strings.js); this file only decides WHEN something happens and WHAT it changes.
  * Delayed effects are timers with a name (`runTimer`), so the whole state stays plain data.
  */
-import { SOL, MODULE_LINES, RECYCLER, BREAKDOWNS, BREAKDOWN_RULES } from './data.js';
+import { SOL, MODULES, MODULE_LINES, RECYCLER, BREAKDOWNS, BREAKDOWN_RULES } from './data.js';
 import { clockAt, online, at, addMod, after, clampTo, powerCapOf } from './util.js';
 
 const say = (emit, lineId, mood = 'calm') => emit({ type: 'astra', lineId, mood });
@@ -97,8 +97,10 @@ export function onSol(s, emit, now, rand) {
     if (sol - (s.flags.lastEvent[ev.id] ?? -99) < ev.cooldown) continue;
     if (rand() >= ev.chance) continue;
     s.flags.lastEvent[ev.id] = sol;
-    if (ev.id === 'e1' && s.modules.lab.tier === 2) { say(emit, 'astra.e1.watch', 'curious'); s.flags.flareWarned = true; }
-    after(s, at(sol, 10), `event:${ev.id}`);
+    // D-T17g: the Lab T2 forecast comes one Sol early (6, E1) and is used up when that flare is answered
+    const forecast = ev.id === 'e1' && s.modules.lab.tier === 2;
+    if (forecast) { say(emit, 'astra.e1.watch', 'curious'); s.flags.flareWarned = true; }
+    after(s, at(forecast ? sol + 1 : sol, 10), `event:${ev.id}`);
     break;
   }
 }
@@ -209,6 +211,20 @@ export function soilWashBlock(s) {
   return null;
 }
 /** Start washing the soil from the Lab: the same cost and result as Dilemma 3 choice B (Soil Beds after 2 Sols). */
+/**
+ * D-T17e: a story choice that needs a drone (SCENARIO 6: Dilemma 3 B and 4 C, Event 3 C). A free drone takes the
+ * job at once; when every awake drone is busy, the job goes first in the shortest queue. The engine frees the drone
+ * when the time is up (`chore` jobs in engine.js).
+ */
+export function droneChore(s, emit, id, module, sols) {
+  const job = { type: 'chore', id, module, sols };
+  const awake = s.drones.filter((d) => d.status === 'awake');
+  const free = awake.find((d) => !d.task);
+  if (free) { free.task = { ...job, until: s.minute + sols * SOL }; emit({ type: 'ordered', drone: free.id, job }); return; }
+  const d = awake.sort((a, b) => a.queue.length - b.queue.length)[0];
+  if (d) { d.queue.unshift(job); emit({ type: 'queued', drone: d.id, job }); }
+}
+
 export function startSoilWash(s, emit) {
   const why = soilWashBlock(s);
   if (why) return why;
@@ -216,6 +232,7 @@ export function startSoilWash(s, emit) {
   setRes(s, 'water', -20);
   s.flags.soilWashing = true;
   after(s, at(sol + 2, 8), 'd3b');
+  droneChore(s, emit, 'wash', 'greenhouse', 1); // the same job as Dilemma 3 B: 1 drone for 1 Sol
   emit({ type: 'soil-wash-started' });
   return null;
 }
@@ -224,6 +241,7 @@ export function applyChoice(s, pending, choice, emit, rand) {
   const key = `${pending.id}${choice}`;
   const { sol } = clockAt(s.minute);
   if (pending.id === 'e1' || pending.id === 'd5') s.flags.flare = false;
+  if (pending.id === 'e1') s.flags.flareWarned = false; // the forecast was for this flare
   const follow = (lineId, mood = 'cheerful') => say(emit, lineId, mood);
   switch (key) {
     // ---- Dilemma 1: the dust storm
@@ -268,6 +286,7 @@ export function applyChoice(s, pending, choice, emit, rand) {
     case 'd3b':
       setRes(s, 'water', -20);
       after(s, at(sol + 2, 8), 'd3b');
+      droneChore(s, emit, 'wash', 'greenhouse', 1); // 1 drone for 1 Sol
       break;
     case 'd3c':
       s.flags.washUnlocked = true;
@@ -284,7 +303,8 @@ export function applyChoice(s, pending, choice, emit, rand) {
       s.flags.d4b = true;
       break;
     case 'd4c':
-      addMod(s, 'd4c_food', 'food', -2, at(sol + 1, 6));
+      addMod(s, 'd4c_food', 'food', -0.2 * MODULES.greenhouse[s.modules.greenhouse.tier === 2 ? 't2' : 't1'].food, s.minute + SOL); // D-T17f: Greenhouse food -20% for 1 Sol
+      droneChore(s, emit, 'trays', 'kitchen', 0.5); // 1 drone for half a Sol
       setRes(s, 'morale', 5);
       follow('astra.d4.c');
       break;
@@ -303,18 +323,18 @@ export function applyChoice(s, pending, choice, emit, rand) {
     case 'e1c': { const h0 = s.hp; hurt(s, 1); s.stats.flares += 1; s.stats.flareMaxLoss = Math.max(s.stats.flareMaxLoss, h0 - s.hp); follow('astra.e1.c'); break; }
     // ---- Event 2: dust devil
     case 'e2a':
-      if (rand() < 0.5) { s.mult.solar = 1.2; after(s, at(sol + 3, 6), 'solar_normal'); follow('astra.e2.a.clean'); } else { s.mult.solar = 0.7; addTask(s, 'solar_wipe', 'The dust devil dumped dust on the panels.'); follow('astra.e2.a.dusty', 'calm'); }
+      if (rand() < 0.5) { s.mult.solar = 1.2; after(s, s.minute + 3 * SOL, 'solar_normal'); follow('astra.e2.a.clean'); } else { s.mult.solar = 0.7; addTask(s, 'solar_wipe', 'The dust devil dumped dust on the panels.'); follow('astra.e2.a.dusty', 'calm'); }
       break;
-    case 'e2b': s.mult.solar = 0.5; after(s, at(sol + 1, 6), 'solar_normal'); follow('astra.e2.b'); break;
-    case 'e2c': hurt(s, 5); s.mult.solar = 1.1; after(s, at(sol + 3, 6), 'solar_normal'); follow('astra.e2.c'); break;
+    case 'e2b': s.mult.solar = 0.5; after(s, at(sol + 1, 0), 'solar_normal'); /* the rest of this Sol */ follow('astra.e2.b'); break;
+    case 'e2c': hurt(s, 5); s.mult.solar = 1.1; after(s, s.minute + 3 * SOL, 'solar_normal'); follow('astra.e2.c'); break;
     // ---- Event 3: airlock micro-leak
     case 'e3a': addTask(s, 'valve_balance', 'Hunt the leak.'); break;
-    case 'e3b': setRes(s, 'sp', -1); s.mods = s.mods.filter((m) => m.id !== 'leak' && m.id !== 'leak_w'); after(s, at(sol + 3, 6), 'leak_returns'); follow('astra.e3.b'); break; // the tape stops the leak at once
-    case 'e3c': s.flags.noLaunchUntil = at(sol + 1, 6); follow('astra.e3.c'); break;
+    case 'e3b': setRes(s, 'sp', -1); s.mods = s.mods.filter((m) => m.id !== 'leak' && m.id !== 'leak_w'); after(s, s.minute + 3 * SOL, 'leak_returns'); follow('astra.e3.b'); break; // the tape stops the leak at once
+    case 'e3c': s.flags.noLaunchUntil = s.minute + SOL; droneChore(s, emit, 'leak', 'garage', 1); follow('astra.e3.c'); break; // a drone fixes the leak (1 Sol)
     // ---- Event 4: nutrient drift
-    case 'e4a': addTask(s, 'nutrient_match', 'Match the nutrients.'); s.mult.food = 0.6; s.flags.freshOff = true; break;
+    case 'e4a': addTask(s, 'nutrient_match', 'Match the nutrients.'); s.mult.food = 0.6; s.flags.freshOff = true; s.flags.e4aFix = true; break; // astra.e4.a when the fix is won
     case 'e4b': setRes(s, 'water', -10); s.mult.food = 0.6; after(s, at(sol + 1, 6), 'drift_fixed'); follow('astra.e4.b'); break;
-    case 'e4c': s.mult.food = 0.6; s.flags.freshOff = true; after(s, at(sol + 2, 6), 'drift_wilt'); break;
+    case 'e4c': s.mult.food = 0.6; s.flags.freshOff = true; after(s, s.minute + 2 * SOL, 'drift_wilt'); break;
     default:
       if (pending.id === 'd5') s.flags.d5Choice = choice; // read by expeditions.js
   }
@@ -345,7 +365,7 @@ export function runTimer(s, id, emit) {
     case 'solar_normal': s.mult.solar = 1; break;
     case 'leak_returns': addMod(s, 'leak', 'oxygen', -2); addMod(s, 'leak_w', 'water', -1); break;
     case 'drift_fixed': s.mult.food = 1; break;
-    case 'drift_wilt': if (s.mult.food < 1) { setRes(s, 'food', -10); addTask(s, 'nutrient_match', 'The plants wilted. Fix the mix.'); } break; // nothing wilts if the mix was fixed in time
+    case 'drift_wilt': if (s.mult.food < 1) { setRes(s, 'food', -10); addTask(s, 'nutrient_match', 'The plants wilted. Fix the mix.'); say(emit, 'astra.e4.c', 'calm'); } break; // nothing wilts if the mix was fixed in time
     case 'harvest': say(emit, 'astra.act2.first_harvest', 'cheerful'); break;
     case 'd4_cold_end': s.flags.freshOff = false; s.mult.food = 1; break;
     case 'finale_earth': follow('astra.finale.earth'); after(s, s.minute + 60, 'finale_closing'); break;
@@ -388,7 +408,8 @@ export function onMini(s, { game, win }, emit) {
     s.stats.miniWins += 1;
     if (game === 'solar_wipe') s.stats.wipes += 1;
     setRes(s, 'sp', 2);
-    if (!rec[game]) { rec[game] = true; if (MINI_LINES[game]) say(emit, MINI_LINES[game], 'cheerful'); } else emit({ type: 'toast', text: 'Nice work!' });
+    if (game === 'nutrient_match' && s.flags.e4aFix) { rec[game] = true; s.flags.e4aFix = false; say(emit, 'astra.e4.a', 'cheerful'); } // E4 A's own explanation
+    else if (!rec[game]) { rec[game] = true; if (MINI_LINES[game]) say(emit, MINI_LINES[game], 'cheerful'); } else emit({ type: 'toast', text: 'Nice work!' });
   }
   if (game === 'solar_wipe') {
     if (win) {

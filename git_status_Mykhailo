@@ -50,10 +50,11 @@ Updated: 2026-11-14 (UTC+1), after the backend was aligned with SCENARIO.md
   SCENARIO.md.
 
 ## DONE
-- 2026-11-15: docs/ERRORS.md refreshed against 027637e at the user's request. Added an open-work index,
+- 2026-11-15: docs/ERRORS.md refreshed against dd32f9b at the user's request. Added an open-work index,
   bold OPEN/PARTIAL/DECISION labels, corrected B4/B9/B11/B16 and settings/mobile acceptance, and
-  added status/evidence to all 26 D tasks: 15 fixed, 7 partial, 4 open. New D-T17b/c/d and C13/C14
-  fixes are explicitly marked done. Validated 83 unique A-C rows and all task columns; 286 tests pass.
+  added status/evidence to all 26 D tasks: 19 fixed, 5 partial, 2 open. New D-T14, D-T17b-g and C13/C14
+  fixes are explicitly marked done. Validated 83 unique A-C rows and all task columns; 291 tests pass.
+  C21 keeps only dormant-LED blinking open; C22 keeps only the ASTRA/scenario-line deviation open.
   Prepared/reviewed in .codex-worktrees/ticket-status, then integrated. No gameplay edits; ready to push.
 - 2026-11-15 ticket audit of main 92d2428 (same as fetched origin/main): 79 A-C rows and 26 D tasks reviewed.
   Full npm test: 297/297 pass. Section D: 12 implemented, 7 partial, 7 open. No gameplay/source changes.

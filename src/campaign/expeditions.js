@@ -186,6 +186,7 @@ export function resolveD5(s, emit) {
     s.upgrades.rover_shielding = false; // worn out: re-craft for 15 SP
   }
   a.decisionDone = true;
+  emit({ type: 'astra', lineId: `astra.d5.${c}`, mood: c === 'c' ? 'calm' : 'cheerful' }); // D-T17g: the choice's own explanation (6, D5)
 }
 
 const pp = (n) => String(n).padStart(2, '0');
