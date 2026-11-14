@@ -55,6 +55,13 @@ export function hazards(s) {
     const v = s.res[k];
     if (v <= 0) { if (!s.emergency[k]) add(`empty-${k}`, 'alarm', EMPTY[k][0], EMPTY[k][1], METER_PLACE[k], EMPTY[k][2]); } else if (v < LOW_LIMITS[k] && !s.emergency[k]) add(`low-${k}`, 'warn', `Low ${METER_WORD[k]}`, `${k[0].toUpperCase()}${k.slice(1)} is getting low (${Math.round(v)}).`, METER_PLACE[k], 'Open the Resources screen for what helps.');
   }
+  // SCENARIO 3.4: a hint at the Solar Array upgrade when Power drops below 50 (C22). SCENARIO gives this hint to ASTRA but
+  // has no line ID for it, so it is a chip here; with the 3 Solar Cells in hand it is a warning that can be acted on.
+  if (s.res.power < 50 && s.modules.solar.tier === 1 && !s.modules.solar.upgrading && s.res.power > 0) {
+    const cells = s.items.solar_cell ?? 0;
+    if (cells >= 3) add('solar-upgrade', 'warn', 'Upgrade the panels', 'Power is under 50, and you have 3 Solar Cells: Clean-Sweep Panels make +80 Power instead of +50.', 'surface', 'Base tab: Solar Array, then Upgrade.');
+    else add('solar-upgrade', 'info', 'More power', `Power is under 50. Clean-Sweep Panels (+80 Power) need 3 Solar Cells (you have ${cells}).`, 'surface', 'Solar Cells come from the Pathfinder-X Wreck (Expedition 2).');
+  }
   if (s.hp < LOW_LIMITS.hp && !s.medRest) add('low-hp', 'warn', 'Low HP', 'Rest and fresh food bring energy back.', 'bedroom', 'Sleep in the Bedroom, or eat a fresh meal.');
   if (s.away) add('away', 'info', 'Rover out', `The Rover is on its way (${Math.round(awayProgress(s.away, s.minute) * 100)}%).`, 'garage', 'Follow the radio log.');
   return h;

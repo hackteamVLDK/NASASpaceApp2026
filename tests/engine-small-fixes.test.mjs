@@ -117,3 +117,14 @@ test('D-T17g: ASTRA explains Dilemma 5 and Event 4 choices; the flare forecast i
   applyChoice(w, { kind: 'event', id: 'e1' }, 'c', () => {}, () => 0.5);
   assert.equal(w.flags.flareWarned, false, 'the forecast is used up by the flare it was for');
 });
+
+test('C22: under 50 Power the Solar Array upgrade is hinted; a warning once the 3 Solar Cells are there', async () => {
+  const { hazards } = await import('../src/campaign/hazards.js');
+  const s = createCampaign();
+  s.res.power = 40;
+  assert.equal(hazards(s).find((h) => h.id === 'solar-upgrade')?.severity, 'info');
+  s.items.solar_cell = 3;
+  assert.equal(hazards(s).find((h) => h.id === 'solar-upgrade')?.severity, 'warn');
+  s.res.power = 60;
+  assert.equal(hazards(s).find((h) => h.id === 'solar-upgrade'), undefined);
+});
