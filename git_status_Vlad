@@ -31,6 +31,10 @@
 - Readability pass changed ASTRA line texts (not IDs/numbers). tests/flow.test.mjs compares texts with SCENARIO.md.
 - "(fiction)" in Line cells is a writers' note: please strip it in the strings module.
 
+## NOTE FOR PAVLO (2026-11-14)
+- I appended the second player report to docs/ERRORS.md (rows A13-A25 and a duplicates note after A12).
+  No existing row was changed, so your unpushed edits should merge cleanly.
+
 ## NOTE FOR MYKHAILO (2026-11-14, two test failures on main)
 - PR #10 (light time) also switches npm test to plain `node --test` (the ** glob needs Node 21+).
   Please review it; I won't merge it.

@@ -37,6 +37,28 @@ R4 `records/20261114-200625-entry-scene-for-the-astronaut-and-a-3-floor-base.md`
 | A11 | These little squares cannot be clicked. | Dormant Drones #02 and #03 were drawn on the surface as two tiny selection squares with nothing behind them (my mistake, see C1). | They sit in the Garage frame as SCENARIO says; clicking a dormant drone tells what wakes it (or wakes it, if the kit is ready). | PLAYER, R1 #21 | FIXED |
 | A12 | My water ran out and nothing warned me; the character was fine. Warn about a low important resource. | The Threats strip skipped a meter at exactly 0 (`> 0` test), Water and Food have no emergency, and the one ASTRA line fires only once. | Every important meter warns when low and when empty: Threats chip (amber "Low", red "No water"), toast and sound at the moment it crosses, the gauge turns amber then red and pulses, ASTRA says it again when the meter hits 0. SCENARIO has no HP loss for 0 Water: kept (Greenhouse pause and Morale -5 a Sol are in the engine). | PLAYER | FIXED |
 
+### Second player report (2026-11-14)
+
+Already listed, so not repeated: no music in the background or at events → B19; 6 floors instead of 3 floors of 2–3 rooms → A2;
+the Heat Pump pipe game does not work → A4; no way out of a mini-game before it ends → B2; two objects to the right of the
+lander that do not exist but light up as clickable → A11. If one of them still happens on the current build, reopen that row.
+
+| # | The player says | Cause | Fix | Source | Status |
+|---|---|---|---|---|---|
+| A13 | The engine fire of the landing is higher than it should be. | Not checked yet. | Anchor the flame to the lander's engine nozzle. | PLAYER | OPEN |
+| A14 | The scroll bar for reading text looks ugly; it should be more transparent and in the colour of the icons. | Not checked yet (looks like the browser's default scroll bar). | A thin, semi-transparent scroll bar in the icon accent colour (`scrollbar-color`, `::-webkit-scrollbar`) on every scrolling text box. | PLAYER | OPEN |
+| A15 | The selection of objects looks too crude; a soft glow would be better than a white frame. | The hovered or selected object gets a white rectangle. | A soft glow around the sprite's outline instead of the frame. | PLAYER | OPEN |
+| A16 | Remove the static from the solar panels. | SCENARIO 4.1 is "Solar Panel Static Wipe": zapping the static is step 1, and `astra.tut.solar_prompt` says it. | Needs a team decision first; SCENARIO is not edited from here. | PLAYER | DECISION |
+| A17 | The label on the button is in the wrong place, and the battery icon itself needs fixing. | Not checked yet. | Centre the label and redraw the battery icon. | PLAYER | OPEN |
+| A18 | Solar Array mission: where do I get 3 Solar Cells? | The mission shows the cost but not where the parts come from. SCENARIO 5.5: Expedition 2 brings 3 Solar Cells, and Scrap Runs can drop them. | Show where each missing component comes from in the mission and upgrade cards. | PLAYER | OPEN |
+| A19 | Why can't I stop building a module and send the workers to another module? | SCENARIO does not say whether a build can be stopped or switched. | Needs a team decision: pause or cancel a build, and whether spent parts come back. | PLAYER | DECISION |
+| A20 | The top bar is not fixed; it can move. | Not checked yet. | Pin the top bar in place, so it never moves with the page. | PLAYER | OPEN |
+| A21 | Clicking objects does nothing. | Not checked yet (see also A11). | Every object that lights up opens its info or action; anything else does not light up. | PLAYER | OPEN |
+| A22 | In the cracked-filter event I could pick the water option before the Garage was built. | Not checked yet; probably a Dilemma 2 choice that needs the Garage is not locked (`story.js`, Mykhailo's file). | Grey out a choice whose building is missing and say why. | PLAYER | OPEN (Mykhailo's file) |
+| A23 | No sound when an action fails (for example, the queue is full, or a build cannot start because one is already running). | Not checked yet. | Play a soft "no" sound with every refused command. | PLAYER | OPEN |
+| A24 | There is no normal way to close pop-up windows; add a close button in the top-right corner. | Not checked yet. | A close button (×) in the top-right corner of every card and window, and Esc closes it too. | PLAYER | OPEN |
+| A25 | The Repair Kit and Drone #02 mission should be two sub-tasks. | It is one mission step. | Two steps: "Craft a Repair Kit", then "Drag it onto Drone #02". | PLAYER | OPEN |
+
 ## B. Found by Codex reviews (not yet fixed unless marked)
 
 Engine items live in `src/campaign/expeditions.js` and `story.js`, which Mykhailo's agent has claimed
