@@ -242,8 +242,8 @@ test('HP: a night in the Bedroom restores about 11 HP net (3.6)', () => {
   assert.ok(s.hp > 55 && s.hp < 75, `hp ${s.hp}`);
 });
 
-test('HP 0 sends the Commander to Med-Rest for a Sol, then back at 50 HP', () => {
-  const s = createCampaign();
+test('SCENARIO rule (hpZeroEndsRun off): HP 0 sends the Commander to Med-Rest for a Sol, then back at 50 HP', () => {
+  const s = createCampaign({ hpZeroEndsRun: false });
   s.res.morale = 10;
   s.hp = 0.0001;
   step(s, 3);

@@ -59,6 +59,14 @@ lander that do not exist but light up as clickable → A11. If one of them still
 | A24 | There is no normal way to close pop-up windows; add a close button in the top-right corner. | Not checked yet. | A close button (×) in the top-right corner of every card and window, and Esc closes it too. | PLAYER | OPEN |
 | A25 | The Repair Kit and Drone #02 mission should be two sub-tasks. | `missions.js` had one step, done only when Drone #02 woke. | Two steps: "Craft a Repair Kit" (done when a kit is in stock or the drone is awake; shows the Workshop's progress; "Show me" opens the Workshop tab), then "Drag the Repair Kit onto Drone #02". The same split for the Reboot Kit and Drone #03. Main list 19 → 21 missions; checked in `tests/missions.test.mjs`. | PLAYER | FIXED |
 
+### Third player report (2026-11-14)
+
+| # | The player says | Cause | Fix | Source | Status |
+|---|---|---|---|---|---|
+| A26 | While the Regolith Roof Layer is built, the drone stands inside the soil texture. | The work place was `firstFloorY - 6`, a point inside the soil band above the right wing. | The drone works on the ground above the right wing, between the dome and the antenna: it climbs the shaft and rolls along the surface. `tests/layout.test.mjs` checks that no work place of any module is inside the soil. | PLAYER | FIXED |
+| A27 | The mission that should give ice does not give it. | The engine has the Ice Run (`ice`: 2 Ice Cores, needs the Deep Ice Drill, Mykhailo's `expeditions.js`), but the map listed only `run`, which is the Scrap mode (15 Spare Parts), so Ice could never be launched. | The map has its own `Scrap` and `Ice` markers; the card says "Brings home: 2x Ice Core. Each Ice Core melts into 25 Water.", and for a locked trip names what is missing ("Craft the Deep Ice Drill first."). The card opens on the first trip that can go now. | PLAYER, B7 | FIXED |
+| A28 | When HP runs out, do not just give it back: show a Game Over screen with an offer to start again. | HP 0 meant Med-Rest (back to 50 HP after a Sol) and, on a trip, a rescue drone. | HP 0 ends the mission: the clock stops, a GAME OVER screen with "Start over" and "See the report" stays up, the old save is deleted, and Continue is not offered for a finished mission. The crater map warns when the trip could cost more HP than the Commander has, and will not launch a trip that surely would. **This conflicts with SCENARIO** 3.1, 3.6 and 5.1 (Med-Rest, rescue drone) and Section 6 ("none can end the run"). It is one switch, `RULES.hpZeroEndsRun` in `src/campaign/data.js` (`true` = the player's wish, `false` = SCENARIO); a game can also be created with `createCampaign({ hpZeroEndsRun: false })`. `tests/gameover.test.mjs` tests both. | PLAYER | FIXED, DECISION (the team confirms or reverts the rule) |
+
 ## B. Found by Codex reviews (not yet fixed unless marked)
 
 Engine items live in `src/campaign/expeditions.js` and `story.js`, which Mykhailo's agent has claimed
@@ -72,7 +80,7 @@ Engine items live in `src/campaign/expeditions.js` and `story.js`, which Mykhail
 | B4 | Continue accepts invalid or old saves. | `main.js` | Validate and migrate by `version`; merge defaults deeply; say what happened. | R1 #4 | OPEN |
 | B5 | A missing sheet throws before the placeholder is drawn. | `atlas.js` | Safe placeholder sizes in `bbox`, `unionBox`, `cellRect`. | R1 #5 | OPEN |
 | B6 | The finale's ASTRA lines at 75% and 85% never fire; Expedition 5 brings no Canyon or Brine Sample. | `expeditions.js` | Dispatch ASTRA marks apart from radio marks; add the protected samples. | R1 #6, R2 #2 | CLAIMED Mykhailo |
-| B7 | Ice Run cannot be chosen; any story trip can be repeated for full loot. | `campaign-ui.js`, `expeditions.js` | Run-mode command and map selector; a done lock for story trips. | R1 #7 | CLAIMED Mykhailo |
+| B7 | Ice Run cannot be chosen; any story trip can be repeated for full loot. | `campaign-ui.js`, `expeditions.js` | Run-mode command and map selector; a done lock for story trips. Engine: the `ice` trip and the done locks (Mykhailo). Map: the `Ice` and `Scrap` markers, loot with counts, HP warning (Pavlo, see A27). | R1 #7 | FIXED |
 | B8 | A failed antenna try clears Dilemma 4 B and loses its outcome. | `story.js` | Keep the dilemma context until the window ends. | R1 #8 | OPEN |
 | B9 | Recurring breakdowns and several failure penalties are missing. | `story.js` | Persistent breakdown state with schedules (plan P2). | R1 #9 | OPEN |
 | B10 | Every Solar Wipe win replays the tutorial battery step. | `main.js` | Tutorial transitions only in the tutorial. | R1 #10 | FIXED |

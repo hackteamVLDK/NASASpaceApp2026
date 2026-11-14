@@ -18,6 +18,14 @@ export const NEEDS = Object.freeze({ oxygen: -10, food: -6, morale: -2, power: -
 export const BASE_HEAT_LOSS = -20;
 export const RECYCLER = Object.freeze({ ok: 0.98, cracked: 0.7 });
 
+/**
+ * Rules the team can switch. Provenance: `gameplay`.
+ * `hpZeroEndsRun`: when the Commander's HP reaches 0, the mission is over and the screen offers a new start. The player asked for
+ * this (2026-11-14, docs/ERRORS.md A28). SCENARIO 3.1, 3.6 and 5.1 say the opposite: Med-Rest (back to 50 HP after a Sol) or, on a
+ * trip, a rescue drone, and Section 6 says no choice can end the run. `true` follows the player, `false` follows SCENARIO.
+ */
+export const RULES = Object.freeze({ hpZeroEndsRun: true });
+
 export const HP = Object.freeze({
   commanderMax: 100,
   sleepPerHour: 1.5,

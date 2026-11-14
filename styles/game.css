@@ -120,3 +120,11 @@ button:hover { background:#1a4668; } button:disabled { opacity:.45; cursor:defau
 #stage ::-webkit-scrollbar-track { background: transparent; }
 #stage ::-webkit-scrollbar-thumb { background: rgba(0,229,255,.4); border-radius: 4px; }
 #stage ::-webkit-scrollbar-thumb:hover { background: rgba(0,229,255,.65); }
+
+/* the crater map card: a warning when the Commander's HP is short for the trip */
+.card .why.warn { color: #ffd180; } .card .why.danger { color: #ff8a80; font-weight: 700; }
+
+/* the Game Over screen */
+.card.gameover { text-align: center; max-width: 760px; border-color: #ff5252; box-shadow: 0 0 60px #ff525255; }
+.card.gameover h1 { margin: 6px 0 10px; font-size: 64px; letter-spacing: 6px; color: #ff6b6b; }
+.card.gameover .stats { color: #9fb5c8; font-size: 20px; } .card.gameover .choices { display: flex; gap: 14px; justify-content: center; margin-top: 16px; }
