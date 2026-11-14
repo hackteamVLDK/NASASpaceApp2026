@@ -108,10 +108,13 @@ export function onSol(s, emit, now, rand) {
  * two Sols after the last one, never with two already open, and never while the Commander
  * is away (Base Autopilot). The system stays weaker until its mini-game is won.
  */
-function scheduleBreakdown(s, emit, sol) {
+export function scheduleBreakdown(s, emit, sol, justHome = false) {
   // Checked every hour, not only at dawn: a Commander who is out with the Rover every dawn would
   // otherwise never see a breakdown. It waits until he is home and the loot screen is done.
-  if (s.away || s.pending || s.minute - (s.flags.lastReturn ?? -1e9) < 90) return;
+  // A breakdown that came due during a trip starts the moment the Rover is home (`justHome`): otherwise a
+  // Commander who leaves again at once would never have one.
+  if (s.away || s.pending) return;
+  if (!justHome && s.minute - (s.flags.lastReturn ?? -1e9) < 90) return;
   const b = (s.flags.breaks ??= { last: 0, due: Object.fromEntries(Object.entries(BREAKDOWNS).map(([k, v]) => [k, v.firstSol])) });
   const open = s.tasks.filter((t) => Object.hasOwn(BREAKDOWNS, t.game)).length;
   if (open >= BREAKDOWN_RULES.maxOpen || sol - b.last < BREAKDOWN_RULES.minGapSols) return;

@@ -4,7 +4,8 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createCampaign, step, command } from '../src/campaign/engine.js';
+import { createCampaign, step, command, rates } from '../src/campaign/engine.js';
+import { whereToFind, itemsWithoutSource } from '../src/campaign/sources.js';
 import { EXPEDITIONS, durationMinutes, expectedLoot, finaleBlock } from '../src/campaign/expeditions.js';
 import { play } from '../tools/balance/strategy-lab.mjs';
 import { readFileSync } from 'node:fs';
@@ -149,6 +150,45 @@ test('base jobs wait while the Commander is away', () => {
   const r = command(s, { type: 'miniResult', game: 'heat_pump', win: true });
   assert.equal(r.ok, false);
   assert.equal(s.res.heat, heat);
+});
+
+test('breakdowns: about one per two Sols, at most two open, and each weakens its system until fixed', () => {
+  const s = readyBase();
+  s.minute = 8 * 1440 + 7 * 60; // Sol 9, morning
+  const opened = [];
+  for (let i = 0; i < 12 * 24; i++) for (const e of step(s, 60)) if (e.type === 'breakdown') opened.push([e.kind, Math.floor(s.minute / 1440) + 1]);
+  assert.ok(opened.length >= 2, 'breakdowns happen');
+  assert.equal(s.tasks.filter((t) => ['valve_balance', 'air_filter', 'solar_wipe', 'water_sort'].includes(t.game)).length, 2, 'never more than two open when nobody repairs');
+  for (let i = 1; i < opened.length; i++) assert.ok(opened[i][1] - opened[i - 1][1] >= 2, 'at least two Sols apart');
+  assert.deepEqual(opened.map((o) => o[0]), ['valve_balance', 'air_filter']);
+
+  const o2 = (st) => rates(st).oxygen;
+  const fresh = readyBase();
+  const base = o2(fresh);
+  assert.ok(o2(s) < base - 8, `a stuck valve and a clogged filter cut Oxygen output (${o2(s)} against ${base} per Sol)`);
+  command(s, { type: 'miniResult', game: 'air_filter', win: false });
+  const afterFail = o2(s);
+  assert.ok(afterFail > o2({ ...s, flags: { ...s.flags, filterClog: 0.5 } }), 'a failed try still cleans part of the filter');
+  command(s, { type: 'miniResult', game: 'air_filter', win: true });
+  command(s, { type: 'miniResult', game: 'valve_balance', win: true });
+  assert.equal(o2(s), base, 'fixed: full output again');
+});
+
+test('breakdowns wait while the Commander is away and start when the Rover is home', () => {
+  const s = readyBase();
+  s.minute = 8 * 1440 + 7 * 60;
+  command(s, { type: 'launch', expedition: 'run' });
+  const events = [];
+  while (s.away) events.push(...step(s, 30));
+  const at = events.findIndex((e) => e.type === 'breakdown');
+  const home = events.findIndex((e) => e.type === 'returned');
+  assert.ok(at > home, 'the first breakdown comes only after the Rover is back');
+});
+
+test('every part has a place where it can be found', () => {
+  assert.deepEqual(itemsWithoutSource(), []);
+  assert.match(whereToFind('solar_cell'), /Pathfinder-X wreck \(Expedition 2\) x3/);
+  assert.equal(whereToFind('unobtainium'), '');
 });
 
 test('play-test: the all-A path is no longer a dead end', () => {

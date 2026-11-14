@@ -11,9 +11,9 @@
  *   - the Scrap Run (`run`) and the Ice Run (`ice`, needs the Deep Ice Drill) are repeatable.
  */
 import { SOL, HP } from './data.js';
-import { online, after, clampTo } from './util.js';
+import { clockAt, online, after, clampTo } from './util.js';
 import { nextRandom } from '../sim/rng.js';
-import { addTask } from './story.js';
+import { addTask, scheduleBreakdown } from './story.js';
 
 const RR_COMMANDER = 0.15;
 const ROUTE = { floor: 1.0, rim: 1.25, delta: 1.25, canyon: 1.5 };
@@ -288,4 +288,5 @@ function finish(s, ex, emit) {
     s.flags.finaleDone = true;
   }
   if (ex.id === 3) emit({ type: 'badge', id: 'ice_miner' });
+  scheduleBreakdown(s, emit, clockAt(s.minute).sol, true); // Base Autopilot held breakdowns back while he was away (2.1)
 }
