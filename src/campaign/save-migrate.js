@@ -82,7 +82,12 @@ export function validateState(s) {
   for (const key of ['items', 'kits']) {
     if (!isObj(s[key]) || Object.values(s[key]).some((n) => !isNum(n) || n < 0)) return `the ${key} are damaged`;
   }
+  if (!['running', 'complete'].includes(s.status)) return 'the mission state is damaged';
   if (!isObj(s.upgrades) || !isObj(s.flags) || !isObj(s.stats) || !isObj(s.emergency) || !isObj(s.low) || !isObj(s.mult)) return 'part of the base is damaged';
+  // records the story keeps inside the flags: the engine writes keys into them, so they must be objects (found by the random-damage test)
+  for (const key of ['done', 'lastEvent', 'mini']) if (s.flags[key] !== undefined && !isObj(s.flags[key])) return 'the story record is damaged';
+  const b = s.flags.breaks;
+  if (b !== undefined && !(isObj(b) && isNum(b.last) && isObj(b.due) && Object.values(b.due).every(isNum))) return 'the breakdown schedule is damaged';
   if (!isNum(s.mult.solar) || !isNum(s.mult.food)) return 'the sunlight or food multiplier is damaged';
   for (const key of ['logbook', 'badges', 'choices', 'said']) if (!Array.isArray(s[key])) return `the ${key} are damaged`;
   if (!isStr(s.where) || !isNum(s.act) || !isNum(s.research) || !isNum(s.recycleEta) || !isNum(s.rng)) return 'part of the mission state is damaged';
@@ -130,6 +135,9 @@ function restore(saved) {
   if (!isNum(state.hp)) state.hp = fresh.hp;
   if (!isNum(state.hpMax)) state.hpMax = fresh.hpMax;
   if (!isNum(state.research)) state.research = 0;
+  if (isObj(state.stats)) for (const [k, v] of Object.entries(fresh.stats)) if (typeof v === 'number' && !isNum(state.stats[k])) state.stats[k] = v; // a counter that is not a number starts again
+  if (state.hpMax <= 0) state.hpMax = fresh.hpMax;
+  state.hp = Math.min(Math.max(state.hp, 0), state.hpMax);
   state.order ??= null;
   const bad = validateState(state) ?? dryRunProblem(state);
   if (bad) return { ok: false, reason: bad };

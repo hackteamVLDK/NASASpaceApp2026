@@ -122,6 +122,13 @@ const DAMAGE = [
   ['the sun multiplier is not a number', (s) => { s.mult.solar = 'bright'; }, 'refuse'],
   ['the minute is a string', (s) => { s.minute = 'noon'; }, 'refuse'],
   ['a save from a newer version', (s) => { s.version = 99; }, 'refuse'],
+  ['the event record is a string (found by the random test)', (s) => { s.flags.lastEvent = 'drone-01'; }, 'refuse'],
+  ['the done record is a number', (s) => { s.flags.done = 3; }, 'refuse'],
+  ['the mini-game record is a list', (s) => { s.flags.mini = []; }, 'refuse'],
+  ['a breakdown schedule without its table', (s) => { s.flags.breaks = { last: 1 }; }, 'refuse'],
+  ['a mission status that does not exist', (s) => { s.status = 'paused'; }, 'refuse'],
+  ['a counter that is not a number', (s) => { s.stats.builds = 'many'; }, 'repair'],
+  ['hp above the maximum', (s) => { s.hp = 9999; }, 'repair'],
   ['a meter that is not a number', (s) => { s.res.water = 'lots'; }, 'repair'],
   ['a meter that is missing', (s) => { delete s.res.oxygen; }, 'repair'],
   ['hp that is null', (s) => { s.hp = null; }, 'repair'],
@@ -169,8 +176,8 @@ test('a save cannot reach the prototype: "__proto__" keys are ignored', () => {
   assert.equal(r.state.flags.polluted, undefined);
 });
 
-test('random damage anywhere in a save never throws, and what loads keeps running (400 random cases)', () => {
-  const rnd = rngOf(424242);
+test('random damage anywhere in a save never throws, and what loads keeps running (600 random cases)', () => {
+  const rnd = rngOf(Number(process.env.SAVE_FUZZ_SEED ?? 424242)); // SAVE_FUZZ_SEED and SAVE_FUZZ_CASES let a person dig deeper than the default run
   const pick = (a) => a[Math.floor(rnd() * a.length)];
   const junk = () => pick([null, 'x', '', -1, 1e9, 0, true, [], {}, [1], { a: 1 }, 0.5, 'drone-01']);
   const bases = [richSnapshot(), ...snapshots(2, 12, 2000).slice(0, 4)];
@@ -182,7 +189,7 @@ test('random damage anywhere in a save never throws, and what loads keeps runnin
   };
   let refused = 0;
   let loaded = 0;
-  for (let i = 0; i < 400; i++) {
+  for (let i = 0; i < Number(process.env.SAVE_FUZZ_CASES ?? 600); i++) {
     const s = clone(pick(bases));
     const all = paths(s);
     for (let n = 1 + Math.floor(rnd() * 3); n > 0; n--) {
@@ -201,9 +208,15 @@ test('random damage anywhere in a save never throws, and what loads keeps runnin
       step(g, 3 * 1440);
       command(g, { type: 'build', module: 'lab' });
       command(g, { type: 'craft', recipe: 'repair_kit' });
-      step(g, 2 * 1440);
+      for (const game of GAMES) command(g, { type: 'miniResult', game, win: true }); // story effects keep their records in the flags
+      command(g, { type: 'launch', expedition: 1 });
+      for (let k = 0; k < 8; k++) { // events, breakdowns, dilemmas and trips need many Sols; answer every card
+        if (g.pending) command(g, g.pending.kind === 'radio' ? { type: 'radio', choice: 'a' } : { type: 'choose', choice: 'a' });
+        step(g, 1440);
+        if (g.status !== 'running') break;
+      }
       JSON.stringify(g);
     }, `case ${i}: a loaded save broke the game later`);
   }
-  assert.ok(refused > 50 && loaded > 50, `refused ${refused}, loaded ${loaded}: the damage must be varied enough to hit both outcomes`);
+  if (!process.env.SAVE_FUZZ_CASES) assert.ok(refused > 50 && loaded > 50, `refused ${refused}, loaded ${loaded}: the damage must be varied enough to hit both outcomes`);
 });
