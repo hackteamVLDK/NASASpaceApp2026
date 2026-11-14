@@ -26,21 +26,26 @@ function timerRing(ctx, frac) {
   ctx.restore();
 }
 
-/** 4.1 Solar Panel Static Wipe: zap the sparking clumps, then swipe the wiper. Win at 90% clean in 20 s (+3 s solo). */
+/**
+ * 4.1 Solar Panel Static Wipe (A16, team decision): the player only swipes. Static stays the explanation:
+ * a few sticky, sparkling clumps need 2 extra wipes (3 strokes in all) before they come off. Win at 90% clean in 20 s (+3 s solo).
+ */
 export function startSolarWipe({ canvas, atlas, title, hint, timeLimit = 23, onWin, onTitle = () => {}, onHint = () => {} }) {
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
   onTitle(title);
   const panels = [0, 1, 2].map((i) => ({ x: 22 + i * 355, y: 150, w: 340, h: 226, cols: 34, rows: 22 }));
   panels.forEach((p) => { p.cells = new Uint8Array(p.cols * p.rows); p.mask = document.createElement('canvas'); p.mask.width = p.w; p.mask.height = p.h; });
-  const seeds = [[0, 90, 70], [0, 250, 150], [1, 170, 110], [2, 80, 140], [2, 260, 60]];
-  let clumps, started, failures = 0, won = false, tapHint = true, last = null, raf = 0, msg = '';
+  const seeds = [[0, 120, 100], [1, 210, 130], [2, 150, 90]]; // one sticky clump per panel (max 3)
+  const STICKY = 3; // wipes a clump needs: the first stroke plus 2 extra
+  let clumps, started, failures = 0, won = false, swipeHint = true, last = null, raf = 0, msg = '', stroke = 0, sparks = [];
 
   function reset() {
-    clumps = seeds.map(([panel, x, y]) => ({ panel, x, y, r: 34, zapped: false }));
+    clumps = seeds.map(([panel, x, y]) => ({ panel, x, y, r: 34, left: STICKY, lastStroke: -1, zapped: false }));
+    sparks = [];
     panels.forEach((p) => { p.cells.fill(0); p.mask.getContext('2d').clearRect(0, 0, p.w, p.h); });
     started = performance.now();
-    tapHint = true;
+    swipeHint = true;
   }
   reset();
   onHint(hint);
@@ -64,13 +69,17 @@ export function startSolarWipe({ canvas, atlas, title, hint, timeLimit = 23, onW
       const lx = pt.x - p.x, ly = pt.y - p.y;
       if (lx < -30 || ly < -30 || lx > p.w + 30 || ly > p.h + 30) return;
       const under = clumps.find((c) => c.panel === pi && !c.zapped && Math.hypot(c.x - lx, c.y - ly) < c.r + 12);
-      if (under) { // an un-zapped clump smears back: the wiper cannot clean it
-        const m = p.mask.getContext('2d');
-        m.save(); m.globalCompositeOperation = 'destination-out'; m.beginPath(); m.arc(under.x, under.y, under.r + 10, 0, Math.PI * 2); m.fill(); m.restore();
-        for (let cy = 0; cy < p.rows; cy++) for (let cx = 0; cx < p.cols; cx++) {
-          if (Math.hypot((cx + 0.5) * (p.w / p.cols) - under.x, (cy + 0.5) * (p.h / p.rows) - under.y) < under.r + 10) p.cells[cy * p.cols + cx] = 0;
+      if (under) { // a sticky clump: each stroke over it loosens it once; the last one pops it off with a spark
+        if (under.lastStroke !== stroke) {
+          under.lastStroke = stroke;
+          under.left -= 1;
+          if (under.left <= 0) {
+            under.zapped = true;
+            for (let k = 0; k < 10; k++) sparks.push({ x: p.x + under.x, y: p.y + under.y, a: (k / 10) * Math.PI * 2, t0: performance.now() });
+            director.minigame('solar_wipe', 'zap'); // the static spark sound (AUDIO_HOOKS: staticZap when a clump comes off)
+          }
         }
-        return;
+        if (!under.zapped) return;
       }
       const m = p.mask.getContext('2d');
       m.fillStyle = '#fff'; m.beginPath(); m.arc(lx, ly, 32, 0, Math.PI * 2); m.fill();
@@ -84,8 +93,8 @@ export function startSolarWipe({ canvas, atlas, title, hint, timeLimit = 23, onW
   const down = (e) => {
     const pt = pointer(canvas, e);
     canvas.setPointerCapture(e.pointerId);
-    const tap = clumps.find((c) => !c.zapped && Math.hypot(panels[c.panel].x + c.x - pt.x, panels[c.panel].y + c.y - pt.y) < c.r + 12);
-    if (tap) { tap.zapped = true; tapHint = false; director.minigame('solar_wipe', 'zap'); return; }
+    stroke += 1;
+    swipeHint = false;
     last = pt; wipeAt(pt);
   };
   const move = (e) => {
@@ -100,6 +109,7 @@ export function startSolarWipe({ canvas, atlas, title, hint, timeLimit = 23, onW
   canvas.addEventListener('pointerdown', down);
   canvas.addEventListener('pointermove', move);
   canvas.addEventListener('pointerup', up);
+  canvas.addEventListener('pointercancel', up);
 
   function frame(now) {
     const left = Math.max(0, timeLimit - (now - started) / 1000);
@@ -123,13 +133,23 @@ export function startSolarWipe({ canvas, atlas, title, hint, timeLimit = 23, onW
     for (const c of clumps) {
       if (c.zapped) continue;
       const p = panels[c.panel], x = p.x + c.x, y = p.y + c.y;
-      ctx.strokeStyle = '#7fd7ff'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(x, y, c.r, 0, Math.PI * 2); ctx.stroke();
-      ctx.strokeStyle = tick % 2 ? '#e6fbff' : '#2aa8ff'; ctx.lineWidth = 3;
-      for (let k = 0; k < 4; k++) { const a = (tick + k * 1.7) * 1.3; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Math.cos(a) * 26, y + Math.sin(a) * 26); ctx.stroke(); }
+      // a thick, darker dust clump (static makes it cling): it fades a little with every wipe
+      ctx.fillStyle = `rgba(110,48,22,${0.45 + 0.18 * c.left})`;
+      ctx.beginPath(); ctx.arc(x, y, c.r, 0, Math.PI * 2); ctx.fill();
+      // small sparks as a hint, not a target (no tapping)
+      ctx.strokeStyle = tick % 2 ? '#e6fbff' : '#7fd7ff'; ctx.lineWidth = 2;
+      for (let k = 0; k < 3; k++) { const a = (tick + k * 2.1) * 1.3; const r0 = c.r * 0.55; ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * r0, y + Math.sin(a) * r0); ctx.lineTo(x + Math.cos(a) * (r0 + 12), y + Math.sin(a) * (r0 + 12)); ctx.stroke(); }
     }
-    if (tapHint && clumps.some((c) => !c.zapped)) {
-      const c = clumps.find((q) => !q.zapped), p = panels[c.panel];
-      ctx.font = '54px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('\u{1F446}', p.x + c.x + 18, p.y + c.y + 70 + Math.sin(now / 160) * 8);
+    // the pop when a sticky clump comes off
+    sparks = sparks.filter((sp) => now - sp.t0 < 450);
+    for (const sp of sparks) {
+      const d = (now - sp.t0) / 450, r = 10 + d * 50;
+      ctx.strokeStyle = `rgba(200,245,255,${1 - d})`; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(sp.x + Math.cos(sp.a) * r * 0.5, sp.y + Math.sin(sp.a) * r * 0.5); ctx.lineTo(sp.x + Math.cos(sp.a) * r, sp.y + Math.sin(sp.a) * r); ctx.stroke();
+    }
+    if (swipeHint) { // an animated hand that swipes across the first panel
+      const k = (now / 1400) % 1, p = panels[0];
+      ctx.font = '54px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('\u{1F446}', p.x + 40 + k * (p.w - 60), p.y + p.h * 0.62);
     }
     // sun meter
     ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(24, 460, 700, 40);
@@ -137,10 +157,12 @@ export function startSolarWipe({ canvas, atlas, title, hint, timeLimit = 23, onW
     ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.strokeRect(24, 460, 700, 40);
     ctx.beginPath(); ctx.moveTo(24 + 700 * 0.9, 452); ctx.lineTo(24 + 700 * 0.9, 508); ctx.stroke();
     ctx.fillStyle = '#fff'; ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'left'; ctx.fillText(`Sun power ${Math.round(pct * 100)}%`, 34, 490);
+    const sticky = clumps.filter((c) => !c.zapped).length;
+    if (sticky && pct >= 0.85) { ctx.fillStyle = '#ffe9a8'; ctx.font = 'bold 22px sans-serif'; ctx.fillText(`Almost! ${sticky} sticky spot${sticky > 1 ? 's' : ''} left: wipe over ${sticky > 1 ? 'them' : 'it'} again.`, 24, 540); }
     timerRing(ctx, left / timeLimit);
     if (msg) { ctx.fillStyle = '#fff'; ctx.font = 'bold 34px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(msg, W / 2, 570); }
 
-    if (!won && pct >= 0.9) { won = true; play('win'); setTimeout(() => { destroy(); onWin(); }, 650); }
+    if (!won && pct >= 0.9 && clumps.every((c) => c.zapped)) { won = true; play('win'); setTimeout(() => { destroy(); onWin(); }, 650); }
     else if (!won && left <= 0) { failures++; msg = failures >= 3 ? 'A drone helps you out!' : 'Close! Try once more.'; reset(); if (failures >= 3) { won = true; setTimeout(() => { destroy(); onWin(); }, 900); } else setTimeout(() => { msg = ''; }, 1400); }
     raf = requestAnimationFrame(frame);
   }
@@ -151,6 +173,7 @@ export function startSolarWipe({ canvas, atlas, title, hint, timeLimit = 23, onW
     canvas.removeEventListener('pointerdown', down);
     canvas.removeEventListener('pointermove', move);
     canvas.removeEventListener('pointerup', up);
+    canvas.removeEventListener('pointercancel', up);
   }
   return { destroy };
 }
@@ -183,15 +206,25 @@ export function startBatteryStep({ canvas, atlas, title, hint, onDone, onTitle =
   const up = () => {
     if (!drag || done) return;
     if (drag.what === 'battery') {
-      if (Math.hypot(battery.x + battery.w / 2 - (slot.x + slot.w / 2), battery.y + battery.h / 2 - (slot.y + slot.h / 2)) < 110) { battery = { ...battery, x: slot.x + 30, y: slot.y + 15, seated: true }; director.minigame('battery', 'insert'); }
+      if (Math.hypot(battery.x + battery.w / 2 - (slot.x + slot.w / 2), battery.y + battery.h / 2 - (slot.y + slot.h / 2)) < 110) {
+        battery = { ...battery, x: slot.x + 30, y: slot.y + 15, seated: true };
+        director.minigame('battery', 'insert');
+        onHint('Now drag the orange plug into the round socket.'); // step 2 gets its own instruction
+      }
       else battery = { x: 90, y: 400, w: 190, h: 100, seated: false };
     } else if (Math.hypot(plug.x - socket.x, plug.y - socket.y) < 70) { plug = { ...socket }; done = true; flash = performance.now(); director.minigame('battery', 'cable'); play('win'); setTimeout(() => { destroy(); onDone(); }, 800); }
     else plug = { ...plugHome };
     drag = null;
   };
+  const cancel = () => { // a lost touch puts the dragged part back instead of leaving it stuck in the air
+    if (!drag || done) { drag = null; return; }
+    if (drag.what === 'battery') battery = { x: 90, y: 400, w: 190, h: 100, seated: false }; else plug = { ...plugHome };
+    drag = null;
+  };
   canvas.addEventListener('pointerdown', down);
   canvas.addEventListener('pointermove', move);
   canvas.addEventListener('pointerup', up);
+  canvas.addEventListener('pointercancel', cancel);
 
   function frame(now) {
     ctx.fillStyle = '#0b1522'; ctx.fillRect(0, 0, W, H);
@@ -201,7 +234,9 @@ export function startBatteryStep({ canvas, atlas, title, hint, onDone, onTitle =
     ctx.fillStyle = '#fff'; ctx.font = 'bold 24px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('Drone #01 – back hatch', 560, 100);
     ctx.setLineDash([12, 8]); ctx.strokeStyle = battery.seated ? '#43e060' : '#00E5FF'; ctx.lineWidth = 4; ctx.strokeRect(slot.x, slot.y, slot.w, slot.h); ctx.setLineDash([]);
     ctx.fillStyle = '#9aa'; ctx.beginPath(); ctx.arc(socket.x, socket.y, 28, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = done ? '#43e060' : '#ff8a2a'; ctx.beginPath(); ctx.arc(socket.x, socket.y, 18, 0, Math.PI * 2); ctx.fill();
+    // the socket lights up only when it is the next thing to use, so the first step has one clear target
+    ctx.fillStyle = done ? '#43e060' : battery.seated ? '#ff8a2a' : '#4a5560'; ctx.beginPath(); ctx.arc(socket.x, socket.y, 18, 0, Math.PI * 2); ctx.fill();
+    if (battery.seated && !done) { ctx.strokeStyle = `rgba(255,138,42,${0.4 + Math.sin(now / 200) * 0.35})`; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(socket.x, socket.y, 38, 0, Math.PI * 2); ctx.stroke(); }
     // cable
     if (battery.seated) {
       ctx.strokeStyle = '#ff8a2a'; ctx.lineWidth = 12; ctx.lineCap = 'round';
@@ -213,8 +248,14 @@ export function startBatteryStep({ canvas, atlas, title, hint, onDone, onTitle =
     ctx.fillStyle = '#2f6f3f'; ctx.strokeStyle = '#d7ffe0'; ctx.lineWidth = 5; ctx.beginPath(); ctx.roundRect(battery.x, battery.y, battery.w, battery.h, 14); ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#d7ffe0'; ctx.fillRect(battery.x + battery.w, battery.y + 32, 14, 36);
     atlas.cell(ctx, 'icons', ICON.battery, battery.x + 10, battery.y + 6, 88, 88);
-    ctx.fillStyle = '#fff'; ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'left'; ctx.fillText('CHARGED', battery.x + 100, battery.y + 58);
-    if (!battery.seated) { ctx.font = '54px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('\u{1F446}', 190 + Math.min(1, ((now / 1500) % 2)) * 190, 560 - Math.min(1, ((now / 1500) % 2)) * 100); }
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 17px sans-serif'; ctx.textAlign = 'left'; ctx.fillText('CHARGED', battery.x + 98, battery.y + 56); // fits inside the battery body
+    // an animated hand shows the next move: battery -> hatch, then plug -> socket
+    if (!drag && !done) {
+      const k = Math.min(1, ((now / 1500) % 2));
+      const [from, to] = battery.seated ? [[plug.x, plug.y], [socket.x, socket.y]] : [[battery.x + battery.w / 2, battery.y + battery.h / 2], [slot.x + slot.w / 2, slot.y + slot.h / 2]];
+      ctx.font = '54px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('\u{1F446}', from[0] + (to[0] - from[0]) * k + 14, from[1] + (to[1] - from[1]) * k + 50);
+    }
     if (done && now - flash < 700) { ctx.fillStyle = `rgba(67,224,96,${0.5 - (now - flash) / 1400})`; ctx.fillRect(0, 0, W, H); }
     raf = requestAnimationFrame(frame);
   }
@@ -225,6 +266,7 @@ export function startBatteryStep({ canvas, atlas, title, hint, onDone, onTitle =
     canvas.removeEventListener('pointerdown', down);
     canvas.removeEventListener('pointermove', move);
     canvas.removeEventListener('pointerup', up);
+    canvas.removeEventListener('pointercancel', cancel);
   }
   return { destroy };
 }

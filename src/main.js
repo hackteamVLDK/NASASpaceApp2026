@@ -187,9 +187,9 @@ function openMini(game, { onDone = null } = {}) {
   };
   const finish = (win) => { send({ type: 'miniResult', game, win }); };
   const win = () => { closeMini(); finish(true); onDone?.(true); };
-  if (game === 'solar_wipe') mini = startSolarWipe({ ...common, title: t('ui.mg.solar_wipe.title'), hint: 'Tap the sparkly clumps to zap them, then swipe to wipe.', onWin: () => { closeMini(); onSolarWin(); onDone?.(true); } });
+  if (game === 'solar_wipe') mini = startSolarWipe({ ...common, title: t('ui.mg.solar_wipe.title'), hint: 'Swipe across the panels to wipe the dust. Sparkly sticky spots need a few extra wipes.', onWin: () => { closeMini(); onSolarWin(); onDone?.(true); } });
   else if (game === 'battery') mini = startBatteryStep({ ...common, title: 'Wake up Drone #01', hint: 'Drag the charged battery into the hatch, then plug in the cable.', onDone: () => { closeMini(); onBatteryDone(); } });
-  else if (hasMini2(game)) mini = startMini2(game, { ...common, delaySeconds, title: miniTitle(game), hint: 'Follow the one-line instruction at the top. You have time!', onWin: win, onFail: () => finish(false) });
+  else if (hasMini2(game)) mini = startMini2(game, { ...common, delaySeconds, title: miniTitle(game), hint: '' /* the game's own line at the top says what to do; a second generic line only adds reading */, onWin: win, onFail: () => finish(false) });
   else { toast('That job is not ready yet.'); $('mgWrap').hidden = true; }
 }
 function closeMini() {
