@@ -6,8 +6,25 @@
  */
 import { clockAt } from './util.js';
 import { SOL, SHIELD } from './data.js';
+import { awayProgress } from './expeditions.js';
+import { powerCap } from './engine.js';
 
 const solsLeft = (s, minute) => Math.max(0, (minute - s.minute) / SOL);
+
+/**
+ * Below these values a meter is LOW (SCENARIO 3.1 and the ASTRA lines "Water below 25", "Morale below 30" ...). The
+ * Threats strip, the gauges in the top bar and ASTRA all use the same limits. Provenance: `gameplay`.
+ */
+export const LOW_LIMITS = Object.freeze({ power: 20, water: 25, oxygen: 25, food: 25, morale: 30, hp: 40 });
+const METER_WORD = { power: 'power', water: 'water', oxygen: 'oxygen', food: 'food', morale: 'morale' };
+const METER_PLACE = { power: 'surface', water: 'lifesupport', oxygen: 'lifesupport', food: 'greenhouse', morale: 'recreation' };
+const EMPTY = {
+  power: ['No power', 'The battery is empty. Everything except life support is off.', 'Wipe the solar panels (Tasks tab) and build Battery & Heating.'],
+  water: ['No water', 'The tank is empty! The Greenhouse stops and Morale drops every Sol.', 'Fetch Ice Cores with the Rover and melt them (Workshop tab); fix a cracked filter.'],
+  oxygen: ['No oxygen', 'The air is out. Everyone goes to the Bedroom, which has backup tanks.', 'Play Valve Balance (Tasks tab).'],
+  food: ['No food', 'The pantry is empty! Morale drops every Sol and fresh crops stop helping.', 'Build the Greenhouse and keep the plants happy (Nutrient Match).'],
+  morale: ['Morale is gone', 'The crew has lost heart: builds and crafts are 25% slower.', 'Build Recreation, call Earth, keep the base warm and lit.'],
+};
 
 export function hazards(s) {
   const h = [];
@@ -26,10 +43,13 @@ export function hazards(s) {
   if (s.tasks.some((t) => t.game === 'solar_wipe') && !s.emergency.power && !s.storm) add('dusty', 'info', 'Dusty panels', 'Dust is sticking to the panels. Clean them for more power.', 'surface', 'Tasks tab: Solar Panel Static Wipe.');
   if (s.flags.noLaunchUntil && s.minute < s.flags.noLaunchUntil) add('airlock', 'info', 'Airlock sealed', 'No trips for now while a drone fixes the leak.', 'garage', 'Wait a little.');
   if (s.medRest) add('medrest', 'info', 'Med-Rest', 'The Commander rests in the Bedroom for a Sol.', 'bedroom', 'The drones keep the base going.');
-  const meters = { oxygen: 25, water: 25, food: 25, morale: 30, power: 20 };
-  for (const [k, limit] of Object.entries(meters)) if (s.res[k] < limit && s.res[k] > 0 && !s.emergency[k]) add(`low-${k}`, 'warn', `Low ${k}`, `${k[0].toUpperCase()}${k.slice(1)} is getting low.`, null, 'Open the Resources screen for what helps.');
-  if (s.hp < 40 && !s.medRest) add('low-hp', 'warn', 'Low HP', 'Rest and fresh food bring energy back.', 'bedroom', 'Sleep in the Bedroom, or eat a fresh meal.');
-  if (s.away) add('away', 'info', 'Rover out', `The Rover is on its way (${Math.round(((s.minute - s.away.start) / (s.away.end - s.away.start)) * 100)}%).`, 'garage', 'Follow the radio log.');
+  // a meter that is low warns; a meter that is empty raises an alarm (the three with a real emergency have their own chip above)
+  for (const k of Object.keys(METER_WORD)) {
+    const v = s.res[k];
+    if (v <= 0) { if (!s.emergency[k]) add(`empty-${k}`, 'alarm', EMPTY[k][0], EMPTY[k][1], METER_PLACE[k], EMPTY[k][2]); } else if (v < LOW_LIMITS[k] && !s.emergency[k]) add(`low-${k}`, 'warn', `Low ${METER_WORD[k]}`, `${k[0].toUpperCase()}${k.slice(1)} is getting low (${Math.round(v)}).`, METER_PLACE[k], 'Open the Resources screen for what helps.');
+  }
+  if (s.hp < LOW_LIMITS.hp && !s.medRest) add('low-hp', 'warn', 'Low HP', 'Rest and fresh food bring energy back.', 'bedroom', 'Sleep in the Bedroom, or eat a fresh meal.');
+  if (s.away) add('away', 'info', 'Rover out', `The Rover is on its way (${Math.round(awayProgress(s.away, s.minute) * 100)}%).`, 'garage', 'Follow the radio log.');
   return h;
 }
 
@@ -43,7 +63,7 @@ export function shieldingByPlace(s) {
 export function meterReport(s, key, lines, net) {
   const own = lines.filter((l) => l.res === key);
   const value = key === 'hp' ? s.hp : s.res[key];
-  const cap = key === 'sp' ? null : 100;
+  const cap = key === 'sp' ? null : key === 'power' ? powerCap(s) : key === 'hp' ? s.hpMax : 100; // Power holds 250 with a battery, 400 with the upgrade
   let outlook = 'Steady.';
   if (net < -0.01 && value > 0) outlook = `Runs out in about ${(value / -net).toFixed(1)} Sols.`;
   else if (net > 0.01 && cap && value < cap) outlook = `Full in about ${((cap - value) / net).toFixed(1)} Sols.`;

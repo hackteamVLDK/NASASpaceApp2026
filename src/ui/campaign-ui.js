@@ -6,11 +6,12 @@
  */
 import { MODULES, RECIPES, UPGRADES, LAYOUT } from '../campaign/data.js';
 import { moduleInfo, clockAt, online } from '../campaign/engine.js';
-import { EXPEDITIONS, hpCost, durationMinutes } from '../campaign/expeditions.js';
+import { EXPEDITIONS, hpCost, durationMinutes, awayProgress } from '../campaign/expeditions.js';
 import { t, hasString } from '../flow/strings.js';
 import { ICON } from '../render/atlas.js';
 import { play, director } from './audio.js';
 import { CARDS, BADGES, buildReport } from '../campaign/logbook.js';
+import { LOW_LIMITS } from '../campaign/hazards.js';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
@@ -313,15 +314,23 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
     setTab(id) { tab = id; sig = ''; },
     showMap: (launch) => showMap(launch ?? ui.launch),
     get modalOpen() { return !modalRoot.hidden; },
+    get modalKey() { return modalKey; },
     update() {
       const c = clockAt(s.minute);
       $('clock').textContent = `Sol ${c.sol} · ${String(c.hour).padStart(2, '0')}:${String(c.minute).padStart(2, '0')}${s.storm ? ' · DUST STORM' : ''}`;
       for (const [k, e] of Object.entries(G)) {
         const v = k === 'hp' ? s.hp : s.res[k];
-        const f = Math.max(0, Math.min(1, v / e.d.max()));
+        const cap = e.d.max();
+        const f = Math.max(0, Math.min(1, v / cap));
         e.bar.style.width = `${f * 100}%`;
-        e.val.textContent = Math.round(v);
-        e.g.classList.toggle('low', f < 0.25 && k !== 'sp');
+        // Power holds more than 100 once there is a battery: show "88 / 250" so the bar and the number agree
+        e.val.textContent = cap !== 100 && k !== 'sp' ? `${Math.round(v)}/${cap}` : Math.round(v);
+        const limit = LOW_LIMITS[k];
+        const empty = k !== 'sp' && (v <= 0 || (k !== 'hp' && Boolean(s.emergency[k]))); // a boolean: classList.toggle(name, undefined) would TOGGLE
+        e.g.classList.toggle('low', empty); // red and pulsing: empty or in an emergency
+        e.g.classList.toggle('warn', Boolean(!empty && limit != null && v < limit && !(k === 'hp' && s.medRest))); // amber: running low
+        const name = k === 'hp' ? t('ui.res.astronaut_hp.name') : k === 'sp' ? t('ui.res.spare_parts.name') : t(`ui.res.${k}.name`);
+        e.g.title = k === 'sp' ? `${name}: ${Math.round(v)}` : k === 'power' ? `${Math.round(v)} power stored out of ${cap}. A bigger battery holds more. Below ${limit} is low.` : `${name}: ${Math.round(v)} of ${cap}.${limit != null ? ` Below ${limit} is low.` : ''}`;
         const prev = lastRes[k];
         if (prev !== undefined && Math.abs(prev - v) > 0.001) e.g.dataset.trend = v > prev ? 'up' : 'down';
         lastRes[k] = v;
@@ -329,12 +338,12 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
       const a = s.away;
       $('radioBox').hidden = !a;
       if (a) {
-        $('radioBar').firstElementChild.style.width = `${Math.min(100, ((s.minute - a.start) / (a.end - a.start)) * 100)}%`;
+        $('radioBar').firstElementChild.style.width = `${awayProgress(a, s.minute) * 100}%`;
         const html = radioLines.map((l) => `<p>${l}</p>`).join('');
         if ($('radioLines').innerHTML !== html) $('radioLines').innerHTML = html;
       } else radioLines.length = 0;
       $('mapBtn').disabled = !online(s, 'garage');
-      const next = `${tab}|${selected}|${JSON.stringify([s.drones.map((d) => (d.queue ?? []).length), s.logbook.length, s.badges.length, s.res.sp | 0, s.items, s.kits, s.upgrades, s.tasks.length, s.crafting?.recipe, s.away?.id, s.drones.map((d) => d.status + (d.task?.module ?? '')), Object.values(s.modules).map((m) => m.status + m.tier + (m.upgrading ? 'u' : '') + Math.floor(m.progress * 10))])}`;
+      const next = `${tab}|${selected}|${JSON.stringify([s.drones.map((d) => (d.queue ?? []).length), s.logbook.length, s.badges.length, s.res.sp | 0, s.items, s.kits, s.upgrades, s.tasks.length, s.crafting?.recipe, s.away?.id, s.drones.map((d) => d.status + (d.task?.module ?? '')), Object.values(s.modules).map((m) => m.status + m.tier + (m.upgrading ? `u${Math.floor(m.upgrading.progress * 20)}` : '') + (m.status === 'building' ? Math.floor(m.progress * 50) : Math.floor(m.progress * 10))), s.crafting ? Math.floor(s.crafting.progress * 20) : -1])}`;
       if (next !== sig) {
         sig = next;
         const body = $('tabBody');

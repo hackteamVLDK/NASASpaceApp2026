@@ -10,15 +10,11 @@ import { ICON } from './atlas.js';
 export const SCREEN = Object.freeze({ w: 1920, h: 1080 });
 export const CREW_COLORS = Object.freeze({ cmdr: '#E53935', eng: '#FDD835', bot: '#43A047', sci: '#1E88E5' });
 export const DRONE_BUMPERS = Object.freeze({ 'drone-01': '#00E5FF', 'drone-02': '#FFB000', 'drone-03': '#43E060' });
-const SOIL = { x0: -800, x1: 2720, scale: 0.5 };
+export const SOIL = { x0: -1250, x1: 3450, scale: 0.5 }; // wide enough to fill the screen at the gameplay zoom
 
-/** Surface props: positions are proposals (docs/LEVELS.md), all on the ground line. */
-export const SURFACE = Object.freeze({
-  // One scale for everything: 100 world units = 1 m, an astronaut is about 185 units. The surface habitat is about
-  // 2.2 m tall, the lander only a little taller, the tower 3.6 m. The habitat is centred on the shaft (x 960).
-  solar: { x: 310, w: 330 }, airlock: { x: 960, w: 860 }, antenna: { x: 1470, h: 360 },
-  lander: { x: 1650, w: 240 }, mound: [{ x: 1830, w: 170, flip: false }, { x: 1790, w: 130, flip: true }],
-});
+/** Surface props live in geometry.js (shared with the movers and the tests). */
+import { SURFACE } from './geometry.js';
+export { SURFACE };
 
 /** Where a crew member stands for each place of the base graph (world units, feet). */
 export function nodeAnchor(node, slot = 0) {

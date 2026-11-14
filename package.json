@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "node tools/dev-server.mjs",
-    "test": "node --test \"tests/**/*.test.mjs\" \"tools/**/*.test.mjs\"",
+    "test": "node --test \"tests/**/*.test.mjs\" \"tools/**/*.test.mjs\" \"src/audio/*.test.mjs\"",
     "test:sim": "node --test \"tests/**/*.test.mjs\"",
     "test:sync": "node --test \"tools/git-sync/test/*.test.mjs\"",
     "sync": "node tools/git-sync/sync.mjs",

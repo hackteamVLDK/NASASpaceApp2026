@@ -153,7 +153,7 @@
   "astra.tut.drone01_wake": "Beep-boop! Drone #01 is awake. Drones can't talk, but they never get tired. Let's give it a job: the base is getting cold.",
   "astra.tut.hp_intro": "This green bar is your HP, your health and energy. Hard work and radiation lower it. Sleep and fresh food restore your energy. Real radiation adds up over time, so astronauts limit their time outside.",
   "astra.tut.solar_done": "Sunlight is flowing! Mars gets less than half the sunlight Earth does, so every clean panel matters.",
-  "astra.tut.solar_prompt": "First job: clean the solar panels. Tap the sparkly clumps to zap the static, then wipe!",
+  "astra.tut.solar_prompt": "First job: clean the solar panels. Mars dust is sticky with static, so wipe it off!",
   "badge.air_from_mars.name": "Air From Mars",
   "badge.air_from_mars.text": "You made oxygen from Mars air, like NASA's MOXIE.",
   "badge.biosignature_hunter.name": "Biosignature Hunter",

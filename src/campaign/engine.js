@@ -16,7 +16,7 @@ import {
   MODULES, BUILD_SOLS, UPGRADE_SOLS, DRONE_BUILD_POWER, STORM, RECIPES, UPGRADES, MODULE_LINES,
 } from './data.js';
 import { clockAt, isNight, online } from './util.js';
-import { storyMinute, onSol, applyChoice, onModuleStart, onModuleBuilt, onKit, onMini, runTimer, onDroneAwake } from './story.js';
+import { storyMinute, onSol, applyChoice, onModuleStart, onModuleBuilt, onKit, onMini, miniBlock, runTimer, onDroneAwake, onMove } from './story.js';
 import { expeditionMinute, startExpedition, radioChoice } from './expeditions.js';
 
 export const STATE_VERSION = 1;
@@ -90,11 +90,13 @@ export function contributions(s) {
   add('food', 'Crew meals', NEEDS.food);
   add('morale', 'Crew needs', NEEDS.morale);
   const blackout = s.res.power <= 0;
+  const dry = s.res.water <= 0; // 3.1: with no water the Greenhouse pauses
   for (const id of Object.keys(MODULES)) {
     if (!online(s, id)) continue;
     if (blackout && id !== 'lifesupport' && id !== 'solar') continue; // non-life-support modules switch off
+    if (dry && id === 'greenhouse') continue;
     for (const [k, v0] of Object.entries(tierFx(s, id))) {
-      if (!RES.includes(k)) continue;
+      if (!RES.includes(k) && k !== 'research') continue;
       let v = v0;
       if (id === 'solar' && k === 'power') v = v0 * s.mult.solar * (s.storm ? (s.modules.solar.tier === 2 ? STORM.solarT2 : STORM.solarT1) : 1);
       if (id === 'battery' && k === 'power' && s.storm) v = v0 * STORM.batteryPowerMult;
@@ -102,6 +104,8 @@ export function contributions(s) {
       add(k, null, v, MODULES[id].nameId);
     }
   }
+  if (dry) add('morale', 'No water (the Greenhouse is paused)', -5); // 3.1, "At 0"
+  if (s.res.food <= 0) add('morale', 'No food (emergency rations)', -5);
   const building = s.drones.filter((d) => d.task && (d.task.type === 'build' || d.task.type === 'upgrade')).length;
   add('power', `Drones working (${building})`, DRONE_BUILD_POWER * building);
   if (s.drones.some((d) => d.status === 'awake' && !d.task)) add('sp', 'A free drone salvages parts', 2);
@@ -112,7 +116,7 @@ export function contributions(s) {
 
 /** Net change per Sol of every meter, from the current state (3.2, 3.3, 3.4). */
 export function rates(s) {
-  const r = { power: 0, heat: 0, water: 0, oxygen: 0, food: 0, morale: 0, sp: 0 };
+  const r = { power: 0, heat: 0, water: 0, oxygen: 0, food: 0, morale: 0, sp: 0, research: 0 };
   for (const l of contributions(s)) r[l.res] += l.amount;
   return r;
 }
@@ -127,6 +131,13 @@ export function locationAt(s) {
   if (MEALS.includes(hour)) return 'kitchen';
   if (s.flags.outside) return 'outside';
   return online(s, 'workshop') ? 'workshop' : 'kitchen';
+}
+
+/** Update where the Commander is; the first visit to a room without the Roof Layer gets ASTRA's warning. */
+function refreshWhere(s, emit) {
+  const was = s.where;
+  s.where = locationAt(s);
+  if (s.where !== was) onMove(s, emit, s.where);
 }
 
 function shieldFactor(s, where) {
@@ -164,7 +175,7 @@ function tick(s, emit) {
 
   // the Commander
   if (s.order && s.minute >= s.order.until) { s.order = null; s.flags.outside = false; }
-  s.where = locationAt(s);
+  refreshWhere(s, emit);
   stepHp(s, emit, now);
   trackStats(s, dt, now);
 
@@ -196,6 +207,7 @@ function tick(s, emit) {
   for (const t of s.timers.filter((x) => s.minute >= x.at)) { onTimer(s, t, emit); }
   s.timers = s.timers.filter((x) => s.minute < x.at);
   expeditionMinute(s, emit);
+  if (!s.away && s.where === 'away') refreshWhere(s, emit); // the Rover just came home: the Commander is back in the base
   checkMeters(s, emit);
   storyMinute(s, emit, now);
 }
@@ -339,13 +351,15 @@ function finishCraft(s, emit) {
 }
 
 
-/** Why a queued job could not be accepted right now, or null. Cost is paid when it starts. */
-function queueCheck(s, job) {
+const QUEUE_MAX = 2; // jobs a busy drone keeps waiting (Drone Link)
+
+/** Why a job cannot wait in drone `d`'s queue right now, or null. Cost is paid when it starts. */
+function queueCheck(s, job, d) {
   const m = s.modules[job.module];
   const queued = s.drones.some((x) => x.queue.some((q) => q.type === job.type && q.module === job.module));
   if (queued) return 'That job is already waiting.';
   if (s.drones.some((x) => x.task && x.task.type === job.type && x.task.module === job.module)) return 'A drone is already on that job.';
-  if (s.drones.some((x) => x.queue.length >= 2) && s.drones.every((x) => x.queue.length >= 2)) return 'The drone queues are full.';
+  if (d.queue.length >= QUEUE_MAX) return 'That drone already has 2 jobs waiting.';
   if (job.type === 'build' && m.status !== 'unbuilt') return m.status === 'online' ? 'Already finished.' : 'Already being built.';
   if (job.type === 'upgrade' && (!UPGRADES[job.module] || m.tier === 2 || m.upgrading)) return 'No upgrade to do there.';
   return null;
@@ -370,6 +384,7 @@ function startJob(s, d, job, emit) {
   }
   const u = UPGRADES[id];
   if (!u) return 'No upgrade for that module.';
+  if (m.status === 'building') return 'That room is still being built.';
   if (m.status !== 'online') return 'Build it first.';
   if (m.tier === 2 || m.upgrading) return 'Already upgraded.';
   const why = canPay(s, u);
@@ -431,7 +446,7 @@ export function command(s, cmd) {
       if (!d) return fail('No free drone. Wake a drone or wait for one to finish.');
       const job = { type: cmd.type, module: id };
       if (d.task) { // Drone Link: the drone is busy, so the job waits in its queue (up to 2)
-        const why = queueCheck(s, job);
+        const why = queueCheck(s, job, d);
         if (why) return fail(why);
         d.queue.push(job);
         emit({ type: 'queued', drone: d.id, job });
@@ -453,6 +468,7 @@ export function command(s, cmd) {
       if (cmd.place !== 'bedroom' && cmd.place !== 'kitchen' && cmd.place !== 'lifesupport' && cmd.place !== 'outside' && !online(s, cmd.place)) return fail('That room is not finished yet.');
       s.order = { place: cmd.place, until: s.minute + 180 };
       s.flags.outside = cmd.place === 'outside';
+      refreshWhere(s, emit); // the Commander sets off at once, even while the game is paused
       emit({ type: 'ordered', place: cmd.place });
       break;
     }
@@ -492,6 +508,8 @@ export function command(s, cmd) {
       break;
     }
     case 'miniResult': {
+      const why = miniBlock(s, cmd.game);
+      if (why) return fail(why);
       onMini(s, cmd, emit);
       break;
     }
@@ -507,6 +525,7 @@ export function command(s, cmd) {
     }
     case 'surface': {
       s.flags.outside = Boolean(cmd.on);
+      refreshWhere(s, emit);
       break;
     }
     case 'launch': {

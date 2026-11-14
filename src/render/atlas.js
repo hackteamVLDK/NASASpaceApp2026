@@ -71,6 +71,30 @@ function loadImage(src) {
   });
 }
 
+/**
+ * The finished-Garage picture (module.finished, 4th cell) has a Rover painted into it. The game draws its own Rover (vehicle.rover)
+ * that can park, drive out and come home, so two vehicles overlapped. This paints the Garage bay empty again: wall, floor and the
+ * hazard pad. Sheet pixel coordinates (1024 x 1536, four cells 384 tall).
+ */
+function patchBakedRover(canvas) {
+  if (canvas.width !== 1024 || canvas.height !== 1536) return; // some other picture: leave it alone
+  const g = canvas.getContext('2d');
+  const X0 = 366, X1 = 748, Y0 = 1270, FLOOR = 1500, END = 1536;
+  const rect = (x, y, w, h, color, alpha = 1) => { g.globalAlpha = alpha; g.fillStyle = color; g.fillRect(x, y, w, h); g.globalAlpha = 1; };
+  // the wall: tan bricks, drawn with a feathered edge so the patch does not show as a box
+  const wall = (inset, alpha) => { rect(X0 + inset, Y0 + inset, X1 - X0 - 2 * inset, FLOOR - Y0 - inset, '#fcbb76', alpha); };
+  for (let i = 0; i < 10; i++) wall(9 - i, (i + 1) / 10);
+  g.globalAlpha = 0.55;
+  for (let k = 0, y = Y0 + 16; y < FLOOR - 4; k++, y += 30) {
+    rect(X0 + 10, y, X1 - X0 - 20, 2, '#ec9f60', 0.55);
+    for (let x = X0 + 14 + (k % 2) * 32; x < X1 - 10; x += 64) rect(x, y, 2, 30, '#ec9f60', 0.4);
+  }
+  g.globalAlpha = 1;
+  rect(X0, FLOOR, X1 - X0, END - FLOOR, '#f79c5b'); // the floor
+  rect(X0, FLOOR, X1 - X0, 3, '#e08a4c'); // its edge
+  for (let x = 435; x < 725; x += 36) { rect(x, 1506, 18, 22, '#e6af32'); rect(x + 18, 1506, 18, 22, '#3c322d'); } // the hazard pad the Rover parks on
+}
+
 export async function loadAtlas(onProgress = () => {}) {
   const sheets = {};
   const ids = Object.keys(FILES);
@@ -84,6 +108,7 @@ export async function loadAtlas(onProgress = () => {}) {
     }
     onProgress(++done / ids.length, id);
   }));
+  if (sheets.finished) patchBakedRover(sheets.finished);
   const missing = ids.filter((id) => !sheets[id]);
   if (missing.length) console.warn('missing art, using placeholders:', missing.join(', '));
 
@@ -202,9 +227,27 @@ export async function loadAtlas(onProgress = () => {}) {
       ctx.save();
       ctx.globalAlpha = alpha;
       const cx = x;
-      const dy = anchor === 'center' ? y - dh / 2 : y - dh; // feet (frame bottom) on the baseline
+      const dy = anchor === 'center' ? y - dh / 2 : anchor === 'top' ? y : y - dh; // feet (frame bottom) on the baseline; 'top' hangs the frame below y
       if (flip) { ctx.translate(cx, 0); ctx.scale(-1, 1); ctx.translate(-cx, 0); }
       ctx.drawImage(src, own.x, own.y, own.w, own.h, cx - dw / 2, dy, dw, dh);
+      ctx.restore();
+    },
+
+    /**
+     * Draw only part of one sprite frame. `region` is a rectangle inside the frame's own visible box (source
+     * pixels from its top-left), `k` is world units per source pixel, and the bottom centre of the region
+     * stands at (x, y). Used to cut a prop out of a sprite (the sleeper without the sprite's own bed).
+     */
+    spriteRegion(ctx, id, index, region, x, y, { k = 1, flip = false, sheet = null, alpha = 1 } = {}) {
+      const src = sheet ?? sheets[id];
+      if (!src) return;
+      const own = bbox(id, index);
+      const dw = region.w * k;
+      const dh = region.h * k;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      if (flip) { ctx.translate(x, 0); ctx.scale(-1, 1); ctx.translate(-x, 0); }
+      ctx.drawImage(src, own.x + region.x, own.y + region.y, region.w, region.h, x - dw / 2, y - dh, dw, dh);
       ctx.restore();
     },
   };

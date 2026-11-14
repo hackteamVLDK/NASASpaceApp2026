@@ -1,12 +1,21 @@
 # git_status_Vlad
 
 ## DOING NOW
-- Done: content/data/strings.en.json (583 line IDs) from SCENARIO.md, PR #5 merged.
-- Next (not started): content/game-data (dilemmas, events, expeditions, roles, modules, logbook JSON),
-  then content/tools/balance-sim.mjs.
+- 2026-11-14: soundManager.js + test replaced with the new engine (marimba/space-ambient); same API, director and hooks unchanged.
+- Done: audio engine + director in src/audio (PR #6 merged). Hooks for the game UI wait in PR #7 (Pavlo)
+  and PR #8 (Mykhailo, src/flow/intro.js one line). Hook list: content/handoff/AUDIO_HOOKS.md.
+- Now: content/game-data (dilemmas, events, expeditions, roles, modules, logbook as JSON in content/data/),
+  then content/tools/balance-sim.mjs (20-Sol balance check).
 - content/space-apps-submission: parked until the end of the hackathon.
 
+## FOR PAVLO (UI / campaign)
+- PR #7 wires your UI to src/audio/audioDirector.js: ui/audio.js becomes an adapter (old play() calls
+  still work), main.js calls director.campaignEvents / flowCue / tick, HUD mute button. Please review and merge.
+- Missing UI for audio: Music/SFX sliders (settings/pause screen) and co-op role select -> see AUDIO_HOOKS.md.
+
 ## FOR MYKHAILO (sim / flow / assets)
+- AUDIO: PR #8 adds `char` to type-blip cues in src/flow/intro.js (one line). Please also add
+  "src/audio/*.test.mjs" to the npm test globs in package.json.
 - STRINGS: import content/data/strings.en.json ({ "line.id": "English" }) instead of hard-coding text.
   Regenerate with `node content/tools/extract-strings.mjs`; check with `node --test content/tools/*.test.mjs`.
   Derived-ID rules are in SCENARIO.md ("How to use this file"). Game data JSON will follow in content/data/.
@@ -21,6 +30,27 @@
   EVA art: crew.eva unchanged (gold visor); crew.heads is indoor-only.
 - Readability pass changed ASTRA line texts (not IDs/numbers). tests/flow.test.mjs compares texts with SCENARIO.md.
 - "(fiction)" in Line cells is a writers' note: please strip it in the strings module.
+
+## NOTE FOR PAVLO (2026-11-14, PR #12)
+- PR #12 fixes ERRORS A13 (landing flames hang below the nozzles: atlas.sprite anchor 'top') and A14 (thin cyan
+  scroll bars) in your files (src/render/atlas.js, campaign-world.js, styles/game.css, docs/ERRORS.md). Please review and merge; I won't.
+
+## NOTE FOR PAVLO (2026-11-14)
+- A16 decided (ERRORS.md, SCENARIO 4.1): Solar Wipe has no tapping/zapping any more. Please change
+  src/ui/minigames.js startSolarWipe: swipe only; sparks on clumps are a hint; a clump needs 1-2 extra swipes
+  and plays staticZap when it comes off; Engineer wiper 2x wider, Pilot clumps outlined; drop the tap hand and
+  the hint 'Tap the sparkly clumps...' in src/main.js. A19: won't do.
+- I appended the second player report to docs/ERRORS.md (rows A13-A25 and a duplicates note after A12).
+  No existing row was changed, so your unpushed edits should merge cleanly.
+
+## NOTE FOR MYKHAILO (2026-11-14, two test failures on main)
+- PR #10 (light time) also switches npm test to plain `node --test` (the ** glob needs Node 21+).
+  Please review it; I won't merge it.
+- tests/campaign.test.mjs:266 "+2 Spare Parts per win": expected 64, got 62. Yours.
+- tests/campaign-run.test.mjs:23 fails on `radio.expice.00`. The game never shows radio.expice.*:
+  the Ice Run picks from the radio.run.* pool (radioPool in src/campaign/expeditions.js, SCENARIO 5.3),
+  and those strings exist. The test skips `run` but not `ice`; skipping every expedition with a
+  radioPool fixes it. No SCENARIO lines needed.
 
 ## NOTE FOR MYKHAILO
 - tests/flow.test.mjs (3 failures) checks the old pre-PR#1 scenario. Please update it to the new

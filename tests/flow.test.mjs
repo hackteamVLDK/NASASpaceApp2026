@@ -91,6 +91,10 @@ test('camera, lander and shake follow the timeline', () => {
   // a strip of surface stays visible above the base, and the whole base fits (SCENARIO framing rule)
   const halfView = 1080 / GAMEPLAY_VIEW.zoom / 2;
   assert.ok(GAMEPLAY_VIEW.centerY - halfView <= 900 && GAMEPLAY_VIEW.centerY + halfView >= LAYOUT.firstFloorY + LAYOUT.floors * LAYOUT.floorHeight);
+  // the surface strip (SCENARIO: about 15% of the screen) must be visible BELOW the interface's top bar (about 98 px), not hidden under it
+  const groundOnScreen = (LAYOUT.groundY - (GAMEPLAY_VIEW.centerY - halfView)) * GAMEPLAY_VIEW.zoom;
+  assert.ok(groundOnScreen - 98 >= 120, `only ${Math.round(groundOnScreen - 98)} px of surface are visible under the top bar`);
+  assert.equal(GAMEPLAY_VIEW.surfaceStripTopY, Math.round(GAMEPLAY_VIEW.centerY - halfView));
 
   assert.equal(landerAt(5).visible, false);
   near(landerAt(19).y, -150);

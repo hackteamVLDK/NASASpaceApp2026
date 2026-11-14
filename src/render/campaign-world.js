@@ -1,62 +1,44 @@
 /**
  * Draws the cutaway of Ares-1 from CAMPAIGN state (browser only). Reads state, never changes it.
- * World 1920 x 3200 units (SCENARIO section 1); the camera is { cy, zoom } with world point
- * (960, cy) at the screen centre. Room positions come from LAYOUT in src/campaign/data.js.
+ * The camera is { cx, cy, zoom }: world point (cx, cy) is at the screen centre. Room positions come from
+ * LAYOUT (src/campaign/data.js) through geometry.js; bodies move by movers.js.
+ *
+ * Two clocks: `nowMs` is the wall clock (interface pulses: selection outline, warning icons, the tutorial
+ * marker). `worldMs` only runs while the game runs, so when the game is paused or a card is open the
+ * characters, drones, Rover and weather freeze with the simulation.
  */
 import { LAYOUT, MODULES } from '../campaign/data.js';
-import { clockAt, isDay } from '../campaign/util.js';
+import { clockAt, isDay, online } from '../campaign/util.js';
 import { ICON } from './atlas.js';
-import { buildSoil, SCREEN, SURFACE, CREW_COLORS, DRONE_BUMPERS } from './world.js';
+import { buildSoil, SCREEN, CREW_COLORS, DRONE_BUMPERS, SOIL } from './world.js';
+import { SURFACE, PERSON_H, DRONE_H, SHAFT_X, GROUND_Y, roomRect, anchor, feetY, bedroomSpots, garageSpots, baseBottom, rightWingWidth } from './geometry.js';
+import { onSurface, createMover, setGoal, advance, place as placeAt, arrived, roverPose, ROVER } from './movers.js';
 
-export { SCREEN, buildSoil };
+export { SCREEN, buildSoil, roomRect, anchor };
 
-/** Frame of each right-wing room in the shared sheets module.unfinished / module.finished. */
+/** Frame of each unfinished room in the shared sheets module.unfinished / module.finished. */
 const FRAME = { workshop: 0, lab: 1, battery: 2, garage: 3 };
 const LEFT_PIC = { bedroom: 'bedroom', kitchen: 'dining', lifesupport: 'lifesupport' };
-const SOIL_X = { x0: -800, x1: 2720 };
+const SOIL_X = { x0: SOIL.x0, x1: SOIL.x1 };
+const NICK = { 'drone-01': 'Pip', 'drone-02': 'Bumble', 'drone-03': 'Zip' };
+const DIG_MS = 1800; // a drone shaking the sand off after its kit was used
+/** The part of the sleeping sprites (crew.indoor 14, 15) that is the person, pillow and blanket: the bed is cut away. */
+const SLEEPER = { x: 24, y: 0, w: 176, h: 100 };
+const ROOMS_WITH_CONSOLE = ['workshop', 'lab', 'garage', 'battery', 'greenhouse', 'recreation'];
 
-/** Rectangle of a room in world units. */
-export function roomRect(id) {
-  const r = LAYOUT.rooms[id];
-  return { x: r.wing === 'left' ? LAYOUT.leftX : LAYOUT.rightX, y: LAYOUT.firstFloorY + (r.floor - 1) * LAYOUT.floorHeight, w: LAYOUT.wingWidth, h: LAYOUT.floorHeight };
-}
-
-/** Where the Commander or a drone stands (feet) for a place. */
-export function anchor(place, slot = 0) {
-  if (place === 'outside') return { x: 330 + slot * 90, y: LAYOUT.groundY + 8 };
-  if (place === 'away') return null;
-  if (place === 'shaft') return { x: 960, y: LAYOUT.firstFloorY + 100 };
-  const r = LAYOUT.rooms[place];
-  if (!r) return { x: 960, y: LAYOUT.firstFloorY + 200 };
-  const rect = roomRect(place);
-  return { x: rect.x + rect.w / 2 + (slot - 1) * 150, y: rect.y + rect.h - 16 };
-}
-
-/** Smooths the Commander's walk between places (screen-side animation only). */
-export function createWalker() {
-  return { pos: null, to: null, moving: false };
-}
-function walk(w, target, dtMs) {
-  if (!target) { w.pos = null; w.moving = false; return w; }
-  if (!w.pos) { w.pos = { ...target }; w.moving = false; return w; }
-  const dx = target.x - w.pos.x, dy = target.y - w.pos.y;
-  const dist = Math.hypot(dx, dy);
-  const speed = 520 * (dtMs / 1000);
-  if (dist <= speed) { w.pos = { ...target }; w.moving = false; } else { w.pos = { x: w.pos.x + (dx / dist) * speed, y: w.pos.y + (dy / dist) * speed }; w.moving = true; w.faceLeft = dx < 0; }
-  return w;
-}
-
-const dronePlace = (s, d) => {
-  if (d.task?.module) return d.task.module;
-  return 'garage';
-};
+/** The Commander's body (see movers.js): it walks the base by the shaft. */
+export const createWalker = createMover;
 
 /**
- * Draw one frame. S: { s (campaign state), cy, zoom, shake, nowMs, soil, cut, dimExcept, marker, highlight, hover, walker, dtMs }
+ * Draw one frame. S: { s (campaign state), cx, cy, zoom, shake, nowMs, worldMs, dtMs (world time that passed),
+ * soil, cut, dimExcept, marker, highlight, hover, walker, droneMovers, rover, hazards, radiation }
  * Returns hit boxes in world units: [{ id, x, y, w, h }].
  */
 export function drawCampaign(ctx, atlas, S) {
   const { s, cy, zoom, nowMs, cut } = S;
+  const cx = S.cx ?? 960;
+  const wm = S.worldMs ?? nowMs; // the world clock
+  const dt = S.dtMs ?? 0; // world time that passed this frame; 0 while the game is stopped
   const hits = [];
   ctx.save();
   ctx.imageSmoothingEnabled = false;
@@ -64,7 +46,7 @@ export function drawCampaign(ctx, atlas, S) {
   ctx.fillRect(0, 0, SCREEN.w, SCREEN.h);
   ctx.translate(SCREEN.w / 2 + (S.shake?.x ?? 0), SCREEN.h / 2 + (S.shake?.y ?? 0));
   ctx.scale(zoom, zoom);
-  ctx.translate(-960, -cy);
+  ctx.translate(-cx, -cy);
 
   const clock = clockAt(s.minute);
   const day = isDay(clock.hourFloat);
@@ -75,26 +57,33 @@ export function drawCampaign(ctx, atlas, S) {
   // ---- sky, soil
   atlas.cell(ctx, 'sky', 0, SOIL_X.x0, -250, SOIL_X.x1 - SOIL_X.x0, LAYOUT.groundY + 270);
   ctx.drawImage(S.soil, SOIL_X.x0, LAYOUT.groundY - 40, SOIL_X.x1 - SOIL_X.x0, S.soil.height / 0.5);
+  if (dark > 0.25 && !s.storm) { // a few twinkling stars (the night overlay below dims them to match)
+    ctx.fillStyle = '#fff';
+    for (let i = 0; i < 70; i++) { ctx.globalAlpha = 0.55 + 0.45 * Math.abs(Math.sin(wm / 650 + i * 1.7)); ctx.fillRect(-1100 + ((i * 977) % 4400), 735 + ((i * 619) % 125), 10, 10); }
+    ctx.globalAlpha = 1;
+  }
 
   // ---- shaft down to the lowest floor
-  const bottom = LAYOUT.firstFloorY + LAYOUT.floors * LAYOUT.floorHeight;
-  for (let y = LAYOUT.groundY - 4; y < bottom; y += LAYOUT.floorHeight) atlas.cell(ctx, 'shaft', y === LAYOUT.groundY - 4 ? 1 : 0, LAYOUT.shaftX, y, LAYOUT.shaftWidth, Math.min(LAYOUT.floorHeight, bottom - y));
+  for (let y = LAYOUT.groundY - 4; y < baseBottom; y += LAYOUT.floorHeight) atlas.cell(ctx, 'shaft', y === LAYOUT.groundY - 4 ? 1 : 0, LAYOUT.shaftX, y, LAYOUT.shaftWidth, Math.min(LAYOUT.floorHeight, baseBottom - y));
 
   // ---- surface
   const dusty = s.storm || s.tasks.some((t) => t.game === 'solar_wipe') || s.mult.solar < 0.95 || !s.flags.panelsCleaned;
   atlas.sprite(ctx, 'solar', dusty ? 0 : 2, SURFACE.solar.x, ground, { w: SURFACE.solar.w });
   atlas.sprite(ctx, 'antenna', s.flags.antennaFixed || s.modules.lab.status === 'online' ? 1 : 0, SURFACE.antenna.x, ground, { h: SURFACE.antenna.h });
-  const atAirlock = s.where === 'outside' || (s.away && s.away.start + 30 > s.minute);
-  atlas.sprite(ctx, 'airlock', atAirlock || cut?.astronaut?.visible ? 1 : 0, SURFACE.airlock.x, ground, { w: SURFACE.airlock.w });
-  if (!s.away && (!cut || cut.landed)) atlas.sprite(ctx, 'lander', 1, SURFACE.lander.x, ground, { w: SURFACE.lander.w });
-  if (cut?.showMound) SURFACE.mound.forEach((m) => atlas.sprite(ctx, 'mound', 0, m.x, ground, { w: m.w, flip: m.flip }));
+  // the hatch of the dome is open while someone stands at it (or the cutscene says so)
+  const droneMovers = S.droneMovers ?? (S.droneMovers = {});
+  const nearHatch = (p) => p && onSurface(p) && Math.abs(p.x - SHAFT_X) < 170;
+  const hatchOpen = cut ? Boolean(cut.airlockOpen) : nearHatch(S.walker?.pos) || Object.values(droneMovers).some((m) => nearHatch(m.pos));
+  atlas.sprite(ctx, 'airlock', hatchOpen ? 1 : 0, SURFACE.airlock.x, ground, { w: SURFACE.airlock.w });
+  if (!cut || cut.landed) atlas.sprite(ctx, 'lander', 1, SURFACE.lander.x, ground, { w: SURFACE.lander.w });
+  if (cut?.showMound) SURFACE.mound.forEach((m) => atlas.sprite(ctx, 'mound', 0, m.x, ground, { w: m.w, flip: m.flip })); // the cutscene only: afterwards the drones wait in the Garage
 
   // ---- the lander in flight (cutscene)
   if (cut?.lander?.visible && !cut.lander.landed) {
     const L = cut.lander;
     atlas.sprite(ctx, 'lander', 0, SURFACE.lander.x, L.y, { w: SURFACE.lander.w - 20 });
     if (L.parachute === 'attached') atlas.sprite(ctx, 'parachute', 0, SURFACE.lander.x, L.y - 150, { w: 340 });
-    if (L.thrusters) for (let i = 0; i < 4; i++) atlas.sprite(ctx, 'parachute', 2 + (Math.floor(nowMs / 90) % 2), SURFACE.lander.x - 78 + i * 52, L.y + 4, { h: 110 });
+    if (L.thrusters) for (let i = 0; i < 4; i++) atlas.sprite(ctx, 'parachute', 2 + (Math.floor(wm / 90) % 2), SURFACE.lander.x - 78 + i * 52, L.y - 4, { h: 110, anchor: 'top' }); // flames hang below the nozzles (A13)
   }
   if (cut?.lander?.parachute === 'drifting-left') {
     const d = cut.parachuteDrift ?? 0;
@@ -108,31 +97,35 @@ export function drawCampaign(ctx, atlas, S) {
 
   // ---- weather and night over the surface
   const sky = { x: SOIL_X.x0, y: -250, w: SOIL_X.x1 - SOIL_X.x0, h: LAYOUT.groundY + 250 - 4 };
-  if (s.storm) { ctx.fillStyle = 'rgba(200,110,40,0.38)'; ctx.fillRect(sky.x, sky.y, sky.w, sky.h); }
+  if (s.storm) {
+    ctx.fillStyle = 'rgba(200,110,40,0.38)'; ctx.fillRect(sky.x, sky.y, sky.w, sky.h);
+    ctx.fillStyle = 'rgba(235,165,95,0.42)';
+    for (let i = 0; i < 70; i++) ctx.fillRect(-1250 + ((i * 313 + wm * (0.55 + (i % 5) * 0.18)) % 4500), 540 + ((i * 131) % 500), 70 + (i % 4) * 40, 5);
+  }
   if (dusk > 0 && !s.storm) { ctx.fillStyle = `rgba(80,110,200,${dusk * 0.22})`; ctx.fillRect(sky.x, sky.y, sky.w, sky.h); } // the blue Martian sunset
   if (dark > 0) { ctx.fillStyle = `rgba(6,10,40,${dark * 0.62})`; ctx.fillRect(sky.x, sky.y, sky.w, sky.h); }
   if (s.flags.flare) { ctx.fillStyle = 'rgba(140,255,120,0.18)'; ctx.fillRect(sky.x, sky.y, sky.w, sky.h); }
 
-  hits.push({ id: 'surface', x: 130, y: LAYOUT.groundY - 330, w: 1700, h: 330 });
+  hits.push({ id: 'surface', x: 130, y: LAYOUT.groundY - 330, w: 2500, h: 330 });
   // ---- left wing (always built)
   for (const [id, pic] of Object.entries(LEFT_PIC)) {
     const r = roomRect(id);
     atlas.room(ctx, pic, r.x, r.y, r.w, r.h);
     hits.push({ id: `module:${id}`, ...r });
   }
-  // ---- right wing: frames that fill in as they are built
+  // ---- the buildable rooms: right wing (two columns) and the surface Garage, frames that fill in as they are built
   for (const id of ['workshop', 'lab', 'battery', 'garage', 'greenhouse', 'recreation']) {
     const r = roomRect(id);
     const m = s.modules[id];
-    const online = m.status === 'online';
-    const progress = online ? 1 : m.status === 'building' ? m.progress : 0;
+    const built = m.status === 'online';
+    const progress = built ? 1 : m.status === 'building' ? m.progress : 0;
     if (id in FRAME) {
       atlas.cell(ctx, 'unfinished', FRAME[id], r.x, r.y, r.w, r.h);
-      if (progress > 0) { ctx.globalAlpha = online ? 1 : 0.15 + progress * 0.8; atlas.cell(ctx, 'finished', FRAME[id], r.x, r.y, r.w, r.h); ctx.globalAlpha = 1; }
+      if (progress > 0) { ctx.globalAlpha = built ? 1 : 0.15 + progress * 0.8; atlas.cell(ctx, 'finished', FRAME[id], r.x, r.y, r.w, r.h); ctx.globalAlpha = 1; }
     } else {
       // Greenhouse and Recreation have their own two-frame sheets (unfinished | finished)
       atlas.cell(ctx, id, 0, r.x, r.y, r.w, r.h);
-      if (progress > 0) { ctx.globalAlpha = online ? 1 : 0.15 + progress * 0.8; atlas.cell(ctx, id, 1, r.x, r.y, r.w, r.h); ctx.globalAlpha = 1; }
+      if (progress > 0) { ctx.globalAlpha = built ? 1 : 0.15 + progress * 0.8; atlas.cell(ctx, id, 1, r.x, r.y, r.w, r.h); ctx.globalAlpha = 1; }
     }
     if (m.status === 'building') {
       ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(r.x + 20, r.y + r.h - 40, r.w - 40, 16);
@@ -146,62 +139,102 @@ export function drawCampaign(ctx, atlas, S) {
     hits.push({ id: `module:${id}`, ...r });
   }
   // power shortage: rooms go dark
-  if (s.res.power <= 0) { ctx.fillStyle = 'rgba(0,0,10,0.45)'; ctx.fillRect(LAYOUT.leftX, LAYOUT.firstFloorY, LAYOUT.rightX + LAYOUT.wingWidth - LAYOUT.leftX, LAYOUT.floors * LAYOUT.floorHeight); }
+  if (s.res.power <= 0) {
+    ctx.fillStyle = 'rgba(0,0,10,0.45)';
+    ctx.fillRect(LAYOUT.leftX, LAYOUT.firstFloorY, LAYOUT.rightX + rightWingWidth - LAYOUT.leftX, LAYOUT.floors * LAYOUT.floorHeight);
+    const g = roomRect('garage'); ctx.fillRect(g.x, g.y, g.w, g.h);
+  }
   // the Regolith Roof Layer: a band of soil over the right wing
-  if (s.modules.roof.status === 'online') { ctx.fillStyle = 'rgba(120,60,40,0.55)'; ctx.fillRect(LAYOUT.rightX, LAYOUT.firstFloorY - 36, LAYOUT.wingWidth, 36); }
+  if (s.modules.roof.status === 'online') { ctx.fillStyle = 'rgba(120,60,40,0.55)'; ctx.fillRect(LAYOUT.rightX, LAYOUT.firstFloorY - 36, rightWingWidth, 36); }
 
-  // ---- drones: idle ones rest in the Garage frame, builders stand in the room they build
-  const dh = 118;
+  // ---- the Rover: parked in the Garage once it is built, rolls out of the right edge on a trip and back in
+  const pace = S.pace ?? 1;
+  const garage = garageSpots();
+  const rp = roverPose(S.rover?.phase ?? (s.away ? 'gone' : 'parked'), S.rover?.k ?? 0);
+  if (online(s, 'garage') && rp.visible && !cut) {
+    atlas.sprite(ctx, 'rover', rp.driving ? 1 + (Math.floor(wm / 130) % 2) : 0, rp.x, GROUND_Y, { w: ROVER.width });
+    hits.push({ id: 'module:garage', x: rp.x - ROVER.width / 2, y: GROUND_Y - 90, w: ROVER.width, h: 90 });
+  }
+
+  // ---- drones: each one rolls (or hovers up the shaft) to where it works and rests in the Garage when idle
   const union = atlas.unionBox('drone', [0, 6, 12, 18]);
-  const slots = {};
-  S.s.drones.forEach((d) => {
-    const place = dronePlace(s, d);
-    slots[place] = (slots[place] ?? -1) + 1;
-    const a = anchor(place, place === 'garage' ? slots[place] + 0.5 : 1);
+  S.s.drones.forEach((d, i) => {
+    const mv = (droneMovers[d.id] ??= createMover());
+    if (cut?.buried && i > 0 && d.status !== 'awake') return; // until 31.0 s Drones #02 and #03 lie in the mounds; then they are in the Garage
+    if (mv.status === undefined) mv.status = d.status;
+    if (mv.status !== d.status) { // a kit just woke it: it shakes the sand off where it lay
+      mv.status = d.status;
+      if (d.status === 'awake' && i > 0) { placeAt(mv, garage.rest(i)); mv.digUntil = wm + DIG_MS; }
+    }
+    const digging = mv.digUntil > wm;
+    const siteId = d.task?.module;
+    const goal = d.status !== 'awake' ? garage.rest(i) : siteId ? { ...anchor(siteId, 0.35) } : garage.rest(i);
+    if (!digging) { setGoal(mv, goal); advance(mv, dt, { walk: 430, climb: 300, pace }); }
+    const a = mv.pos ?? goal;
+    const working = Boolean(siteId) && arrived(mv);
     let frame;
-    if (d.status !== 'awake') frame = Math.floor(nowMs / 500) % 2 === 0 ? 0 : 1;
-    else if (!day) frame = 18 + (Math.floor(nowMs / 800) % 2);
-    else if (d.task) frame = 12 + (Math.floor(nowMs / 200) % 3);
-    else frame = 6 + (Math.floor(nowMs / 500) % 2);
-    atlas.sprite(ctx, 'drone', frame, a.x, a.y, { h: dh, box: union });
-    ctx.fillStyle = DRONE_BUMPERS[d.id]; ctx.fillRect(a.x - 22, a.y - 16, 44, 7);
-    ctx.fillStyle = '#fff'; ctx.font = 'bold 24px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText({ 'drone-01': 'Pip', 'drone-02': 'Bumble', 'drone-03': 'Zip' }[d.id], a.x, a.y - dh - 8);
-    hits.push({ id: `drone:${d.id}`, x: a.x - 70, y: a.y - dh - 10, w: 140, h: dh + 20 });
+    if (d.status !== 'awake') frame = Math.floor(wm / 500) % 2 === 0 ? 0 : 1;
+    else if (digging) frame = 20 + (Math.floor(wm / 220) % 4);
+    else if (mv.climbing) frame = 6 + (Math.floor(wm / 250) % 2); // hovering up or down the shaft
+    else if (mv.moving) frame = siteId ? 16 + (Math.floor(wm / 220) % 2) : 8 + (Math.floor(wm / 110) % 4); // carrying a girder to the site, or just rolling
+    else if (working) frame = 12 + (Math.floor(wm / 180) % 4); // welding, by day and by night: drones never sleep
+    else if (!day) frame = 18 + (Math.floor(wm / 800) % 2); // idle at night: powered down for the dark
+    else frame = 6 + (Math.floor(wm / 500) % 2);
+    atlas.sprite(ctx, 'drone', frame, a.x, a.y, { h: DRONE_H, box: union, flip: mv.moving && !mv.climbing && mv.faceLeft });
+    ctx.fillStyle = DRONE_BUMPERS[d.id]; ctx.fillRect(a.x - 13, a.y - 9, 26, 4);
+    ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center'; ctx.lineJoin = 'round'; ctx.lineWidth = 6; ctx.strokeStyle = '#1a0c10';
+    ctx.strokeText(NICK[d.id], a.x, a.y - DRONE_H - 6); ctx.fillStyle = '#fff'; ctx.fillText(NICK[d.id], a.x, a.y - DRONE_H - 6);
+    hits.push({ id: `drone:${d.id}`, x: a.x - 50, y: a.y - DRONE_H - 24, w: 100, h: DRONE_H + 34 });
   });
 
-  // ---- the Commander
+  // ---- the Commander: walks the base by the shaft, wears the suit on the surface, boards the Rover for a trip
   if (!cut) {
-    const target = anchor(s.where, 1);
-    const w = walk(S.walker, target, S.dtMs ?? 16);
+    const w = S.walker;
+    const rv = S.rover?.phase;
+    const boarding = rv === 'boarding';
+    const hidden = !boarding && (s.where === 'away' || rv === 'out' || rv === 'in' || rv === 'gone'); // inside the Rover, or out on the trip
+    const target = boarding ? garage.board : anchor(s.where, 1);
+    if (hidden) setGoal(w, null);
+    else { setGoal(w, target); advance(w, dt, { walk: 470, climb: 320, pace }); }
     if (w.pos) {
-      const eva = s.where === 'outside';
+      const eva = onSurface(w.pos);
       const sheet = eva ? 'crewEva' : 'crewIndoor';
-      const tick = Math.floor(nowMs / 180);
-      let frame = Math.floor(nowMs / 700) % 2;
-      if (w.moving) frame = 2 + (tick % 6);
-      else if (!eva) {
-        if (s.medRest || (s.where === 'bedroom' && !day)) frame = 14 + (Math.floor(nowMs / 900) % 2);
-        else if (s.where === 'kitchen' && [6, 12, 18].includes(clock.hour)) frame = 12 + (Math.floor(nowMs / 450) % 2);
-        else if (['workshop', 'lab', 'garage', 'battery', 'greenhouse', 'recreation'].includes(s.where)) frame = 8 + (tick % 4);
-      } else frame = 8 + (tick % 4);
-      const tinted = atlas.tinted(sheet, CREW_COLORS.cmdr);
+      const tick = Math.floor(wm / 160);
+      const sleeping = !eva && !w.moving && (s.medRest || (s.where === 'bedroom' && !day));
       const box = atlas.unionBox(sheet, [0, 1, 2, 3, 4, 5, 6, 7]);
-      // the generated sheet draws the sleeping figure smaller than the standing one: bring it to the same body size
-      const norm = !eva && (frame === 14 || frame === 15) ? 1.2 : 1;
-      atlas.sprite(ctx, sheet, frame, w.pos.x, w.pos.y, { h: 185 * norm, box, flip: Boolean(w.faceLeft), sheet: tinted });
-      hits.push({ id: 'crew:cmdr', x: w.pos.x - 50, y: w.pos.y - 190, w: 100, h: 190 });
+      const tinted = atlas.tinted(sheet, CREW_COLORS.cmdr);
+      if (sleeping) {
+        // he lies in the lower-left bunk of the room: only the person, pillow and blanket are drawn, never a second bed
+        const bed = bedroomSpots().lie;
+        const k = (PERSON_H * 1.2) / box.h;
+        atlas.spriteRegion(ctx, sheet, 14 + (Math.floor(wm / 900) % 2), SLEEPER, bed.x, bed.y, { k, sheet: tinted });
+        hits.push({ id: 'crew:cmdr', x: bed.x - 60, y: bed.y - 70, w: 120, h: 80 });
+      } else {
+        let frame = Math.floor(wm / 700) % 2; // standing about
+        let still = false; // frames drawn facing right with their own furniture (console, table)
+        if (w.climbing) frame = eva ? 16 + (tick % 2) : 18 + (tick % 4);
+        else if (w.moving) frame = 2 + (tick % 6);
+        else if (eva) frame = s.where === 'outside' ? 8 + (tick % 4) : frame;
+        else if (s.where === 'kitchen' && [6, 12, 18].includes(clock.hour)) { frame = 12 + (Math.floor(wm / 450) % 2); still = true; }
+        else if (ROOMS_WITH_CONSOLE.includes(s.where)) { frame = 8 + (tick % 4); still = true; }
+        atlas.sprite(ctx, sheet, frame, w.pos.x, w.pos.y, { h: PERSON_H, box, flip: !still && Boolean(w.faceLeft), sheet: tinted });
+        hits.push({ id: 'crew:cmdr', x: w.pos.x - 45, y: w.pos.y - PERSON_H - 25, w: 90, h: PERSON_H + 35 });
+      }
     }
-  } else if (cut.astronaut?.visible) {
-    const p = anchor('bedroom', 1);
-    atlas.sprite(ctx, 'crewIndoor', cut.astronaut.helmetOn ? 22 : 23, p.x, p.y, { h: 185, box: atlas.unionBox('crewIndoor', [0, 1, 2, 3, 4, 5, 6, 7]), sheet: atlas.tinted('crewIndoor', CREW_COLORS.cmdr) });
+  } else if (cut.astronaut?.pose) {
+    // the entry scene: the astronaut walks to the dome, goes down the shaft and into the Bedroom (src/flow/intro.js)
+    const A = cut.astronaut.pose;
+    if (A.visible) {
+      const sheet = A.sheet;
+      atlas.sprite(ctx, sheet, A.frame, A.x, A.y, { h: PERSON_H, box: atlas.unionBox(sheet, [0, 1, 2, 3, 4, 5, 6, 7]), flip: A.flip, sheet: atlas.tinted(sheet, CREW_COLORS.cmdr) });
+    }
   }
 
   // ---- hazard markers over the places that are in trouble
   if (S.hazards?.length) {
     const pulse = 0.6 + Math.sin(nowMs / 220) * 0.4;
     S.hazards.filter((hz) => hz.place && hz.severity !== 'info').forEach((hz, i) => {
-      const at = hz.place === 'surface' ? { x: 960 + 480 + i * 70, y: LAYOUT.groundY - 260 } : (() => { const r = roomRect(hz.place); return r ? { x: r.x + r.w - 46 - i * 8, y: r.y + 46 } : null; })();
+      const at = hz.place === 'surface' ? { x: SURFACE.antenna.x - 30 + i * 70, y: LAYOUT.groundY - 260 } : (() => { const r = LAYOUT.rooms[hz.place] ? roomRect(hz.place) : null; return r ? { x: r.x + r.w - 46 - i * 8, y: r.y + 46 } : null; })();
       if (!at) return;
       ctx.globalAlpha = pulse;
       atlas.cell(ctx, 'icons', hz.severity === 'alarm' ? ICON.alert : ICON.warning, at.x - 36, at.y - 36, 72, 72);
@@ -210,9 +243,9 @@ export function drawCampaign(ctx, atlas, S) {
   }
   // ---- radiation view: how much radiation reaches each place (docs/GAMEPLAY_PLAN.md 3.7)
   if (S.radiation) {
-    const place = (id, r) => { const f = S.radiation[id]; if (f === undefined) return; ctx.fillStyle = `rgba(${Math.round(80 + 175 * f)},${Math.round(220 - 170 * f)},60,${0.22 + 0.45 * f})`; ctx.fillRect(r.x, r.y, r.w, r.h); ctx.fillStyle = '#fff'; ctx.font = 'bold 40px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(`${Math.round(f * 100)}%`, r.x + r.w / 2, r.y + r.h / 2 + 14); };
-    for (const id of Object.keys(LAYOUT.rooms)) place(id, roomRect(id));
-    place('surface', { x: 130, y: LAYOUT.groundY - 330, w: 1700, h: 330 });
+    const shade = (id, r) => { const f = S.radiation[id]; if (f === undefined) return; ctx.fillStyle = `rgba(${Math.round(80 + 175 * f)},${Math.round(220 - 170 * f)},60,${0.22 + 0.45 * f})`; ctx.fillRect(r.x, r.y, r.w, r.h); ctx.fillStyle = '#fff'; ctx.font = 'bold 40px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(`${Math.round(f * 100)}%`, r.x + r.w / 2, r.y + r.h / 2 + 14); };
+    for (const id of Object.keys(LAYOUT.rooms)) shade(id, roomRect(id));
+    shade('surface', { x: 130, y: LAYOUT.groundY - 330, w: 1780, h: 330 }); // the open ground; the Garage building has its own value
   }
 
   // ---- tutorial dimming, highlight and marker
@@ -239,6 +272,6 @@ export function drawCampaign(ctx, atlas, S) {
     if (h && (h.id.startsWith('module:') || h.id.startsWith('drone:') || h.id.startsWith('crew:'))) { ctx.strokeStyle = color; ctx.lineWidth = w; ctx.strokeRect(h.x + 3, h.y + 3, h.w - 6, h.h - 6); }
   }
   ctx.restore();
-  void MODULES;
+  void MODULES; void feetY;
   return hits;
 }

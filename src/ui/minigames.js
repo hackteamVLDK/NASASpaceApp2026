@@ -169,6 +169,7 @@ export function startBatteryStep({ canvas, atlas, title, hint, onDone, onTitle =
 
   const over = (pt, r) => pt.x > r.x && pt.x < r.x + r.w && pt.y > r.y && pt.y < r.y + r.h;
   const down = (e) => {
+    if (done) return; // the step is finished: more taps must not finish it a second time
     const pt = pointer(canvas, e);
     canvas.setPointerCapture(e.pointerId);
     if (!battery.seated && over(pt, battery)) drag = { what: 'battery', dx: pt.x - battery.x, dy: pt.y - battery.y };
@@ -180,7 +181,7 @@ export function startBatteryStep({ canvas, atlas, title, hint, onDone, onTitle =
     if (drag.what === 'battery') { battery.x = pt.x - drag.dx; battery.y = pt.y - drag.dy; } else { plug.x = pt.x - drag.dx; plug.y = pt.y - drag.dy; }
   };
   const up = () => {
-    if (!drag) return;
+    if (!drag || done) return;
     if (drag.what === 'battery') {
       if (Math.hypot(battery.x + battery.w / 2 - (slot.x + slot.w / 2), battery.y + battery.h / 2 - (slot.y + slot.h / 2)) < 110) { battery = { ...battery, x: slot.x + 30, y: slot.y + 15, seated: true }; director.minigame('battery', 'insert'); }
       else battery = { x: 90, y: 400, w: 190, h: 100, seated: false };
