@@ -114,15 +114,16 @@ test('dawn chime when night turns to day; drone work is paced', () => {
 
 test('campaign events map to sounds; urgent alerts are emergencies', () => {
   const sfx = fakeSfx();
-  const d = createAudioDirector({ sfx, now: clock() });
+  const now = clock();
+  const d = createAudioDirector({ sfx, now });
   d.campaignEvents([
     { type: 'built' }, { type: 'drone-awake' }, { type: 'emergency', kind: 'heat' }, { type: 'storm', on: true },
     { type: 'event', id: 'e1' }, { type: 'dilemma', id: 'd2' }, { type: 'chosen' }, { type: 'launched' },
     { type: 'astra', lineId: 'astra.hp.zero_base' }, { type: 'sol' },
   ]);
-  d.decisionShown('e1'); d.decisionShown('d2');
+  now.add(1000); d.decisionShown('e1'); now.add(1000); d.decisionShown('d2');
   assert.deepEqual(sfx.calls, ['moduleComplete', 'droneWake', 'alertEmergency', 'alertWarning',
-    'dilemmaChoice', 'airlockCycle', 'roverDepart', 'medRestActivate', 'alertEmergency', 'alertWarning']);
+    'airlockCycle', 'roverDepart', 'medRestActivate', 'alertEmergency', 'alertWarning']);
 });
 
 test('mini-games: actions map per game, moves are throttled', () => {
@@ -138,4 +139,16 @@ test('mini-games: actions map per game, moves are throttled', () => {
 
 test('musicFlags is safe before the campaign exists', () => {
   assert.deepEqual(musicFlags(null), { victory: false, storm: false, emergency: false, canyon: false, expedition: false, night: false });
+});
+
+test('one-shot sounds reported twice at once play once', () => {
+  const sfx = fakeSfx();
+  const now = clock();
+  const d = createAudioDirector({ sfx, now });
+  d.flowCue({ type: 'sfx', id: 'astra-chime' });
+  d.astraLine('astra.intro.landing', { slideIn: true });
+  d.campaignEvents([{ type: 'built' }, { type: 'built' }]);
+  now.add(1000);
+  d.campaignEvents([{ type: 'built' }]);
+  assert.deepEqual(sfx.calls, ['astraSlideIn', 'moduleComplete', 'moduleComplete']);
 });

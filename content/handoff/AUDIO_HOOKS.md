@@ -59,7 +59,6 @@ audio.toggleMute(); audio.setMusicVolume(v); audio.setSfxVolume(v); audio.settin
 | `drone-awake` | `droneWake` |
 | `emergency` | `alertEmergency` |
 | `storm` (on) | `alertWarning` |
-| `chosen` | `dilemmaChoice` |
 | `launched` | `airlockCycle` + `roverDepart` |
 | `returned` | `airlockCycle` |
 | `radio` | `radioPing` + lore cue |

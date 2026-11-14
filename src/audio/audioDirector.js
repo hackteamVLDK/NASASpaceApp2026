@@ -68,6 +68,13 @@ export const MINIGAME_CUES = Object.freeze({
   antenna: { move: 'uiTabSwitch', lock: 'antennaLock' },
 });
 
+/**
+ * One-shot sounds that can be reported twice for the same moment (e.g. the intro's chime cue and
+ * the panel's first slide-in at touchdown; several rooms finishing in one tick): repeats inside
+ * this window are dropped.
+ */
+export const DEDUPE_MS = Object.freeze({ astraSlideIn: 600, moduleComplete: 400, alertWarning: 400, alertEmergency: 400, droneWake: 400, airlockCycle: 400 });
+
 /** Minimum real time between repeats of continuous sounds (pointer moves, drone work). */
 export const REPEAT_MS = Object.freeze({ move: 160, droneWork: 2500 });
 /** Canyon music after the black box starts decoding: until react2 shows + 8 s, at most 120 s. */
@@ -111,11 +118,17 @@ export function createAudioDirector({ sfx = defaultSfx, now = () => (globalThis.
   let victoryFrom = null;
   let sandboxFrom = null;
   let musicOn = false;
+  const lastOneShot = new Map();
 
   const call = (name, ...args) => {
     if (!SFX_NAMES.includes(name)) return false;
     const f = sfx[name];
     if (typeof f !== 'function') return false;
+    if (DEDUPE_MS[name]) {
+      const t = now();
+      if (t - (lastOneShot.get(name) ?? -Infinity) < DEDUPE_MS[name]) return false;
+      lastOneShot.set(name, t);
+    }
     f.call(sfx, ...args);
     return true;
   };
@@ -199,7 +212,6 @@ export function createAudioDirector({ sfx = defaultSfx, now = () => (globalThis.
           case 'drone-awake': call('droneWake'); break;
           case 'emergency': call('alertEmergency'); break;
           case 'storm': if (e.on) call('alertWarning'); break;
-          case 'chosen': call('dilemmaChoice'); break;
           case 'launched': call('airlockCycle'); call('roverDepart'); break;
           case 'returned': call('airlockCycle'); break;
           case 'radio': director.radio(e.id); break;
@@ -248,6 +260,7 @@ export function createAudioDirector({ sfx = defaultSfx, now = () => (globalThis.
 
     /** Forget timed state (new campaign or a loaded save). */
     reset() {
+      lastOneShot.clear();
       lastFlags = null; wasNight = null; lastMove = new Map(); lastDroneWork = -Infinity;
       canyonFrom = null; canyonUntil = null; victoryFrom = null; sandboxFrom = null;
     },
