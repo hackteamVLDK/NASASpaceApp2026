@@ -61,7 +61,7 @@ export const MINIGAME_CUES = Object.freeze({
   air_filter: { pull: 'uiClick', move: 'brushWipe', lock: 'suitClampSnap' },
   valve_balance: { down: 'waterValveTurn', move: 'waterValveTurn' },
   water_sort: { place: 'suitClampSnap', tap: 'waterValveTurn' },
-  heat_pump: { rotate: 'pipeRotate', down: 'pipeRotate' },
+  heat_pump: { rotate: 'pipeRotate' },
   nutrient_match: { drop: 'nutrientDrop', led: 'uiClick' },
   wheel_vacuum: { move: 'vacuumHum', pebble: 'pebblePop', patch: 'suitClampSnap' },
   suit_seal: { clamp: 'suitClampSnap', badge: 'uiClick', liner: 'suitClampSnap' },
@@ -258,11 +258,17 @@ export function createAudioDirector({ sfx = defaultSfx, now = () => (globalThis.
     setSfxVolume(v) { sfx.setSfxVolume?.(v); },
     get settings() { return { muted: Boolean(sfx.muted), musicVolume: sfx.musicVolume, sfxVolume: sfx.sfxVolume }; },
 
-    /** Forget timed state (new campaign or a loaded save). */
-    reset() {
+    /**
+     * Forget timed state (new campaign or a loaded save). With the loaded state `s`, victory music
+     * is restored when the finale is done but Free-Play has not started; past that the 30 s
+     * fallback is already over. (The black-box canyon window lasts under 2 minutes and is not
+     * restored.)
+     */
+    reset(s = null) {
       lastOneShot.clear();
       lastFlags = null; wasNight = null; lastMove = new Map(); lastDroneWork = -Infinity;
       canyonFrom = null; canyonUntil = null; victoryFrom = null; sandboxFrom = null;
+      if (s?.flags?.finaleDone && clockAt(s.minute ?? 0).sol < 21) victoryFrom = now();
     },
   };
   return director;

@@ -35,6 +35,7 @@ audio.toggleMute(); audio.setMusicVolume(v); audio.setSfxVolume(v); audio.settin
 | Event | Call | Where | Status |
 |---|---|---|---|
 | Start Mission / Continue click | `gesture()` | `src/main.js` boot (via `ui/audio.js` `unlock()`) | PR-Pavlo |
+| Continue a save | `reset(s)` after the save is loaded (restores victory music after the finale) | `src/main.js` boot | PR-Pavlo |
 | Role select click (co-op lobby) | `gesture()` | lobby screen | missing UI |
 | Every frame | `tick({ s, mode })`: music flags, dawn chime, drone work | `src/main.js` `loop()` | PR-Pavlo |
 | Campaign events | `campaignEvents(events)` | `src/main.js` `handleEvents()` | PR-Pavlo |
@@ -122,3 +123,5 @@ pointer is pressed (the scaffold checks this).
 - **Role select:** no co-op lobby exists. Call `gesture()` from its first click.
 - **Crawl characters:** until the Mykhailo PR is merged, crawl blips play without a character. That
   is fine; the character only skips spaces.
+- **Audio tests are not in `npm test`:** its globs don't include `src/audio/*.test.mjs`, and
+  `package.json` is Mykhailo's. Run them with `node --test src/audio/*.test.mjs` until he adds them.
