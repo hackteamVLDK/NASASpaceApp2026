@@ -16,7 +16,7 @@ import {
   MODULES, BUILD_SOLS, UPGRADE_SOLS, DRONE_BUILD_POWER, STORM, RECIPES, UPGRADES, MODULE_LINES, BREAKDOWN_RULES, RULES, STORAGE_REFILL,
 } from './data.js';
 import { clockAt, isNight, online } from './util.js';
-import { storyMinute, onSol, applyChoice, choiceBlock, onModuleStart, onModuleBuilt, onKit, onMini, miniBlock, runTimer, onDroneAwake, onMove, startSoilWash, soilWashBlock } from './story.js';
+import { storyMinute, onSol, applyChoice, choiceBlock, onModuleStart, onModuleBuilt, onKit, onMini, miniBlock, runTimer, onDroneAwake, onMove, startSoilWash, soilWashBlock, MINI_GAMES } from './story.js';
 export { soilWashBlock };
 import { expeditionMinute, startExpedition, radioChoice } from './expeditions.js';
 
@@ -209,7 +209,10 @@ function tick(s, emit) {
     }
     else if (d.task.type === 'chore' && s.minute >= d.task.until) { // D-T17e: a story job (wash the soil, move trays, fix the leak) is done
       emit({ type: 'choreDone', drone: d.id, chore: d.task.id });
+      const { fix, deferred } = d.task;
       d.task = null;
+      // B2: a drone that was sent to fix a system finishes it now, if it still needs fixing (the player may have won the game meanwhile)
+      if (fix && deferred && s.tasks.some((t) => t.game === fix)) { onMini(s, { game: fix, win: true, auto: true }, emit); emit({ type: 'drone-fixed', drone: d.id, game: fix }); }
       nextJob(s, d, emit);
     }
   }
@@ -489,6 +492,22 @@ function nextJob(s, d, emit) {
 
 // ------------------------------------------------------------------ commands
 
+/** The prep games before a Rover trip (SCENARIO 5.1): a drone can do them too. */
+const PREP_GAMES = ['wheel_vacuum', 'suit_seal'];
+
+/**
+ * B2: why a drone cannot offer to fix `game` right now, or null. A drone needs to be awake and free, the game must be
+ * something a drone can do (a system that is down, or the prep before a trip) and nobody may be on it already.
+ */
+export function droneFixBlock(s, game) {
+  if (s.status !== 'running') return 'The mission is over.';
+  if (!MINI_GAMES.includes(game) || !(PREP_GAMES.includes(game) || s.tasks.some((t) => t.game === game))) return 'There is nothing for a drone to fix.';
+  if (s.drones.some((d) => d.task?.fix === game)) return 'A drone is already on it.';
+  if (!s.drones.some((d) => d.status === 'awake')) return 'No drone is awake yet.';
+  if (!s.drones.some((d) => d.status === 'awake' && !d.task)) return 'Every drone is busy right now. Try once more yourself!';
+  return null;
+}
+
 /**
  * Player commands. Returns { ok: true, events } or { ok: false, error }.
  *   build { module }            a free awake drone starts building
@@ -498,6 +517,7 @@ function nextJob(s, d, emit) {
  *   wakeDrone { drone }         the tutorial battery step wakes Drone #01
  *   choose { choice }           answer the pending dilemma or event
  *   miniResult { game, win }    the result of a mini-game
+ *   droneFix { game }           after 3 failed tries a free drone fixes the system (1 Sol) or does the prep (B2)
  *   launch { expedition }       send the Rover out (expeditions.js)
  *   radio { choice }            answer a radio decision
  *   melt {}                     melt one Ice Core into 25 Water in Life Support
@@ -603,6 +623,16 @@ export function command(s, cmd) {
     case 'washSoil': { // B11: Dilemma 3 choice B, started later from the Lab
       const why = startSoilWash(s, emit);
       if (why) return fail(why);
+      break;
+    }
+    case 'droneFix': { // B2 / SCENARIO section 4: after 3 failures in a row a drone offers to fix it (1 Sol of drone time)
+      const why = droneFixBlock(s, cmd.game);
+      if (why) return fail(why);
+      const d = s.drones.find((x) => x.status === 'awake' && !x.task);
+      const deferred = s.tasks.some((t) => t.game === cmd.game); // a system that is down is fixed when the Sol is over; a prep game is needed now, for the trip
+      d.task = { type: 'chore', id: `fix:${cmd.game}`, fix: cmd.game, deferred, module: null, sols: 1, until: s.minute + SOL };
+      if (!deferred) onMini(s, { game: cmd.game, win: true, auto: true }, emit);
+      emit({ type: 'drone-fix', drone: d.id, game: cmd.game, deferred });
       break;
     }
     case 'melt': {

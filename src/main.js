@@ -10,7 +10,7 @@ import { loadAtlas } from './render/atlas.js';
 import { drawCampaign, buildSoil, createWalker, SCREEN } from './render/campaign-world.js';
 import { ROVER, arrived, place as placeBody } from './render/movers.js';
 import { garageSpots, entryGeometry } from './render/geometry.js';
-import { createCampaign, step, command, clockAt } from './campaign/engine.js';
+import { createCampaign, step, command, clockAt, droneFixBlock } from './campaign/engine.js';
 import { prefs, setPref, applyPrefs } from './ui/prefs.js';
 import { restoreSave } from './campaign/save-migrate.js';
 import { SECONDS_PER_SOL, SOL, RECIPES, MODULES } from './campaign/data.js';
@@ -199,6 +199,8 @@ function handleEvents(events) {
       case 'launched': rover.phase = 'boarding'; rover.boardAt = worldMs; break;
       case 'returned': rover.phase = 'in'; rover.t0 = worldMs; ui.showLoot(e); break;
       case 'queued': toast(`${NICK[e.drone] ?? 'The drone'} will do that next.`); break;
+      case 'drone-fix': toast(e.deferred ? `${NICK[e.drone] ?? 'A drone'} is on it. It takes a Sol.` : `${NICK[e.drone] ?? 'A drone'} does the checks for you and is busy for a Sol.`, 3600, 2); break; // B2: the answer to what the player just chose: it is not covered by a standing warning
+      case 'drone-fixed': toast(`${NICK[e.drone] ?? 'A drone'} fixed it!`, 3200); break;
       case 'ordered': break;
       case 'finale': checkAllBadges(); ui.showFinale(); break;
       case 'gameover': onGameOver(); break;
@@ -235,10 +237,17 @@ function openMini(game, { onDone = null } = {}) {
     onHint: (x) => { document.querySelector('.mgHint').textContent = x; },
   };
   const finish = (win) => { send({ type: 'miniResult', game, win }); };
+  // B2: after three failed tries a free drone OFFERS to fix it (1 Sol of its time, SCENARIO section 4); in the tutorial the pass stays free
+  const help = mode === 'play' ? {
+    who: () => { const d = s.drones.find((x) => x.status === 'awake' && !x.task); return d ? NICK[d.id] : null; },
+    block: () => droneFixBlock(s, game),
+    ask: () => send({ type: 'droneFix', game }),
+    done: () => { closeMini(); onDone?.(true); },
+  } : undefined;
   const win = () => { closeMini(); finish(true); onDone?.(true); };
-  if (game === 'solar_wipe') mini = startSolarWipe({ ...common, title: t('ui.mg.solar_wipe.title'), hint: 'Swipe across the panels to wipe the dust. Sparkly sticky spots need a few extra wipes.', onWin: () => { closeMini(); onSolarWin(); onDone?.(true); } });
+  if (game === 'solar_wipe') mini = startSolarWipe({ ...common, help, title: t('ui.mg.solar_wipe.title'), hint: 'Swipe across the panels to wipe the dust. Sparkly sticky spots need a few extra wipes.', onWin: () => { closeMini(); onSolarWin(); onDone?.(true); } });
   else if (game === 'battery') mini = startBatteryStep({ ...common, title: 'Wake up Drone #01', hint: 'Drag the charged battery into the hatch, then plug in the cable.', onDone: () => { closeMini(); onBatteryDone(); } });
-  else if (hasMini2(game)) mini = startMini2(game, { ...common, delaySeconds, liner: Boolean(s.upgrades?.suit_liner) /* Suit Seal Check: one more thing to drag (SCENARIO 4.8) */, title: miniTitle(game), hint: '' /* the game's own line at the top says what to do; a second generic line only adds reading */, onWin: win, onFail: () => finish(false) });
+  else if (hasMini2(game)) mini = startMini2(game, { ...common, help, delaySeconds, liner: Boolean(s.upgrades?.suit_liner) /* Suit Seal Check: one more thing to drag (SCENARIO 4.8) */, title: miniTitle(game), hint: '' /* the game's own line at the top says what to do; a second generic line only adds reading */, onWin: win, onFail: () => finish(false) });
   else { toast('That job is not ready yet.'); $('mgWrap').hidden = true; }
 }
 function closeMini() {

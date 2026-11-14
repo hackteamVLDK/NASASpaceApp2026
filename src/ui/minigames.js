@@ -7,6 +7,7 @@
 import { t } from '../flow/strings.js';
 import { play, director } from './audio.js';
 import { ICON } from '../render/atlas.js';
+import { offerButtonAt, drawOffer } from './drone-offer.js';
 
 const W = 1100;
 const H = 620;
@@ -30,7 +31,7 @@ function timerRing(ctx, frac) {
  * 4.1 Solar Panel Static Wipe (A16, team decision): the player only swipes. Static stays the explanation:
  * a few sticky, sparkling clumps need 2 extra wipes (3 strokes in all) before they come off. Win at 90% clean in 20 s (+3 s solo).
  */
-export function startSolarWipe({ canvas, atlas, title, hint, timeLimit = 23, onWin, onTitle = () => {}, onHint = () => {} }) {
+export function startSolarWipe({ canvas, atlas, title, hint, timeLimit = 23, onWin, help, onTitle = () => {}, onHint = () => {} }) {
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
   onTitle(title);
@@ -39,6 +40,7 @@ export function startSolarWipe({ canvas, atlas, title, hint, timeLimit = 23, onW
   const seeds = [[0, 120, 100], [1, 210, 130], [2, 150, 90]]; // one sticky clump per panel (max 3)
   const STICKY = 3; // wipes a clump needs: the first stroke plus 2 extra
   let clumps, started, failures = 0, won = false, swipeHint = true, last = null, raf = 0, msg = '', stroke = 0, sparks = [];
+  let offer = null; // B2: after the third failed try a drone offers to help (`help`: { who, block, ask, done }); none in the tutorial
 
   function reset() {
     clumps = seeds.map(([panel, x, y]) => ({ panel, x, y, r: 34, left: STICKY, lastStroke: -1, zapped: false }));
@@ -90,15 +92,26 @@ export function startSolarWipe({ canvas, atlas, title, hint, timeLimit = 23, onW
     });
   }
 
+  /** A tap while the offer is up: the drone helps, or the player tries again (the three failures are forgotten). */
+  const answerOffer = (pt) => {
+    const b = offerButtonAt(pt);
+    if (b === 'retry') { play('click'); failures = 0; offer = null; reset(); return; }
+    if (b !== 'help') return;
+    const why = help.block();
+    if (why) { offer.said = why; return; }
+    const r = help.ask();
+    if (r?.ok) { play('click'); won = true; destroy(); help.done?.(); } else offer.said = r?.error ?? 'The drone could not help just now.';
+  };
   const down = (e) => {
     const pt = pointer(canvas, e);
+    if (offer) { answerOffer(pt); return; }
     canvas.setPointerCapture(e.pointerId);
     stroke += 1;
     swipeHint = false;
     last = pt; wipeAt(pt);
   };
   const move = (e) => {
-    if (!last) return;
+    if (offer || !last) return;
     const pt = pointer(canvas, e);
     const steps = Math.ceil(Math.hypot(pt.x - last.x, pt.y - last.y) / 12);
     for (let i = 1; i <= steps; i++) wipeAt({ x: last.x + ((pt.x - last.x) * i) / steps, y: last.y + ((pt.y - last.y) * i) / steps });
@@ -161,9 +174,14 @@ export function startSolarWipe({ canvas, atlas, title, hint, timeLimit = 23, onW
     if (sticky && pct >= 0.85) { ctx.fillStyle = '#ffe9a8'; ctx.font = 'bold 22px sans-serif'; ctx.fillText(`Almost! ${sticky} sticky spot${sticky > 1 ? 's' : ''} left: wipe over ${sticky > 1 ? 'them' : 'it'} again.`, 24, 540); }
     timerRing(ctx, left / timeLimit);
     if (msg) { ctx.fillStyle = '#fff'; ctx.font = 'bold 34px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(msg, W / 2, 570); }
+    if (offer) drawOffer(ctx, { who: help.who?.() ?? null, reason: help.block(), said: offer.said, atlas }, now);
 
-    if (!won && pct >= 0.9 && clumps.every((c) => c.zapped)) { won = true; play('win'); setTimeout(() => { destroy(); onWin(); }, 650); }
-    else if (!won && left <= 0) { failures++; msg = failures >= 3 ? 'A drone helps you out!' : 'Close! Try once more.'; reset(); if (failures >= 3) { won = true; setTimeout(() => { destroy(); onWin(); }, 900); } else setTimeout(() => { msg = ''; }, 1400); }
+    if (!won && !offer && pct >= 0.9 && clumps.every((c) => c.zapped)) { won = true; play('win'); setTimeout(() => { destroy(); onWin(); }, 650); }
+    else if (!won && !offer && left <= 0) {
+      failures++;
+      if (failures >= 3 && help) { msg = ''; offer = { said: '' }; } // a drone offers to fix it: 1 Sol of its time
+      else { msg = failures >= 3 ? 'A drone helps you out!' : 'Close! Try once more.'; reset(); if (failures >= 3) { won = true; setTimeout(() => { destroy(); onWin(); }, 900); } else setTimeout(() => { msg = ''; }, 1400); } // no drone to offer (the tutorial): the pass stays free
+    }
     raf = requestAnimationFrame(frame);
   }
   raf = requestAnimationFrame(frame);

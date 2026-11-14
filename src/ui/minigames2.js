@@ -1,6 +1,7 @@
 /**
  * The other mini-games of SCENARIO Section 4, on one shared scaffold: an overlay canvas, a timer
- * ring, an instant free retry, and no big FAIL screen. After 3 failures in a row a drone helps.
+ * ring, an instant free retry, and no big FAIL screen. After 3 failures in a row a drone OFFERS to fix it (1 Sol of
+ * drone time, B2): `opts.help` { who, block, ask, done } turns the offer on; without it (the tutorial) the pass is free.
  *   heat_pump (4.5)   valve_balance (4.3)   water_sort (4.4)   nutrient_match (4.6)
  *   air_filter (4.2)  antenna (4.9)         wheel_vacuum (4.7) suit_seal (4.8)
  * Solar Wipe (4.1) and the tutorial battery step are in minigames.js.
@@ -11,6 +12,7 @@ import { createSuit, pointerDown, pointerMove, pointerUp, pressureAt, steps, com
 import { t } from '../flow/strings.js';
 import { formatDelay } from '../data/nasa/lightTime.js';
 import { wave } from './prefs.js';
+import { offerButtonAt, drawOffer } from './drone-offer.js';
 
 const W = 1100;
 const H = 620;
@@ -42,29 +44,44 @@ function scaffold({ canvas, game, onWin, onFail, onTitle, onHint, title, hint, m
   onHint(HINTS[game] ?? hint);
   const limit = TIME[game] + SOLO_BONUS;
   let g, started, failures = 0, finished = false, msg = '', raf = 0, held = 0;
+  let offer = null; // B2: after the third failed try a drone offers to help: { said } while the panel is up
+  const help = opts.help;
   const reset = () => { g = make(opts); started = performance.now(); held = 0; };
   reset();
   // A game may set `outroMs` and keep drawing after the win (g.wonAt), e.g. the antenna's message counter.
   const api = { win() { if (!finished) { finished = true; g.wonAt = performance.now(); play('win'); setTimeout(() => { destroy(); onWin(); }, g.outroMs ?? 600); } }, elapsed: () => performance.now() - started };
   let pressed = false; // sounds for dragging play only while the pointer is down
+  /** A tap while the offer is up: the drone helps, or the player tries again (the three failures are forgotten). */
+  const answerOffer = (p) => {
+    const b = offerButtonAt(p);
+    if (b === 'retry') { play('click'); failures = 0; offer = null; reset(); return; }
+    if (b !== 'help') return;
+    const why = help.block();
+    if (why) { offer.said = why; return; }
+    const r = help.ask();
+    if (r?.ok) { play('click'); finished = true; destroy(); help.done?.(); } else offer.said = r?.error ?? 'The drone could not help just now.';
+  };
   const handlers = {
-    pointerdown: (e) => { pressed = true; canvas.setPointerCapture?.(e.pointerId); director.minigame(game, 'down'); g.down?.(pt(canvas, e), api); },
-    pointermove: (e) => { if (pressed) director.minigame(game, 'move'); g.move?.(pt(canvas, e), api); },
-    pointerup: (e) => { pressed = false; g.up?.(pt(canvas, e), api); },
-    pointercancel: (e) => { pressed = false; g.up?.(pt(canvas, e), api); }, // a lost touch lets go instead of sticking
+    pointerdown: (e) => { if (offer) { answerOffer(pt(canvas, e)); return; } pressed = true; canvas.setPointerCapture?.(e.pointerId); director.minigame(game, 'down'); g.down?.(pt(canvas, e), api); },
+    pointermove: (e) => { if (offer) return; if (pressed) director.minigame(game, 'move'); g.move?.(pt(canvas, e), api); },
+    pointerup: (e) => { if (offer) return; pressed = false; g.up?.(pt(canvas, e), api); },
+    pointercancel: (e) => { if (offer) return; pressed = false; g.up?.(pt(canvas, e), api); }, // a lost touch lets go instead of sticking
   };
   for (const [k, f] of Object.entries(handlers)) canvas.addEventListener(k, f);
   function frame(now) {
-    const left = Math.max(0, limit - (now - started) / 1000);
+    const left = offer ? 0 : Math.max(0, limit - (now - started) / 1000);
     ctx.fillStyle = '#0b1522'; ctx.fillRect(0, 0, W, H);
     g.draw(ctx, now, api);
     ring(ctx, left / limit);
     if (msg) label(ctx, msg, W / 2, H - 24, 34);
-    if (!finished && g.done?.(now)) api.win();
-    if (!finished && left <= 0) {
+    if (offer) drawOffer(ctx, { who: help.who?.() ?? null, reason: help.block(), said: offer.said, atlas: opts.atlas }, now);
+    if (!finished && !offer && g.done?.(now)) api.win();
+    if (!finished && !offer && left <= 0) {
       failures++;
       onFail();
-      if (failures >= 3) { msg = 'A drone helps you out!'; finished = true; setTimeout(() => { destroy(); onWin(); }, 900); } else { msg = 'Close! Try once more.'; reset(); setTimeout(() => { msg = ''; }, 1500); }
+      if (failures >= 3 && help) { msg = ''; offer = { said: '' }; } // a drone offers to fix it: 1 Sol of its time
+      else if (failures >= 3) { msg = 'A drone helps you out!'; finished = true; setTimeout(() => { destroy(); onWin(); }, 900); } // no drone to offer (the tutorial): the pass stays free
+      else { msg = 'Close! Try once more.'; reset(); setTimeout(() => { msg = ''; }, 1500); }
     }
     raf = requestAnimationFrame(frame);
   }

@@ -411,12 +411,13 @@ export function miniBlock(s, game) {
   return 'That job is not needed right now.';
 }
 
-export function onMini(s, { game, win }, emit) {
+export function onMini(s, { game, win, auto = false }, emit) {
+  // `auto`: a drone did the job for the player (B2): the system is repaired, but there is no +2 SP, no win count and no ASTRA explanation
   const rec = (s.flags.mini ??= {});
   // The prep games pay once per trip, not once per try.
   const onOffer = s.tasks.some((t) => t.game === game);
   const prepAlreadyDone = !onOffer && ((game === 'wheel_vacuum' && s.flags.prepWheel === 'ok') || (game === 'suit_seal' && s.flags.prepSuit));
-  if (win && !prepAlreadyDone) {
+  if (win && !auto && !prepAlreadyDone) {
     s.stats.miniWins += 1;
     if (game === 'solar_wipe') s.stats.wipes += 1;
     setRes(s, 'sp', 2);
