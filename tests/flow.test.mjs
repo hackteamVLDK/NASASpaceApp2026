@@ -10,6 +10,7 @@ import {
 import { setStrings, t, hasString } from '../src/flow/strings.js';
 import { ASTRA, createGuide, say, dismiss, guideProps, currentMessage, astraLineFor, hearEvents } from '../src/flow/astra.js';
 import { createGame, applyCommand } from '../src/sim/index.js';
+import { LAYOUT } from '../src/campaign/data.js';
 
 const scenario = readFileSync(new URL('../SCENARIO.md', import.meta.url), 'utf8');
 const strings = JSON.parse(readFileSync(new URL('../content/data/strings.en.json', import.meta.url), 'utf8'));
@@ -89,7 +90,7 @@ test('camera, lander and shake follow the timeline', () => {
   assert.equal(cameraZoomAt(33), GAMEPLAY_VIEW.zoom);
   // a strip of surface stays visible above the base, and the whole base fits (SCENARIO framing rule)
   const halfView = 1080 / GAMEPLAY_VIEW.zoom / 2;
-  assert.ok(GAMEPLAY_VIEW.centerY - halfView <= 900 && GAMEPLAY_VIEW.centerY + halfView >= 2640);
+  assert.ok(GAMEPLAY_VIEW.centerY - halfView <= 900 && GAMEPLAY_VIEW.centerY + halfView >= LAYOUT.firstFloorY + LAYOUT.floors * LAYOUT.floorHeight);
 
   assert.equal(landerAt(5).visible, false);
   near(landerAt(19).y, -150);

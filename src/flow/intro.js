@@ -124,7 +124,7 @@ const easeOut = (u) => 1 - (1 - u) * (1 - u);
  * Gameplay framing (PROPOSAL; the scenario leaves the zoom to the layout work): the whole base
  * width fits and a strip of surface stays visible at the top. Zoom is screen pixels per world unit.
  */
-export const GAMEPLAY_VIEW = Object.freeze({ zoom: 0.58, centerY: 1780, surfaceStripTopY: 850 });
+export const GAMEPLAY_VIEW = Object.freeze({ zoom: 0.54, centerY: 1880, surfaceStripTopY: 880 });
 
 /** Camera centre Y at time `sec`. Locked on the sky, follows the lander, then pans underground. */
 export function cameraYAt(sec) {

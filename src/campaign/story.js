@@ -65,6 +65,7 @@ function endStorm(s, emit) {
   s.mods = s.mods.filter((m) => m.id !== 'd1a_saver');
   say(emit, 'astra.act1.storm_end', 'cheerful');
   emit({ type: 'storm', on: false });
+  s.flags.panelsCleaned = false;
   addTask(s, 'solar_wipe', 'The storm left dust on the panels.');
   s.flags.filterDue = clockAt(s.minute).sol + 1;
 }
@@ -214,15 +215,17 @@ export function applyChoice(s, pending, choice, emit, rand) {
       break;
     // ---- Dilemma 5 is answered inside the expedition (expeditions.js)
     // ---- Event 1: solar flare
-    case 'e1a': hurt(s, 1); setRes(s, 'sp', -3); setRes(s, 'food', -5); s.stats.flares += 1; follow('astra.e1.a'); break;
+    case 'e1a': { const h0 = s.hp; hurt(s, 1); setRes(s, 'sp', -3); setRes(s, 'food', -5); s.stats.flares += 1; s.stats.flareMaxLoss = Math.max(s.stats.flareMaxLoss, h0 - s.hp); follow('astra.e1.a'); break; }
     case 'e1b': {
+      const h0 = s.hp;
       const where = s.where;
       hurt(s, where === 'outside' ? 30 : ['workshop', 'lab', 'battery', 'garage', 'greenhouse', 'recreation'].includes(where) && !online(s, 'roof') ? 9 : 2);
       s.stats.flares += 1;
+      s.stats.flareMaxLoss = Math.max(s.stats.flareMaxLoss, h0 - s.hp);
       follow('astra.e1.b', 'calm');
       break;
     }
-    case 'e1c': hurt(s, 1); s.stats.flares += 1; follow('astra.e1.c'); break;
+    case 'e1c': { const h0 = s.hp; hurt(s, 1); s.stats.flares += 1; s.stats.flareMaxLoss = Math.max(s.stats.flareMaxLoss, h0 - s.hp); follow('astra.e1.c'); break; }
     // ---- Event 2: dust devil
     case 'e2a':
       if (rand() < 0.5) { s.mult.solar = 1.2; after(s, at(sol + 3, 6), 'solar_normal'); follow('astra.e2.a.clean'); } else { s.mult.solar = 0.7; addTask(s, 'solar_wipe', 'The dust devil dumped dust on the panels.'); follow('astra.e2.a.dusty', 'calm'); }
@@ -279,12 +282,14 @@ export function onMini(s, { game, win }, emit) {
   const rec = (s.flags.mini ??= {});
   if (win) {
     s.stats.miniWins += 1;
+    if (game === 'solar_wipe') s.stats.wipes += 1;
     setRes(s, 'sp', 2);
     if (!rec[game]) { rec[game] = true; if (MINI_LINES[game]) say(emit, MINI_LINES[game], 'cheerful'); } else emit({ type: 'toast', text: 'Nice work!' });
   }
   if (game === 'solar_wipe') {
     if (win) {
       dropTask(s, 'solar_wipe');
+      s.flags.panelsCleaned = true;
       if (s.mult.solar < 1) { s.mult.solar = 1; }
       if (s.emergency.power) { s.res.power = Math.max(s.res.power, 25); s.emergency.power = false; }
     }
@@ -308,6 +313,7 @@ export function onMini(s, { game, win }, emit) {
       setRes(s, 'morale', s.flags.d4b ? 10 : 5);
       s.research += s.flags.d4b ? 10 : 0;
       say(emit, 'astra.act3.earth_reply', 'cheerful');
+      s.flags.earthContact = true;
       emit({ type: 'earth-contact' });
       emit({ type: 'badge', id: 'first_contact' });
       if (s.flags.d4b) {

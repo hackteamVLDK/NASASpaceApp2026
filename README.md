@@ -18,19 +18,27 @@ Click **Start mission** (browsers need a click before they allow sound).
 
 ## What you can play today
 
-1. **Text crawl** (19 s, `Skip >>` top right) and **landing cutscene**.
-2. **Tutorial**: read the HP bar, click the sleeping **Drone #01**, win the *Solar Panel Static Wipe*
-   (tap the sparking clumps, then swipe), drag the battery into the hatch and plug in the cable,
-   then tap **Battery & Heating** and press **Build**.
-3. **Play**: give each astronaut a job (Crew panel), finish the right wing, give the *shelter order*
-   when a solar storm warning comes, keep oxygen, water, food and power up for 6 sols. Space pauses.
+The whole 20-Sol story of [SCENARIO.md](SCENARIO.md) v2, solo (one Commander and three builder drones):
+
+1. **Text crawl** (19 s, `Skip >>`) and the **landing cutscene**.
+2. **Tutorial**: HP bar, click the sleeping **Drone #01**, win the *Solar Panel Static Wipe*, drag the
+   battery into the hatch and snap the cable, then tap **Battery & Heating** and press **Build**.
+3. **Act I-III**: finish the six right-wing modules with the drones (Base tab), craft parts in the Workshop,
+   wake Drones #02 and #03, survive the dust storm and the dilemmas, send the Rover to five places from the
+   crater map (Garage), read the radio, decode Pathfinder-X's black box, and reach the **Canyon Anomaly**.
+4. **Mini-games** when the base needs them: Static Wipe, Heat Pump Pipes, Valve Balance, Water Sort, Nutrient
+   Match, Air Filter, Antenna Alignment, Wheel Pebble Vacuum, Suit Seal Check.
+5. **Science Logbook** (58 cards), **badges** and the **Mission Report** with a 9-star rating; then **Free-Play**.
+
+Space pauses, the game saves each Sol (Continue mission).
 
 ## Where things are
 
 | Path | What |
 |---|---|
 | `index.html`, `styles/`, `src/main.js` | the page, its look, the game loop and tutorial |
-| `src/sim/` | the simulation: pure, deterministic, no DOM |
+| `src/campaign/` | THE GAME'S SIMULATION (SCENARIO v2): economy, modules, drones, story, dilemmas, expeditions, logbook. Pure, deterministic, no DOM |
+| `src/sim/` | the first, hourly-schedule simulation. No longer used by the game; kept with its tests |
 | `src/flow/` | the opening from SCENARIO.md as data and functions of time, ASTRA 6.7, strings by line ID |
 | `src/render/`, `src/ui/` | canvas drawing, HUD, ASTRA panel, mini-games, sound (read state, send commands) |
 | `content/` | the story bible's data: `content/data/strings.en.json` holds every player-facing line |

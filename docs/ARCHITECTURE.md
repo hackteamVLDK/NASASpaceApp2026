@@ -4,7 +4,10 @@ No build step, no dependencies. Plain ES modules that run both in the browser an
 
 ```
 src/
-  sim/                     THE GAME. Pure simulation, no DOM, deterministic.
+  campaign/                THE GAME (SCENARIO v2). Pure simulation, no DOM, deterministic: engine.js (rates, builds,
+                           commands), story.js (acts, dilemmas, events, mini-game results), expeditions.js,
+                           logbook.js (58 cards, badges, Mission Report), data.js (every table of the scenario).
+  sim/                     The first simulation (4 astronauts, hourly schedules). The game no longer uses it.
   flow/                    The opening of the game from SCENARIO.md as pure logic: intro.js (text
                            intro, landing cutscene, tutorial hand-off as functions of time),
                            astra.js (ASTRA 6.7: guide queue, lines for game events),

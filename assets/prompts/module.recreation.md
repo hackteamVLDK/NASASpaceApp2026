@@ -1,0 +1,31 @@
+# module.recreation — Recreation & Storage (right wing, two frames)
+
+> Generated from assets/manifests/asset-manifest.json. Do not edit by hand.
+
+- **Status:** received
+- **Tier:** 1
+- **Attach as reference images:** `style.anchor`, `module.unfinished`, `module.finished`
+- **Save the result as:** `assets/incoming/module.recreation.png`
+- **Final location (after processing):** `assets/art/modules/recreation.png`
+- **Used for:** SCENARIO v2: the Recreation & Storage module of the right wing (morale, exercise, emergency refill).
+- **Notes:** SCENARIO Section 3.3 and 3.11: Recreation & Storage (morale, exercise station, emergency refill). Attach module.unfinished and module.finished so it matches the other right-wing rooms.
+
+## Prompt
+
+```text
+Create a pixel-art game asset: Recreation & Storage (right wing, two frames).
+
+STYLE: Use the attached reference image(s) as the exact style guide: same palette, pixel size, outline, lighting and level of detail. Make this asset in the same style.
+
+WHAT IT SHOWS: Two frames of one underground room. Frame 1 (unfinished): dark blue-grey steel girders, columns and scaffolding standing in loose pale sand, no walls, no lights, a stack of unopened crates and an empty frame where a lounge will be, exactly in the style of the attached unfinished right-wing rooms. Frame 2 (finished): the same girders and layout, now with cream walls and warm light: a cosy lounge with a soft rug and bean bags, a small table with board games, an exercise bike, a window screen, a glass display case holding one real-looking Mars rock, and tidy storage lockers and supply crates along the wall.
+
+VIEW: Side view cutaway of one room each.
+LAYOUT: A strict grid of 1 column x 2 rows of equal cells, the finished room at exactly the same positions as the unfinished frame so one can fade into the other. The right edge of each cell is a door opening.
+FRAMES: a strict grid of 1 columns x 2 rows of EQUAL cells that exactly fill the image, each cell with the proportions 120:54. Cell contents in order: unfinished: bare dark steel frame standing in sand | finished: the same room with walls, lights and equipment. Any unused trailing cells stay empty background.
+BACKGROUND: opaque.
+
+STYLE RULES: Pixel art with crisp, un-blurred pixels. Flat orthographic side view (like an ant farm): no perspective, no vanishing point. A limited palette of about 24 colours shared by the whole game. One-pixel dark outline on characters and props, none on terrain. Light comes from the upper left. Warm Martian oranges, rusts and butterscotch for the world; cream and white for hulls; cyan (#00E5FF) and amber (#FFB000) for ASTRA and electronics; Martian Orange #FF6B35 only for highlights. Friendly and tidy for children aged 7-12: rounded corners, no gore, no frightening shapes.
+AVOID: No text or letters inside the image (the game draws all text), no watermarks, no anti-aliased gradients, no photorealism, no 3D rendering, no perspective, no extra characters unless asked.
+
+OUTPUT: 1:1 image, 1024x1024. Logical size in the game: 120 x 108 px; the image is scaled down later, so keep every shape chunky.
+```

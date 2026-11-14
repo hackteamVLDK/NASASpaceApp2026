@@ -400,6 +400,74 @@
       "notes": "Attach module.unfinished as a second reference so the frames line up. Switching on what each module is for: docs/GAME_DESIGN.md."
     },
     {
+          "id": "module.greenhouse",
+          "tier": 1,
+          "title": "Greenhouse (right wing, two frames)",
+          "purpose": "SCENARIO v2: the Greenhouse is one of the six buildable modules of the right wing.",
+          "kind": "room-sheet",
+          "perspective": "Side view cutaway of one room each.",
+          "logicalSize": [
+                120,
+                108
+          ],
+          "frames": {
+                "cell": [
+                      120,
+                      54
+                ],
+                "columns": 1,
+                "rows": 2,
+                "order": "unfinished: bare dark steel frame standing in sand | finished: the same room with walls, lights and equipment"
+          },
+          "generate": "2:3 portrait",
+          "background": "opaque",
+          "subject": "Two frames of one underground room. Frame 1 (unfinished): dark blue-grey steel girders, columns and scaffolding standing in loose pale sand, no walls, no lights, an empty rack frame for trays, a few crates, cables hanging, exactly in the style of the attached unfinished right-wing rooms. Frame 2 (finished): the same girders and layout, now with cream walls and warm light, three rows of shelves with clear water trays holding green lettuce, tomatoes and bean plants, small pumps and tubes, and glowing pink-purple LED strips above the plants.",
+          "layout": "A strict grid of 1 column x 2 rows of equal cells, the finished room at exactly the same positions as the unfinished frame so one can fade into the other. The right edge of each cell is a door opening.",
+          "dependsOn": [
+                "style.anchor",
+                "module.unfinished",
+                "module.finished"
+          ],
+          "incoming": "assets/incoming/module.greenhouse.png",
+          "file": "assets/art/modules/greenhouse.png",
+          "status": "received",
+          "notes": "SCENARIO Section 3.3: Greenhouse, hydroponic (no soil, red and blue LEDs). Replaces the earlier 'room.hydroponics' proposal. Attach module.unfinished and module.finished so it matches the other right-wing rooms."
+    },
+    {
+          "id": "module.recreation",
+          "tier": 1,
+          "title": "Recreation & Storage (right wing, two frames)",
+          "purpose": "SCENARIO v2: the Recreation & Storage module of the right wing (morale, exercise, emergency refill).",
+          "kind": "room-sheet",
+          "perspective": "Side view cutaway of one room each.",
+          "logicalSize": [
+                120,
+                108
+          ],
+          "frames": {
+                "cell": [
+                      120,
+                      54
+                ],
+                "columns": 1,
+                "rows": 2,
+                "order": "unfinished: bare dark steel frame standing in sand | finished: the same room with walls, lights and equipment"
+          },
+          "generate": "2:3 portrait",
+          "background": "opaque",
+          "subject": "Two frames of one underground room. Frame 1 (unfinished): dark blue-grey steel girders, columns and scaffolding standing in loose pale sand, no walls, no lights, a stack of unopened crates and an empty frame where a lounge will be, exactly in the style of the attached unfinished right-wing rooms. Frame 2 (finished): the same girders and layout, now with cream walls and warm light: a cosy lounge with a soft rug and bean bags, a small table with board games, an exercise bike, a window screen, a glass display case holding one real-looking Mars rock, and tidy storage lockers and supply crates along the wall.",
+          "layout": "A strict grid of 1 column x 2 rows of equal cells, the finished room at exactly the same positions as the unfinished frame so one can fade into the other. The right edge of each cell is a door opening.",
+          "dependsOn": [
+                "style.anchor",
+                "module.unfinished",
+                "module.finished"
+          ],
+          "incoming": "assets/incoming/module.recreation.png",
+          "file": "assets/art/modules/recreation.png",
+          "status": "received",
+          "notes": "SCENARIO Section 3.3 and 3.11: Recreation & Storage (morale, exercise station, emergency refill). Attach module.unfinished and module.finished so it matches the other right-wing rooms."
+    },
+    {
       "id": "prop.shaft",
       "tier": 2,
       "title": "Ladder shaft",

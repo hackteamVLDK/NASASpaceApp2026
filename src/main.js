@@ -1,22 +1,25 @@
 /**
  * Browser entry point: loads strings and art, then runs
- *   intro crawl -> landing cutscene -> tutorial -> play
- * as SCENARIO.md (Section 1) describes. The simulation (src/sim) runs only while playing;
+ *   intro crawl -> landing cutscene -> tutorial -> the 20-Sol campaign and Free-Play
+ * as SCENARIO.md describes. The campaign simulation (src/campaign) runs only while playing;
  * the screen reads its state and sends commands, it never edits it.
  */
 import { loadStrings, t } from './flow/strings.js';
 import { loadAtlas } from './render/atlas.js';
-import { drawWorld, buildSoil, SCREEN } from './render/world.js';
-import { createGame, step, applyCommand, evaluateObjectives } from './sim/index.js';
+import { drawCampaign, buildSoil, createWalker, SCREEN } from './render/campaign-world.js';
+import { createCampaign, step, command } from './campaign/engine.js';
+import { SECONDS_PER_SOL, SOL } from './campaign/data.js';
 import { openingFrameAt, cuesBetween, skipTarget, T, GAMEPLAY_VIEW, INTRO_TEXT, introTextAt, flowStateAt } from './flow/intro.js';
-import { createGuide, say, hearEvents } from './flow/astra.js';
+import { createGuide, say } from './flow/astra.js';
 import { createAstraPanel } from './ui/astra-panel.js';
-import { createHud } from './ui/hud.js';
+import { createUi, miniTitle } from './ui/campaign-ui.js';
+import { unlockFor, checkBadges } from './campaign/logbook.js';
 import { startSolarWipe, startBatteryStep } from './ui/minigames.js';
+import { startMini2, hasMini2 } from './ui/minigames2.js';
 import * as audio from './ui/audio.js';
 
-const LEVEL = 'L1-wake-the-station';
-const SIM_MINUTES_PER_SECOND = 12; // about two minutes of real time per Mars day at 1x
+const SIM_MINUTES_PER_SECOND = SOL / SECONDS_PER_SOL; // 1 Sol = 4 real minutes at 1x (SCENARIO 3.1)
+const SAVE_KEY = 'ares-kids-save-v1';
 const $ = (id) => document.getElementById(id);
 
 const stage = $('stage');
@@ -30,8 +33,8 @@ function fit() {
 window.addEventListener('resize', fit);
 fit();
 
-let atlas, soil, game, guide, astra, hud;
-let mode = 'loading'; // loading | intro | tutorial | play | over
+let atlas, soil, s, guide, astra, ui;
+let mode = 'loading'; // loading | intro | tutorial | play
 let flowT = 0;
 let prevFlowT = 0;
 let speed = 1;
@@ -40,7 +43,20 @@ let tut = null; // { state, phase }
 let hits = [];
 let hover = null;
 let mini = null;
-let paused = false;
+const walker = createWalker();
+
+// ------------------------------------------------------------------ interface size
+
+const UI_KEY = 'ares-kids-ui-scale';
+let uiScale = 1.3;
+try { uiScale = Number(localStorage.getItem(UI_KEY)) || uiScale; } catch { /* storage may be blocked */ }
+function applyUiScale() {
+  uiScale = Math.min(1.8, Math.max(0.9, uiScale));
+  document.documentElement.style.setProperty('--ui', String(uiScale));
+  try { localStorage.setItem(UI_KEY, String(uiScale)); } catch { /* ignore */ }
+}
+applyUiScale();
+for (const b of document.querySelectorAll('#uisize button')) b.addEventListener('click', () => { uiScale += Number(b.dataset.ui) * 0.1; applyUiScale(); });
 
 // ------------------------------------------------------------------ helpers
 
@@ -52,33 +68,84 @@ function toast(text, ms = 2600) {
   toast.timer = setTimeout(() => { el.hidden = true; }, ms);
 }
 
-/** Send a command to the simulation. Rejected commands show their reason. */
-function command(cmd) {
-  const res = applyCommand(game, cmd);
+/** Unlock Logbook cards for a trigger key and announce them (SCENARIO 8.1). */
+function trigger(key) {
+  const fresh = unlockFor(s, key);
+  for (const id of fresh) {
+    toast(`${t('ui.logbook.new_card')} ${t(`card.${id}.title`)}`, 3200);
+    if (s.logbook.length === 1) say(guide, { lineId: 'astra.logbook.first', mood: 'cheerful' });
+  }
+}
+function sayLine(lineId, mood) { say(guide, { lineId, mood }); trigger(lineId); }
+function checkAllBadges() {
+  for (const id of checkBadges(s)) {
+    toast(`${t('ui.badge.earned')} ${t(`badge.${id}.name`)}`, 3500);
+    audio.play('win');
+    if (s.badges.length === 1) say(guide, { lineId: 'astra.badge.first', mood: 'cheerful' });
+  }
+}
+
+/** Turn campaign events into what the player sees and hears. */
+function handleEvents(events) {
+  for (const e of events) {
+    switch (e.type) {
+      case 'astra': sayLine(e.lineId, e.mood); break;
+      case 'act': ui.showActCard(e.lineId); break;
+      case 'radio': ui.pushRadio(e.id); trigger(`R:${e.id}`); break;
+      case 'dilemma': trigger(`D:${e.id}`); break;
+      case 'event': trigger(`E:${e.id}`); break;
+      case 'chosen': trigger(`C:${e.id}${e.choice}`); break;
+      case 'log': say(guide, { lineId: e.lineId, mood: 'calm' }); break;
+      case 'returned': ui.showLoot(e); audio.play('chirp'); break;
+      case 'finale': checkAllBadges(); ui.showFinale(); break;
+      case 'toast': toast(e.text); break;
+      case 'emergency': toast(`Emergency: ${e.kind}!`, 4000); audio.play('alert'); break;
+      case 'built': toast('Room finished!'); audio.play('win'); break;
+      case 'upgraded': toast('Upgrade installed!'); audio.play('win'); break;
+      case 'drone-awake': audio.play('chirp'); break;
+      case 'storm': audio.play(e.on ? 'alert' : 'chirp'); break;
+      default:
+    }
+  }
+}
+
+/** Send a command to the campaign. Rejected commands show their reason. */
+function send(cmd) {
+  if (cmd.type === 'say') { say(guide, { lineId: cmd.lineId, mood: 'curious' }); return { ok: true }; }
+  const res = command(s, cmd);
   if (!res.ok) { toast(res.error); return res; }
-  hearEvents(guide, res.events);
-  if (tut?.state === 'TUT_BUILD' && cmd.type === 'buildModule') finishTutorial();
+  handleEvents(res.events);
+  if (tut?.state === 'TUT_BUILD' && cmd.type === 'build' && cmd.module === 'battery') finishTutorial();
   return res;
 }
 
-function openMini(kind) {
+// ------------------------------------------------------------------ mini-games
+
+function openMini(game, { onDone = null } = {}) {
+  if (mini) return;
   $('mgWrap').hidden = false;
   const c = $('mg');
   const common = {
     canvas: c, atlas,
-    onTitle: (s) => { document.querySelector('.mgTitle').textContent = s; },
-    onHint: (s) => { document.querySelector('.mgHint').textContent = s; },
+    onTitle: (x) => { document.querySelector('.mgTitle').textContent = x; },
+    onHint: (x) => { document.querySelector('.mgHint').textContent = x; },
   };
-  if (kind === 'solar') {
-    mini = startSolarWipe({ ...common, title: t('ui.mg.solar_wipe.title'), hint: 'Tap the sparkly clumps to zap them, then swipe to wipe.', onWin: () => { closeMini(); onSolarWin(); } });
-  } else {
-    mini = startBatteryStep({ ...common, title: 'Wake up Drone #01', hint: 'Drag the charged battery into the hatch, then plug in the cable.', onDone: () => { closeMini(); onBatteryDone(); } });
-  }
+  const finish = (win) => { send({ type: 'miniResult', game, win }); };
+  const win = () => { closeMini(); finish(true); onDone?.(true); };
+  if (game === 'solar_wipe') mini = startSolarWipe({ ...common, title: t('ui.mg.solar_wipe.title'), hint: 'Tap the sparkly clumps to zap them, then swipe to wipe.', onWin: () => { closeMini(); onSolarWin(); onDone?.(true); } });
+  else if (game === 'battery') mini = startBatteryStep({ ...common, title: 'Wake up Drone #01', hint: 'Drag the charged battery into the hatch, then plug in the cable.', onDone: () => { closeMini(); onBatteryDone(); } });
+  else if (hasMini2(game)) mini = startMini2(game, { ...common, title: miniTitle(game), hint: 'Follow the one-line instruction at the top. You have time!', onWin: win, onFail: () => finish(false) });
+  else { toast('That job is not ready yet.'); $('mgWrap').hidden = true; }
 }
 function closeMini() {
   mini?.destroy();
   mini = null;
   $('mgWrap').hidden = true;
+}
+
+/** Required prep before an expedition: Wheel Pebble Vacuum, then a Suit Seal Check (SCENARIO 5.1). */
+function launchWithPrep(key) {
+  openMini('wheel_vacuum', { onDone: () => setTimeout(() => openMini('suit_seal', { onDone: () => { send({ type: 'launch', expedition: key }); } }), 250) });
 }
 
 // ------------------------------------------------------------------ tutorial (SCENARIO: TUT_HP ... PLAY)
@@ -88,9 +155,9 @@ function enterTutorial() {
   $('hud').hidden = false;
   astra.setAuto(false);
   tut = { state: 'TUT_HP', phase: 'talk' };
-  say(guide, { lineId: 'astra.intro.status', mood: 'cheerful' });
-  say(guide, { lineId: 'astra.tut.hp_intro', mood: 'calm' });
-  hud.highlightGauge('hp-bar');
+  sayLine('astra.intro.status', 'cheerful');
+  sayLine('astra.tut.hp_intro', 'calm');
+  ui.highlight('hp');
 }
 
 function updateTutorial() {
@@ -98,10 +165,10 @@ function updateTutorial() {
   const talking = astra.open;
   switch (tut.state) {
     case 'TUT_HP':
-      if (!talking) { hud.highlightGauge(null); tut = { state: 'TUT_DRONE_CLICK', phase: 'wait' }; }
+      if (!talking) { ui.highlight(null); tut = { state: 'TUT_DRONE_CLICK', phase: 'wait' }; }
       break;
     case 'TUT_SOLAR_WIPE':
-      if (!talking && tut.phase === 'talk') { tut.phase = 'game'; openMini('solar'); }
+      if (!talking && tut.phase === 'talk') { tut.phase = 'game'; openMini('solar_wipe'); }
       break;
     case 'TUT_BATTERY':
       if (!talking && tut.phase === 'talk') { tut.phase = 'game'; openMini('battery'); }
@@ -114,31 +181,45 @@ function updateTutorial() {
 }
 
 function onSolarWin() {
-  command({ type: 'repairSystem', system: 'solarClean', value: 0.95 });
+  send({ type: 'miniResult', game: 'solar_wipe', win: true });
   tut = { state: 'TUT_BATTERY', phase: 'talk' };
-  say(guide, { lineId: 'astra.tut.solar_done', mood: 'cheerful' });
-  say(guide, { lineId: 'astra.tut.drone01_prompt', mood: 'calm' });
+  sayLine('astra.tut.solar_done', 'cheerful');
+  sayLine('astra.tut.drone01_prompt', 'calm');
 }
 
 function onBatteryDone() {
-  command({ type: 'wakeDrone', drone: 'drone-01' });
-  audio.play('chirp');
+  send({ type: 'wakeDrone', drone: 'drone-01' });
   tut = { state: 'TUT_BUILD', phase: 'talk' };
-  say(guide, { lineId: 'astra.tut.drone01_wake', mood: 'cheerful' });
-  say(guide, { lineId: 'astra.char.pip', mood: 'cheerful' });
-  say(guide, { lineId: 'astra.tut.build_prompt', mood: 'calm' });
+  sayLine('astra.tut.drone01_wake', 'cheerful');
+  sayLine('astra.char.pip', 'cheerful');
+  sayLine('astra.tut.build_prompt', 'calm');
 }
 
 function finishTutorial() {
   tut = null;
   mode = 'play';
-  say(guide, { lineId: 'astra.tut.done', mood: 'cheerful' });
-  toast('Tip: give each astronaut a job in the Crew panel.', 5000);
+  sayLine('astra.tut.done', 'cheerful');
+  ui.select('module:battery');
+  save();
+}
+
+// ------------------------------------------------------------------ save and load
+
+function save() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(s)); } catch { /* storage may be blocked */ }
+}
+function loadSave() {
+  try { const raw = localStorage.getItem(SAVE_KEY); return raw ? JSON.parse(raw) : null; } catch { return null; }
 }
 
 // ------------------------------------------------------------------ input
 
-function worldPoint(e, view) {
+function currentView() {
+  if (mode === 'intro') { const f = openingFrameAt(flowT); return { cy: f.cameraY, zoom: f.zoom }; }
+  return { cy: GAMEPLAY_VIEW.centerY, zoom: GAMEPLAY_VIEW.zoom };
+}
+function worldPoint(e) {
+  const view = currentView();
   const r = canvas.getBoundingClientRect();
   const sx = ((e.clientX - r.left) / r.width) * SCREEN.w;
   const sy = ((e.clientY - r.top) / r.height) * SCREEN.h;
@@ -146,26 +227,21 @@ function worldPoint(e, view) {
 }
 const pick = (p) => [...hits].reverse().find((h) => p.x >= h.x && p.x <= h.x + h.w && p.y >= h.y && p.y <= h.y + h.h)?.id ?? null;
 
-function currentView() {
-  if (mode === 'intro') { const f = openingFrameAt(flowT); return { cy: f.cameraY, zoom: f.zoom }; }
-  return { cy: GAMEPLAY_VIEW.centerY, zoom: GAMEPLAY_VIEW.zoom };
-}
-
-canvas.addEventListener('pointermove', (e) => { if (mode === 'tutorial' || mode === 'play') hover = pick(worldPoint(e, currentView())); });
+canvas.addEventListener('pointermove', (e) => { if (mode === 'tutorial' || mode === 'play') hover = pick(worldPoint(e)); });
 canvas.addEventListener('pointerdown', (e) => {
-  if (mini || (mode !== 'tutorial' && mode !== 'play')) return;
-  const id = pick(worldPoint(e, currentView()));
+  if (mini || ui.modalOpen || (mode !== 'tutorial' && mode !== 'play')) return;
+  const id = pick(worldPoint(e));
   if (!id) return;
   audio.play('click');
   if (mode === 'tutorial') {
     if (tut.state === 'TUT_DRONE_CLICK' && id === 'drone:drone-01') {
       tut = { state: 'TUT_SOLAR_WIPE', phase: 'talk' };
-      say(guide, { lineId: 'astra.tut.drone01_click', mood: 'curious' });
-      say(guide, { lineId: 'astra.tut.solar_prompt', mood: 'cheerful' });
-    } else if (tut.state === 'TUT_BUILD' && tut.phase === 'pick' && id.startsWith('module:')) hud.select(id);
+      sayLine('astra.tut.drone01_click', 'curious');
+      sayLine('astra.tut.solar_prompt', 'cheerful');
+    } else if (tut.state === 'TUT_BUILD' && tut.phase === 'pick' && id.startsWith('module:')) ui.select(id);
     return;
   }
-  hud.select(id);
+  ui.select(id);
 });
 
 $('skipBtn').addEventListener('click', () => { flowT = skipTarget(flowT); prevFlowT = flowT; audio.play('click'); });
@@ -175,7 +251,7 @@ for (const b of document.querySelectorAll('#speed button')) {
     document.querySelectorAll('#speed button').forEach((x) => x.classList.toggle('on', x === b));
   });
 }
-window.addEventListener('keydown', (e) => { if (e.code === 'Space' && mode === 'play') { e.preventDefault(); $('speed').querySelector(speed ? '[data-speed="0"]' : '[data-speed="1"]').click(); } });
+window.addEventListener('keydown', (e) => { if (e.code === 'Space' && mode === 'play') { e.preventDefault(); document.querySelector(speed ? '#speed [data-speed="0"]' : '#speed [data-speed="1"]').click(); } });
 
 // ------------------------------------------------------------------ frames
 
@@ -197,22 +273,16 @@ function drawCrawl(nowMs) {
   ctx.fillStyle = INTRO_TEXT.background;
   ctx.fillRect(0, 0, SCREEN.w, SCREEN.h);
   ctx.fillStyle = '#fff';
-  for (const s of stars) { const x = (s.x - nowMs * 0.012 * s.z + 1920 * 10) % 1920; ctx.globalAlpha = 0.25 + 0.5 * s.z; ctx.fillRect(x, s.y, 2 * s.z + 1, 2 * s.z + 1); }
+  for (const st of stars) { const x = (st.x - nowMs * 0.012 * st.z + 1920 * 10) % 1920; ctx.globalAlpha = 0.25 + 0.5 * st.z; ctx.fillRect(x, st.y, 2 * st.z + 1, 2 * st.z + 1); }
   ctx.globalAlpha = 1;
   const { lines } = introTextAt(flowT);
   ctx.font = 'bold 46px "Trebuchet MS", sans-serif';
   ctx.textAlign = 'center';
-  const rows = [];
-  for (const l of lines) if (l.shown > 0) for (const part of wrapLines(l.text, 1500)) rows.push({ part, l });
-  // reveal: only the characters typed so far, row by row
-  let budget = {};
-  const lineY = 200;
-  let y = lineY;
+  let y = 200;
   for (const l of lines) {
     if (!l.shown) continue;
-    const wrapped = wrapLines(l.text, 1500);
     let left = l.shown;
-    for (const part of wrapped) {
+    for (const part of wrapLines(l.text, 1500)) {
       const visible = part.slice(0, Math.max(0, Math.min(part.length, left)));
       left -= part.length + 1;
       ctx.fillStyle = l.highlight ? INTRO_TEXT.highlightColor : '#e8f4ff';
@@ -223,38 +293,39 @@ function drawCrawl(nowMs) {
     }
     y += 22;
   }
-  // scanlines and vignette
   ctx.fillStyle = 'rgba(0,0,0,0.16)';
   for (let sy = 0; sy < SCREEN.h; sy += 4) ctx.fillRect(0, sy, SCREEN.w, 1);
   const vg = ctx.createRadialGradient(960, 540, 300, 960, 540, 1100);
   vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.65)');
   ctx.fillStyle = vg; ctx.fillRect(0, 0, SCREEN.w, SCREEN.h);
-  void budget; void rows;
 }
 
+let lastFrameMs = 0;
 function render(nowMs) {
   if (mode === 'loading') return;
   if (mode === 'intro' && flowT < T.introEnd) { drawCrawl(nowMs); hits = []; return; }
+  const dtMs = Math.min(100, nowMs - lastFrameMs);
+  lastFrameMs = nowMs;
   let S;
   if (mode === 'intro') {
     const f = openingFrameAt(flowT);
     S = {
-      game, cy: f.cameraY, zoom: f.zoom, shake: f.shake, nowMs, soil,
+      s, cy: f.cameraY, zoom: f.zoom, shake: f.shake, nowMs, soil, walker, dtMs,
       cut: { lander: f.lander, landed: f.lander.landed, dust: f.dustBurst ? { age: flowT - 25 } : null, astronaut: f.astronaut, droneLedOn: f.droneLedOn, showMound: true, parachuteDrift: Math.min(1, Math.max(0, (flowT - 22.2) / 3)) },
     };
   } else {
     S = {
-      game, cy: GAMEPLAY_VIEW.centerY, zoom: GAMEPLAY_VIEW.zoom, nowMs, soil, hover,
-      cut: null,
+      s, cy: GAMEPLAY_VIEW.centerY, zoom: GAMEPLAY_VIEW.zoom, nowMs, soil, hover, walker, dtMs, cut: null,
       dimExcept: tut?.state === 'TUT_DRONE_CLICK' ? 'drone-01' : null,
       marker: tut?.state === 'TUT_DRONE_CLICK' ? 'drone-01' : null,
-      highlight: tut?.state === 'TUT_BUILD' && tut.phase === 'pick' ? 'module:power' : (hud?.selected ?? null),
+      highlight: tut?.state === 'TUT_BUILD' && tut.phase === 'pick' ? 'module:battery' : (ui?.selected ?? null),
     };
   }
-  hits = drawWorld(ctx, atlas, S);
+  hits = drawCampaign(ctx, atlas, S);
 }
 
 let last = performance.now();
+let savedSol = 0;
 function loop(now) {
   const dt = Math.min(0.1, (now - last) / 1000);
   last = now;
@@ -264,27 +335,31 @@ function loop(now) {
       flowT += dt;
       for (const cue of cuesBetween(prevFlowT, flowT)) {
         if (cue.type === 'sfx') audio.play(cue.id);
-        else if (cue.type === 'astra') say(guide, { lineId: cue.lineId, mood: 'cheerful' });
+        else if (cue.type === 'astra') sayLine(cue.lineId, 'cheerful');
       }
       astra.setAuto(true);
       if (flowT >= T.introEnd) $('skipBtn').hidden = false;
       if (flowT >= T.panEnd) { audio.stopWind(); $('skipBtn').hidden = true; enterTutorial(); }
     } else if (mode === 'tutorial') {
       updateTutorial();
-    } else if (mode === 'play' && !mini) {
-      if (speed > 0 && game.status === 'running') {
+    } else if (mode === 'play') {
+      astra.setAuto(false);
+      if (s.pending) {
+        ui.showChoice(s.pending.kind, s.pending.id);
+        if (speed > 0) document.querySelector('#speed [data-speed="0"]').click();
+      } else if (!mini && !ui.modalOpen && speed > 0) {
         simAccum += dt * speed * SIM_MINUTES_PER_SECOND;
         const whole = Math.min(60, Math.floor(simAccum));
         if (whole > 0) {
           simAccum -= whole;
-          const events = step(game, whole);
-          hearEvents(guide, events);
-          if (events.some((e) => e.type === 'storm-warning' || e.type === 'emergency')) { speed = 0; document.querySelector('#speed [data-speed="0"]').click(); audio.play('alert'); }
+          const solBefore = Math.floor(s.minute / SOL);
+          handleEvents(step(s, whole));
+          if (Math.floor(s.minute / SOL) !== solBefore) { savedSol = s.minute; save(); }
         }
       }
-      if (game.status !== 'running') showSummary();
     }
-    if (hud && (mode === 'tutorial' || mode === 'play')) hud.update();
+    if (mode === 'play' && Math.floor(now / 1000) !== loop.lastSec) { loop.lastSec = Math.floor(now / 1000); checkAllBadges(); }
+    if (ui && (mode === 'tutorial' || mode === 'play')) { ui.update(); $('hud').hidden = false; if (mode === 'play') $('side').hidden = false; }
     astra.update(now);
     render(now);
   } catch (err) {
@@ -294,17 +369,6 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 
-function showSummary() {
-  if (mode === 'over') return;
-  mode = 'over';
-  const goals = evaluateObjectives(game, true);
-  const stars = game.result?.stars ?? 0;
-  const el = $('summary');
-  el.hidden = false;
-  el.innerHTML = `<h1>${game.status === 'complete' ? 'Mission complete!' : 'Mission paused'}</h1><div class="stars">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</div><div>${game.result?.reason ?? ''}</div><div>Score ${game.result?.score?.total ?? 0}</div><ul>${goals.map((g) => `<li>${g.status === 'done' ? '✔' : '✖'} ${g.text}</li>`).join('')}</ul><button id="again">Play again</button>`;
-  $('again').addEventListener('click', () => location.reload());
-}
-
 // ------------------------------------------------------------------ boot
 
 async function boot() {
@@ -312,21 +376,40 @@ async function boot() {
   await loadStrings();
   atlas = await loadAtlas((f) => { bar.style.width = `${f * 100}%`; });
   soil = buildSoil(atlas);
-  game = createGame(LEVEL);
+  s = createCampaign({ seed: 1 });
   guide = createGuide();
   astra = createAstraPanel(guide, atlas);
-  hud = createHud(game, atlas, command);
+  ui = createUi({ atlas, s, send, openMini });
+  ui.launch = launchWithPrep;
+  void savedSol;
+  const saved = loadSave();
   $('startBtn').hidden = false;
+  if (saved) {
+    const cont = document.createElement('button');
+    cont.id = 'contBtn';
+    cont.textContent = 'Continue mission';
+    cont.addEventListener('click', () => {
+      audio.unlock();
+      Object.assign(s, saved); // the UI and the renderer hold this same object
+      $('loading').hidden = true;
+      mode = 'play';
+    });
+    $('startBtn').after(cont);
+  }
   $('startBtn').addEventListener('click', () => {
     audio.unlock();
     $('loading').hidden = true;
     mode = 'intro';
     $('skipBtn').hidden = false;
   });
-  // test and debug hook: ?skip jumps straight to the end of the cutscene
+  // test and debug hooks
   const q = new URLSearchParams(location.search);
-  window.__ares = { get hits() { return hits; }, view: () => currentView(), get mode() { return mode; }, get tut() { return tut; }, get game() { return game; }, jump: (s) => { flowT = s; prevFlowT = s; }, state: () => flowStateAt(flowT) };
+  window.__ares = {
+    get hits() { return hits; }, view: () => currentView(), get mode() { return mode; }, get tut() { return tut; }, get s() { return s; },
+    send, jump: (sec) => { flowT = sec; prevFlowT = sec; }, state: () => flowStateAt(flowT), openMini,
+  };
   if (q.has('autostart')) { $('loading').hidden = true; mode = 'intro'; flowT = Number(q.get('autostart')) || 0; prevFlowT = flowT; }
+  if (q.has('play')) { $('loading').hidden = true; mode = 'play'; command(s, { type: 'wakeDrone', drone: 'drone-01' }); s.flags.panelsCleaned = true; }
   requestAnimationFrame(loop);
 }
 

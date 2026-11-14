@@ -27,6 +27,8 @@ asset is then generated with that image attached as the style reference. See
 | 1 | [module.lifesupport](module.lifesupport.md) | Water & Air Life Support (left wing, online) | received | style.anchor |
 | 1 | [module.unfinished](module.unfinished.md) | Right wing, unfinished — four frames | received | style.anchor, drone.builder |
 | 1 | [module.finished](module.finished.md) | Right wing, finished — four frames | received | style.anchor, module.unfinished, vehicle.rover |
+| 1 | [module.greenhouse](module.greenhouse.md) | Greenhouse (right wing, two frames) | received | style.anchor, module.unfinished, module.finished |
+| 1 | [module.recreation](module.recreation.md) | Recreation & Storage (right wing, two frames) | received | style.anchor, module.unfinished, module.finished |
 | 2 | [prop.shaft](prop.shaft.md) | Ladder shaft | received | style.anchor |
 | 2 | [vehicle.rover](vehicle.rover.md) | Rover | received | style.anchor |
 | 2 | [room.hydroponics](room.hydroponics.md) | Hydroponics bay (proposed module) | awaiting-generation | style.anchor |

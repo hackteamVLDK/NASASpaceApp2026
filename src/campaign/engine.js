@@ -57,7 +57,10 @@ export function createCampaign({ seed = 1 } = {}) {
     tasks: [], // mini-games on offer { game, why }
     act: 1,
     said: [],
-    stats: { builds: 0, miniWins: 0, flares: 0, expeditions: 0 },
+    logbook: [],
+    badges: [],
+    choices: [],
+    stats: { builds: 0, miniWins: 0, flares: 0, expeditions: 0, samples: 0, hpSum: 0, moraleSum: 0, lowestHp: HP.commanderMax, outsideMin: 0, emergencies: 0, flareMaxLoss: 0, recycleStreak: 0, wipes: 0, melted: 0, medRests: 0, harvest: 0 },
     where: 'bedroom',
   };
 }
@@ -141,6 +144,7 @@ function tick(s, emit) {
   // the Commander
   s.where = locationAt(s);
   stepHp(s, emit, now);
+  trackStats(s, dt, now);
 
   // drones: building, upgrading
   const mult = s.res.morale < 30 ? 0.75 : 1;
@@ -157,7 +161,7 @@ function tick(s, emit) {
   }
 
   // Life Support Tier 2 melts Ice Cores by itself (3.5): each gives +25 Water
-  if (s.modules.lifesupport.tier === 2 && (s.items.ice_core ?? 0) > 0 && s.res.water <= 75) { s.items.ice_core -= 1; s.res.water = clamp(s.res.water + 25, 0, CAP.water); emit({ type: 'melted', cores: 1 }); }
+  if (s.modules.lifesupport.tier === 2 && (s.items.ice_core ?? 0) > 0 && s.res.water <= 75) { s.items.ice_core -= 1; s.stats.melted += 1; s.res.water = clamp(s.res.water + 25, 0, CAP.water); emit({ type: 'melted', cores: 1 }); }
 
   // Workshop crafting
   if (s.crafting) {
@@ -174,7 +178,16 @@ function tick(s, emit) {
   storyMinute(s, emit, now);
 }
 
+function trackStats(s, dt, now) {
+  const st = s.stats;
+  if (s.where === 'outside' || s.where === 'away') st.outsideMin += 1;
+  if (online(s, 'greenhouse')) st.harvest += MODULES.greenhouse[s.modules.greenhouse.tier === 2 ? 't2' : 't1'].food * s.mult.food * dt;
+  st.lowestHp = Math.min(st.lowestHp, s.hp);
+  if (now.minute === 0) { st.samples += 1; st.hpSum += s.hp; st.moraleSum += s.res.morale; }
+}
+
 function onNewSol(s, emit, now) {
+  s.stats.recycleStreak = s.recycleEta >= RECYCLER.ok ? s.stats.recycleStreak + 1 : 0;
   for (const k of Object.keys(s.low)) if (s.res[k] > 40) s.low[k] = false;
   emit({ type: 'sol', sol: now.sol });
   onSol(s, emit, now, () => nextRandom(s));
@@ -202,6 +215,7 @@ function stepHp(s, emit, now) {
   s.hp = clamp(s.hp + d, 0, s.hpMax);
   if (s.hp <= 0 && !s.away) {
     s.medRest = { until: s.minute + SOL };
+    s.stats.medRests += 1;
     emit({ type: 'astra', lineId: 'astra.hp.zero_base', mood: 'calm' });
   }
 }
@@ -215,8 +229,11 @@ function checkMeters(s, emit) {
   for (const [k, line] of Object.entries(zero)) {
     if (s.res[k] <= 0 && !s.emergency[k]) {
       s.emergency[k] = true;
+      s.stats.emergencies += 1;
       emit({ type: 'astra', lineId: line, mood: 'alert' });
-      emit({ type: 'emergency', kind: k, mini: { power: 'solar_wipe', heat: 'heat_pump', oxygen: 'valve_balance' }[k] });
+      const mini = { power: 'solar_wipe', heat: 'heat_pump', oxygen: 'valve_balance' }[k];
+      emit({ type: 'emergency', kind: k, mini });
+      if (!s.tasks.some((t) => t.game === mini)) s.tasks.push({ game: mini, why: 'Emergency! Fix it now.' });
     } else if (s.res[k] >= 20 && s.emergency[k]) s.emergency[k] = false;
   }
 }
@@ -382,6 +399,7 @@ export function command(s, cmd) {
       const p = s.pending;
       if (!['a', 'b', 'c'].includes(cmd.choice)) return fail('Pick a, b or c.');
       s.pending = null;
+      if (p.kind === 'dilemma' || p.kind === 'event') s.choices.push(`${p.id}${cmd.choice}`);
       applyChoice(s, p, cmd.choice, emit, () => nextRandom(s));
       emit({ type: 'chosen', id: p.id, choice: cmd.choice });
       break;
@@ -395,6 +413,7 @@ export function command(s, cmd) {
       if ((s.items.ice_core ?? 0) < 1) return fail('You have no Ice Core.');
       if (s.res.water > 75) return fail('The tank is nearly full.');
       s.items.ice_core -= 1;
+      s.stats.melted += 1;
       s.res.water = clamp(s.res.water + 25, 0, CAP.water);
       emit({ type: 'melted', cores: 1 });
       break;

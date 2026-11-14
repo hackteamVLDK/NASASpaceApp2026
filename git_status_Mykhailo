@@ -11,10 +11,12 @@ Updated: 2026-11-14 (UTC+1), after the backend was aligned with SCENARIO.md
   "in the same style"). The team generates images and drops them in assets/incoming/.
 
 ## DOING NOW
-- Nothing in progress. Backend is aligned with SCENARIO.md; waiting for the team's answers (see QUESTIONS) and for the next scenario parts.
+- Done: the playable game on SCENARIO v2 (src/campaign = engine, story, expeditions, logbook; src/render, src/ui, src/main.js).
+  npm run dev. The old src/sim is no longer used by the game. Next: Fitness + Sol Plans (3.10/3.11), co-op roles, logbook images,
+  portraits/heads (Vlad's CHARACTER_PROMPTS), polish, sound files.
 
 ## I AM NOT BUILDING (free for others)
-- The screens themselves: intro text screen, landing cutscene rendering, AstraGuidePanel
+- (UI now exists in src/ui and src/render; coordinate before editing) The screens themselves: intro text screen, landing cutscene rendering, AstraGuidePanel
   component, DroneRepairMiniGame modal, HUD. If you build them, import the numbers and texts
   from src/flow/ instead of retyping them from SCENARIO.md — tests keep src/flow/ equal to
   SCENARIO.md.

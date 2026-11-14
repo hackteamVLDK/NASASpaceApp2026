@@ -33,7 +33,7 @@ export const EXPEDITIONS = Object.freeze({
   5: { id: 5, nameId: 'ui.exp5.name', sol: 2, route: 'canyon', risk: 'low', scripted: true, requires: (s) => (canLaunchFinale(s) ? null : 'Needs all four Rover upgrades and the Lab Deep Scan.'),
     loot: { sp: 30, items: {} }, story: [],
     radio: [0, 25, 50, 55, 70, 95], radioIdMap: { 0: '01', 25: '02', 50: '03', 55: '04', 70: '05', 95: '06' }, astra: { 75: 'astra.finale.leopard', 85: 'astra.finale.methane' }, mapPos: [0.08, 0.35] },
-  run: { id: 'run', nameId: 'ui.exp.run.name', sol: 1, route: 'floor', risk: 'low', requires: (s) => (online(s, 'garage') ? null : 'Build the Garage & Airlock first.'),
+  run: { id: 'run', nameId: 'ui.exp_run.name', sol: 1, route: 'floor', risk: 'low', requires: (s) => (online(s, 'garage') ? null : 'Build the Garage & Airlock first.'),
     loot: { sp: 15, items: {} }, story: [], radio: [0, 50, 100], mapPos: [0.6, 0.7] },
 });
 
@@ -143,6 +143,7 @@ export function expeditionMinute(s, emit) {
   for (const mark of ex.radio) {
     if (pct >= mark && !a.fired.includes(mark)) {
       a.fired.push(mark);
+      if (ex.id === 4 && mark === 20) s.flags.passedIngenuity = true;
       const suffix = ex.radioIdMap ? ex.radioIdMap[mark] : pp(mark);
       emit({ type: 'radio', id: `radio.exp${ex.id}.${suffix}`, percent: mark });
       if (ex.astra?.[mark]) emit({ type: 'astra', lineId: ex.astra[mark], mood: 'cheerful' });
