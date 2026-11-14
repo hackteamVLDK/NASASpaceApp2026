@@ -54,7 +54,7 @@ lander that do not exist but light up as clickable → A11. If one of them still
 | A19 | Why can't I stop building a module and send the workers to another module? | SCENARIO does not say whether a build can be stopped or switched. | Team decision: no change; a started build cannot be stopped or switched. | PLAYER | DECIDED: won't do |
 | A20 | The top bar is not fixed; it can move. | Not checked yet. | Pin the top bar in place, so it never moves with the page. | PLAYER | OPEN |
 | A21 | Clicking objects does nothing. | Not checked yet (see also A11). | Every object that lights up opens its info or action; anything else does not light up. | PLAYER | OPEN |
-| A22 | In the cracked-filter event I could pick the water option before the Garage was built. | Not checked yet; probably a Dilemma 2 choice that needs the Garage is not locked (`story.js`, Mykhailo's file). | Grey out a choice whose building is missing and say why. | PLAYER | OPEN (Mykhailo's file) |
+| A22 | In the cracked-filter event I could pick the water option before the Garage was built. | Not checked yet; probably a Dilemma 2 choice that needs the Garage is not locked (`story.js`, Mykhailo's file). | The engine now refuses the Cargo Trailer until the Garage is at least being built, and any paid choice the base cannot afford; the card stays open and says why. Greying the card out is UI (D-T1). | PLAYER | FIXED in the engine |
 | A23 | No sound when an action fails (for example, the queue is full, or a build cannot start because one is already running). | Not checked yet. | Play a soft "no" sound with every refused command. | PLAYER | OPEN |
 | A24 | There is no normal way to close pop-up windows; add a close button in the top-right corner. | Not checked yet. | A close button (×) in the top-right corner of every card and window, and Esc closes it too. | PLAYER | OPEN |
 | A25 | The Repair Kit and Drone #02 mission should be two sub-tasks. | `missions.js` had one step, done only when Drone #02 woke. | Two steps: "Craft a Repair Kit" (done when a kit is in stock or the drone is awake; shows the Workshop's progress; "Show me" opens the Workshop tab), then "Drag the Repair Kit onto Drone #02". The same split for the Reboot Kit and Drone #03. Main list 19 → 21 missions; checked in `tests/missions.test.mjs`. | PLAYER | FIXED |
@@ -74,14 +74,14 @@ Engine items live in `src/campaign/expeditions.js` and `story.js`, which Mykhail
 
 | # | Problem | Where | Fix (from the record) | Source | Status |
 |---|---|---|---|---|---|
-| B1 | Heat Pump cannot be won. | `minigames2.js` | See A4. | R1 #1 | FIXED |
+| B1 | Heat Pump cannot be won. | `minigames2.js` | See A4. | R1 #1 | MERGED into A4 |
 | B2 | Mini-games have no way out; three failures give a free win without the drone offer. | `index.html`, `minigames2.js` | Back button on every mini-game (not during the tutorial). The drone offer needs an engine job (1 Sol of drone time). | R1 #2 | FIXED (Back); OPEN (drone job) |
 | B3 | Reload loses progress between Sols; blocked storage fails silently. | `main.js` | Save after consequential commands and on page exit; show a message when saving fails. | R1 #3 | OPEN |
 | B4 | Continue accepts invalid or old saves. | `main.js` | Validate and migrate by `version`; merge defaults deeply; say what happened. | R1 #4 | OPEN |
 | B5 | A missing sheet throws before the placeholder is drawn. | `atlas.js` | Safe placeholder sizes in `bbox`, `unionBox`, `cellRect`. | R1 #5 | OPEN |
-| B6 | The finale's ASTRA lines at 75% and 85% never fire; Expedition 5 brings no Canyon or Brine Sample. | `expeditions.js` | Dispatch ASTRA marks apart from radio marks; add the protected samples. | R1 #6, R2 #2 | CLAIMED Mykhailo |
+| B6 | The finale's ASTRA lines at 75% and 85% never fire; Expedition 5 brings no Canyon or Brine Sample. | `expeditions.js` | Dispatch ASTRA marks apart from radio marks; add the protected samples. | R1 #6, R2 #2 | FIXED (both ASTRA lines fire; `tests/engine-fixes.test.mjs`). OPEN: the two sample items need `ui.item.canyon_samples.name` and `ui.item.brine_sample.name` in the strings (content), then 2 lines of loot |
 | B7 | Ice Run cannot be chosen; any story trip can be repeated for full loot. | `campaign-ui.js`, `expeditions.js` | Run-mode command and map selector; a done lock for story trips. Engine: the `ice` trip and the done locks (Mykhailo). Map: the `Ice` and `Scrap` markers, loot with counts, HP warning (Pavlo, see A27). | R1 #7 | FIXED |
-| B8 | A failed antenna try clears Dilemma 4 B and loses its outcome. | `story.js` | Keep the dilemma context until the window ends. | R1 #8 | OPEN |
+| B8 | A failed antenna try clears Dilemma 4 B and loses its outcome. | `story.js` | Keep the dilemma context until the window ends. | R1 #8 | FIXED (a failed try keeps Dilemma 4 B) |
 | B9 | Recurring breakdowns and several failure penalties are missing. | `story.js` | Persistent breakdown state with schedules (plan P2). | R1 #9 | OPEN |
 | B10 | Every Solar Wipe win replays the tutorial battery step. | `main.js` | Tutorial transitions only in the tutorial. | R1 #10 | FIXED |
 | B11 | Washing the soil (Dilemma 3 A or C) has no button. | UI, `story.js` | A Lab action with its cost and drone time. | R1 #11 | OPEN |
@@ -90,15 +90,61 @@ Engine items live in `src/campaign/expeditions.js` and `story.js`, which Mykhail
 | B14 | The battery step can finish twice. | `minigames.js` | Ignore input after done. | R1 #14 | FIXED |
 | B15 | Skip drops the transition sounds; ASTRA does not finish a line when the next is due. | `main.js`, `astra.js` | Fire cues for a skipped interval; finish-and-hold. | R1 #15 #16 | OPEN |
 | B16 | The report and badge accounting are incomplete; the Logbook has no pictures. | `campaign-ui.js` | Record flare shelter and loss, story items; show images. | R1 #17 #18 | OPEN |
-| B17 | The Run radio shows string keys. | `expeditions.js` | Use `radio.run.<percent>.<variant>`. | R1 #19 | CLAIMED Mykhailo |
+| B17 | The Run radio shows string keys. | `expeditions.js` | Use `radio.run.<percent>.<variant>`. | R1 #19 | FIXED (`radio.run.<percent>.<variant>`, picked from the pool) |
 | B18 | Small screens and big interface sizes clip cards. | CSS | Scrollable cards, real pixel targets. | R1 #20 | OPEN |
 | B19 | The audio director is not connected. | `main.js` | PR #7 (Pavlo) and PR #8 (Mykhailo). | R1 #22 | OPEN |
-| B20 | Dilemma 1 B caps Power at 100 even with a battery; Dilemma 5 A repeat trip and C repair cost are not implemented; Dilemma 3 B, 4 C and Event 3 C need drone jobs; timed effects use calendar cut-offs. | `story.js`, `expeditions.js` | R2 has 23 numbered items with a fix each. | R2 | OPEN (Mykhailo's files) |
+| B20 | Dilemma 1 B caps Power at 100 even with a battery; Dilemma 5 A repeat trip and C repair cost are not implemented; Dilemma 3 B, 4 C and Event 3 C need drone jobs; timed effects use calendar cut-offs. | `story.js`, `expeditions.js` | R2 has 23 numbered items with a fix each. | R2 | PARTLY FIXED: #1 Power cap, #3 return trip, #6 #7 mini-game checks, #8 #9 choice checks, #13 Dilemma 1 C, #18 tape, #20 wilt. Still open: see D-T17a..h |
 
 ## C. Found by the main agent
 
+Rows C4-C9 come from `node tools/balance/strategy-lab.mjs` (14 kinds of player x seeds, 30 Sols each).
+
 | # | Problem | Fix | Status |
 |---|---|---|---|
-| C1 | I moved dormant Drones #02 and #03 onto the surface mounds in the last batch. SCENARIO says "from here on they sit dormant in the Garage & Airlock frame"; the mounds are for the cutscene only. That deviation also caused A11. | Reverted (see A11). The dig-out animation plays in the Garage when the kit wakes them. | FIXED |
+| C1 | I moved dormant Drones #02 and #03 onto the surface mounds in the last batch. SCENARIO says "from here on they sit dormant in the Garage & Airlock frame"; the mounds are for the cutscene only. That deviation also caused A11. | Reverted. | MERGED into A11 |
 | C2 | The 22 fixes of [REVIEW_2026-11-14.md](REVIEW_2026-11-14.md). | | FIXED |
-| C3 | Two tests fail on the current `main` because of Mykhailo's work in progress on `expeditions.js` and `story.js` (`radio.expice.00`, the +2 SP replay test). | Not touched; theirs. | CLAIMED Mykhailo |
+| C3 | Two tests fail on the current `main` because of Mykhailo's work in progress on `expeditions.js` and `story.js` (`radio.expice.00`, the +2 SP replay test). | Both tests updated to the new rules. `npm test`: 257 pass. | FIXED |
+| C4 | The all-A path could never reach the finale: Dilemma 5 A brings 2 Rare Battery Cells, Battery T2 eats both, the Long-Range Battery needs 1, and nothing said so (0 of 8 runs finished). | Return trip to the Delta Cliffs (1 Sol, the rest of the loot) as SCENARIO Dilemma 5 A says; the map lists exactly what the finale still needs. Now 6 of 6. | FIXED |
+| C5 | Reporting a won mini-game over and over gave free Spare Parts and Heat (999 SP in the lab run). | A result counts only for a task on offer, the prep before a trip, or the Sol 1 tutorial. | FIXED |
+| C6 | Doing nothing costs nothing: Heat at 0 for 26 Sols and Food at 0 for 18, HP never under 94, Mission Rating 5 of 9 (the same as a player who finishes the story in a rush). SCENARIO gives an Emergency no cost while it is ignored. | Needs the team: (a) a small HP or Morale cost per Sol while an Emergency stays open; (b) count Emergencies and Sols at zero in the rating. Row A28 (Game Over at HP 0) does not change this: in the base HP never falls. | DECISION |
+| C7 | Losing or ignoring every mini-game changes almost nothing (same rooms, same stars). | Comes with B9: the recurring breakdowns of SCENARIO 4.x lower a system until its game is won. | OPEN (with B9) |
+| C8 | Oxygen never falls below 80 and Morale never below 53 in any strategy; Spare Parts pile up past 300 with nothing to buy. | B9 makes Oxygen matter (a dirty filter halves output). Morale and the Spare Parts surplus need the team. | DECISION |
+| C9 | The always-C path finishes late (Sol 28) or not within 30 Sols: Dilemma 5 C wears out the shielding and the re-craft asks for a Titanium Plate, but SCENARIO says 15 SP only. | D-T17a. | OPEN |
+
+## D. Open work, cut into small tasks
+
+Rules for this list: one task = one small change with a check that proves it. Who does it:
+**GEMMA** = the local model (`node tools/local-llm/ask.mjs`: free, slow, small context; drafts only, always checked),
+**CODEX** = `node tools/codex/delegate.mjs` (review, root cause, or a patch in its own worktree with `--write`),
+**MAIN** = the main agent (joins the pieces, runs the tests, commits). Rows that say the same thing are merged
+on sight (status `MERGED into <row>`); a new report is first compared with this file.
+
+| Task | From | What exactly | Files | Who | Done when |
+|---|---|---|---|---|---|
+| D-T1 | A24, B2, A22 | A close button (x) on every card and window, Esc closes it; a choice the engine refuses is greyed with the reason | `campaign-ui.js`, `game.css` | CODEX write | every modal closes by x and Esc; test for the refused choice text |
+| D-T2 | A15 | Soft glow around a hovered or selected sprite instead of the white frame | `campaign-world.js` | CODEX write | screenshot check |
+| D-T3 | A17 | Centre the button label; redraw the battery icon | UI | needs a screenshot from the player first | player confirms |
+| D-T4 | A18 | A table "where each part comes from" from SCENARIO 5.5, shown in mission and upgrade cards | new `src/campaign/sources.js`, then UI | GEMMA drafts the table, MAIN checks it against 5.5 and wires it | test: every item of `ITEMS` has a source line |
+| D-T5 | A20 | Pin the top bar | `game.css` | GEMMA proposes the CSS, MAIN applies | bar does not move when the page scrolls |
+| D-T6 | A21 | List every object that lights up but does nothing when clicked | `campaign-world.js`, `main.js` | CODEX read-only | a list of objects with file:line |
+| D-T7 | A23 | A soft "no" sound for every refused command | `main.js` `send()` | MAIN (1 line, after the audio PRs) | refused command plays it |
+| D-T8 | B3 | Save after each accepted command and on page exit; show a message when saving fails | `main.js` | CODEX write | reload after a craft keeps it |
+| D-T9 | B4 | Validate a save before use (version, shapes, known ids); bad save = clear message and a new game | new `src/campaign/save.js` + test | CODEX write, MAIN reviews | tampered saves are refused in a test |
+| D-T10 | B5 | Safe placeholder sizes when a sprite sheet is missing | `atlas.js` | CODEX write | test with a missing sheet does not throw |
+| D-T11 | B6 | Strings for Canyon Samples and Brine Sample, then add them to the finale loot | content strings, `expeditions.js` | content owner, then MAIN (2 lines) | loot screen shows both |
+| D-T13a | B9, C7 | Breakdown table: Static Wipe every 5 Sols (-20% solar), Air Filter every 4 (-50% Oxygen output, -25% after a failed try), Valve every 6 (-30%), Water Sort every 6 (recycler 70%) | `data.js` | MAIN | table has provenance notes |
+| D-T13b | B9 | Scheduler at dawn: about 1 breakdown per 2 Sols, at most 2 open, none while away | `story.js` `onSol` | MAIN | test over 20 Sols |
+| D-T13c | B9 | Oxygen output multiplier from open breakdowns in `contributions()` | `engine.js` | MAIN | Resources screen shows the loss line |
+| D-T13d | B9 | Tests for the three above; strategy lab row "ignore-minigames" must end worse than "recommended" | `tests/` | CODEX drafts, MAIN runs | lab shows the difference |
+| D-T14 | B11 | `washSoil` command (20 Water, 1 drone for 1 Sol) when Dilemma 3 A or C was chosen; a Lab button | `story.js`, UI | MAIN engine, UI owner button | Soil Beds can be had later |
+| D-T15 | B12 | Sol Plans and Fitness (SCENARIO 3.10, 3.11) | many | first the team decision in GAMEPLAY_PLAN section 2, then split | — |
+| D-T16 | B15, B16, B18, B19 | Skip cues, report details, small screens, audio PRs #7 and #8 | UI | UI and audio owners | — |
+| D-T17a | B20 (R2 #4), C9 | Worn shielding after Dilemma 5 C is repaired for 15 SP, no plate | `engine.js` craft, `expeditions.js` | GEMMA or CODEX (5 lines + test) | always-C reaches the finale by Sol 25 |
+| D-T17b | B20 (R2 #5) | One "Greenhouse is working" test (online, Water above 0, Power above 0) used by food, fresh-crop HP, Soil Beds and the harvest count | `engine.js` | CODEX write | test at 0 Water |
+| D-T17c | B20 (R2 #7) | `wakeDrone` only for Drone #01 (the tutorial); the others need their kit | `engine.js` | GEMMA (2 lines + test) | test |
+| D-T17d | B20 (R2 #11) | Suit Liner x0.75 also when walking outside | `engine.js` `stepHp` | GEMMA (1 line + test) | test |
+| D-T17e | B20 (R2 #14) | Dilemma 3 B, 4 C and Event 3 C take a drone for 1, 0.5 and 1 Sol | `story.js`, `engine.js` | CODEX write | test: the drone is busy |
+| D-T17f | B20 (R2 #15 #19) | Durations as elapsed time, not calendar cut-offs | `story.js` | CODEX write | tests with exact minutes |
+| D-T17g | B20 (R2 #16 #21) | Flare forecast one Sol early and used once; the follow-up lines `astra.d5.a/b/c`, `astra.e4.a` | `story.js`, `expeditions.js` | CODEX write | events contain the lines |
+| D-T17h | B20 (R2 #10 #12 #22) | Radio A on Expedition 2 adds time but no dose; Titanium Wheels "-1 risk on rocky routes"; slow builds at Morale 0 or below 30; builds end at dawn | — | DECISION (SCENARIO is unclear or differs) | team answers |
+
