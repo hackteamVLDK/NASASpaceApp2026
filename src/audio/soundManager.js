@@ -28,6 +28,7 @@ export class SoundManager {
     this.reverbNode = null;
 
     this.muted = false;
+    this.masterVolume = 1.0; // C15: the Settings card's master slider (0..1)
     this.musicVolume = 0.75;
     this.sfxVolume = 0.85;
 
@@ -94,6 +95,7 @@ export class SoundManager {
       if (!raw) return;
       const v = JSON.parse(raw);
       if (typeof v.muted === 'boolean') this.muted = v.muted;
+      if (typeof v.masterVolume === 'number') this.masterVolume = Math.max(0, Math.min(1, v.masterVolume));
       if (typeof v.musicVolume === 'number') this.musicVolume = Math.max(0, Math.min(1, v.musicVolume));
       if (typeof v.sfxVolume === 'number') this.sfxVolume = Math.max(0, Math.min(1, v.sfxVolume));
     } catch (e) { /* ignore: defaults stay */ }
@@ -103,7 +105,7 @@ export class SoundManager {
     try {
       if (typeof localStorage === 'undefined') return;
       localStorage.setItem(SETTINGS_KEY, JSON.stringify({
-        muted: this.muted, musicVolume: this.musicVolume, sfxVolume: this.sfxVolume
+        muted: this.muted, masterVolume: this.masterVolume, musicVolume: this.musicVolume, sfxVolume: this.sfxVolume
       }));
     } catch (e) { /* ignore */ }
   }
@@ -123,7 +125,7 @@ export class SoundManager {
       this.compressor.release.value = 0.2;
 
       this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.value = this.muted ? 0 : 1.0;
+      this.masterGain.gain.value = this.muted ? 0 : this.masterVolume;
 
       this.musicGain = this.ctx.createGain();
       this.musicGain.gain.value = this.musicVolume * 0.9;
@@ -168,7 +170,7 @@ export class SoundManager {
   setMuted(isMuted) {
     this.muted = Boolean(isMuted);
     if (this.masterGain && this.ctx) {
-      this.masterGain.gain.setTargetAtTime(this.muted ? 0 : 1.0, this.ctx.currentTime, 0.05);
+      this.masterGain.gain.setTargetAtTime(this.muted ? 0 : this.masterVolume, this.ctx.currentTime, 0.05);
     }
     this._saveSettings();
   }
@@ -176,6 +178,14 @@ export class SoundManager {
   toggleMute() {
     this.setMuted(!this.muted);
     return this.muted;
+  }
+
+  setMasterVolume(val0to1) {
+    this.masterVolume = Math.max(0, Math.min(1, val0to1));
+    if (this.masterGain && this.ctx && !this.muted) {
+      this.masterGain.gain.setTargetAtTime(this.masterVolume, this.ctx.currentTime, 0.05);
+    }
+    this._saveSettings();
   }
 
   setMusicVolume(val0to1) {

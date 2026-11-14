@@ -10,6 +10,7 @@ import { LAYOUTS, scramble, reach, tap, canTurn, ROWS, COLS, N, E, S, W as WEST 
 import { createSuit, pointerDown, pointerMove, pointerUp, pressureAt, steps, complete, nextStep, STAGE, PRESSURE } from './suit-seal.js';
 import { t } from '../flow/strings.js';
 import { formatDelay } from '../data/nasa/lightTime.js';
+import { wave } from './prefs.js';
 
 const W = 1100;
 const H = 620;
@@ -110,7 +111,7 @@ function heatPump() {
         const m = tiles[r][col];
         const x = X + col * T, y = Y + r * RH, cx = x + T / 2, cy = y + RH / 2;
         c.fillStyle = canTurn(m) ? '#16293c' : '#101d2b'; rr(c, x + 4, y + 4, T - 8, RH - 8, 14); c.fill();
-        c.strokeStyle = seen.has(`${r},${col}`) ? `rgba(255,${140 + Math.sin(now / 150) * 30},40,1)` : '#7b8a99'; c.lineWidth = 18; c.lineCap = 'round';
+        c.strokeStyle = seen.has(`${r},${col}`) ? `rgba(255,${Math.round(110 + 60 * wave(now, 150))},40,1)` : '#7b8a99'; c.lineWidth = 18; c.lineCap = 'round';
         const arm = (dx, dy) => { c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + dx * T / 2, cy + dy * RH / 2); c.stroke(); };
         if (m & N) arm(0, -1); if (m & E) arm(1, 0); if (m & S) arm(0, 1); if (m & WEST) arm(-1, 0);
         if (m && !canTurn(m)) { c.fillStyle = '#394b5d'; c.beginPath(); c.arc(cx, cy, 12, 0, Math.PI * 2); c.fill(); } // a fixed junction: it does not turn
@@ -170,7 +171,7 @@ function valveBalance() {
         label(c, '\u2194', hx, sliderY + 9, 28, '#0b1522');
         // which way to go: a pulsing arrow until the needle is safe
         if (!inBand) {
-          const dir = val > g.band[1] ? -1 : 1, a = 0.5 + 0.5 * Math.sin(now / 180);
+          const dir = val > g.band[1] ? -1 : 1, a = wave(now, 180);
           c.fillStyle = `rgba(255,214,0,${a})`; c.beginPath();
           const ax = hx + dir * 62;
           c.moveTo(ax + dir * 22, sliderY); c.lineTo(ax, sliderY - 18); c.lineTo(ax, sliderY + 18); c.closePath(); c.fill();
@@ -263,7 +264,7 @@ function waterSort() {
       // the pipe the water runs through: tap -> three machines -> clean water
       c.fillStyle = '#22384d'; c.fillRect(100, 296, 960, 18);
       const ready = full() && !flowing;
-      if (ready) { c.shadowColor = '#ffd600'; c.shadowBlur = 10 + 16 * (0.5 + 0.5 * Math.sin(now / 200)); }
+      if (ready) { c.shadowColor = '#ffd600'; c.shadowBlur = 10 + 16 * wave(now, 200); }
       c.fillStyle = '#ffb000'; rr(c, 30, 150, 150, 70); c.fill(); c.shadowBlur = 0; label(c, 'TAP', 105, 196, 30, '#000');
       // the droplet: murky at the start, it runs along the pipe and turns clear blue after the last machine
       const k = flowing ? Math.min(1, (now - flowing) / 900) : 0;
@@ -275,7 +276,7 @@ function waterSort() {
       c.fillStyle = '#fff'; c.beginPath(); c.arc(dx - 8, 299, 5, 0, Math.PI * 2); c.arc(dx + 8, 299, 5, 0, Math.PI * 2); c.fill(); // eyes
       for (let i = 0; i < 3; i++) {
         const r = slotRect(i); const bad = wobble?.i === i && now - wobble.at < 600;
-        c.strokeStyle = bad ? '#ff5252' : i === next && !drag ? `rgba(0,229,255,${0.6 + 0.4 * Math.sin(now / 200)})` : '#4db8ff';
+        c.strokeStyle = bad ? '#ff5252' : i === next && !drag ? `rgba(0,229,255,${0.2 + 0.8 * wave(now, 200)})` : '#4db8ff';
         c.setLineDash([10, 8]); c.lineWidth = 4; c.strokeRect(r.x + (bad ? Math.sin(now / 30) * 6 : 0), r.y, r.w, r.h); c.setLineDash([]);
         if (!slots[i]) label(c, String(i + 1), r.x + r.w / 2, r.y + 72, 44, 'rgba(77,184,255,.45)');
       }
@@ -322,14 +323,14 @@ function nutrientMatch() {
       trays.forEach((t) => {
         c.fillStyle = t.filled ? '#2e6b3a' : '#2a3a4a'; rr(c, t.x - 120, 300, 240, 200); c.fill();
         c.fillStyle = t.tag; rr(c, t.x - 30, 470, 60, 24, 8); c.fill();
-        if (drag && !t.filled && t.tag === drag.c) { c.strokeStyle = `rgba(255,255,255,${0.5 + 0.4 * Math.sin(now / 150)})`; c.lineWidth = 4; rr(c, t.x - 120, 300, 240, 200); c.stroke(); }
+        if (drag && !t.filled && t.tag === drag.c) { c.strokeStyle = `rgba(255,255,255,${0.1 + 0.8 * wave(now, 150)})`; c.lineWidth = 4; rr(c, t.x - 120, 300, 240, 200); c.stroke(); }
         const wilt = !t.filled || !led; const yellow = now - t.bad < 900;
         c.fillStyle = yellow ? '#e5d34a' : wilt ? '#7a8a3a' : '#43e060'; c.fillRect(t.x - 8, wilt ? 380 : 340, 16, wilt ? 90 : 130); c.beginPath(); c.arc(t.x, wilt ? 380 : 340, wilt ? 30 : 46, 0, Math.PI * 2); c.fill();
         if (t.filled) label(c, '✔', t.x + 95, 330, 26, '#9affb0');
       });
       bottles.forEach((b) => { if (b.used) return; c.fillStyle = b.c; rr(c, b.x - 28, b.y - 50, 56, 100, 10); c.fill(); c.fillStyle = '#fff'; c.fillRect(b.x - 12, b.y - 62, 24, 14); });
       const ready = fed() === 3 && !led;
-      if (ready) { c.shadowColor = '#ff4de1'; c.shadowBlur = 10 + 16 * (0.5 + 0.5 * Math.sin(now / 200)); }
+      if (ready) { c.shadowColor = '#ff4de1'; c.shadowBlur = 10 + 16 * wave(now, 200); }
       c.fillStyle = led ? '#ff4de1' : ready ? '#9a5a8a' : '#555'; rr(c, 500, 520, 100, 90, 14); c.fill(); c.shadowBlur = 0; label(c, 'LED', 550, 575, 26, '#000'); // below the trays, not on top of one
       progress(c, `Plants fed: ${fed()} / 3`, fed() / 3, 950, 225);
       if (!moved && !drag) { const b = bottles[0]; const tr = trays.find((q) => q.tag === b.c); dragHand(c, b.x, b.y, tr.x, 400, now); }
@@ -375,9 +376,9 @@ function airFilter() {
     draw(c, now) {
       label(c, step === 0 ? 'Tap the yellow handle to pull the filter out' : step === 1 ? 'Rub each brown square left and right until it is clean' : 'Tap the green LOCK lever', W / 2, 60, 26, '#ffb000');
       c.fillStyle = '#394b5d'; rr(c, X - 110, Y - 20, 640, 440, 16); c.fill();
-      if (step === 0) { c.shadowColor = '#ffd600'; c.shadowBlur = 10 + 16 * (0.5 + 0.5 * Math.sin(now / 200)); c.fillStyle = '#ffb000'; rr(c, X - 100, Y, 80, 200); c.fill(); c.shadowBlur = 0; label(c, 'PULL', X - 60, Y + 110, 22, '#000'); }
+      if (step === 0) { c.shadowColor = '#ffd600'; c.shadowBlur = 10 + 16 * wave(now, 200); c.fillStyle = '#ffb000'; rr(c, X - 100, Y, 80, 200); c.fill(); c.shadowBlur = 0; label(c, 'PULL', X - 60, Y + 110, 22, '#000'); }
       cells.forEach((q, i) => { const x = X + (i % 4) * C, y = Y + Math.floor(i / 4) * C; c.fillStyle = '#9fb5c8'; c.fillRect(x + 4, y + 4, C - 8, C - 8); c.fillStyle = `rgba(180,70,30,${q.dust / 3 * 0.85})`; c.fillRect(x + 4, y + 4, C - 8, C - 8); if (q.dust === 0 && step === 1) label(c, '✔', x + C / 2, y + C / 2 + 10, 28, '#1d6e2e'); });
-      if (step === 2) { c.shadowColor = '#43e060'; c.shadowBlur = 10 + 16 * (0.5 + 0.5 * Math.sin(now / 200)); c.fillStyle = '#43e060'; rr(c, 820, 300, 120, 100); c.fill(); c.shadowBlur = 0; label(c, 'LOCK', 880, 360, 26, '#000'); }
+      if (step === 2) { c.shadowColor = '#43e060'; c.shadowBlur = 10 + 16 * wave(now, 200); c.fillStyle = '#43e060'; rr(c, 820, 300, 120, 100); c.fill(); c.shadowBlur = 0; label(c, 'LOCK', 880, 360, 26, '#000'); }
       if (step === 1) progress(c, `Clean squares: ${clean()} / 16`, clean() / 16, 950, 170);
       if (step === 0) tapHand(c, X - 60, Y + 100, now);
       else if (step === 1 && clean() === 0 && !rub) { const i = cells.findIndex((q) => q.dust > 0); const x = X + (i % 4) * C, y = Y + Math.floor(i / 4) * C + C / 2; dragHand(c, x + 15, y, x + C - 15, y, now); }
@@ -497,7 +498,7 @@ function wheelVacuum() {
 // The rules (random seals, the badge, the liner, the pressure gauge) are in suit-seal.js and are tested under node (docs/ERRORS.md A37).
 // The suit is drawn from code: a development stand-in for a front-view suit picture, not final art.
 const RINGS = { helmet: [550, 222, 58, 14], gloveL: [449, 372, 32, 9], gloveR: [651, 372, 32, 9], bootL: [513, 536, 36, 9], bootR: [587, 536, 36, 9] };
-const pulse = (now, ms = 320) => 0.5 + 0.5 * Math.sin(now / ms);
+const pulse = (now, ms = 320) => wave(now, ms); // steady with Reduce motion (C15)
 
 function drawSuit(c) {
   const fill = '#ece6da', line = '#6e6759', dark = '#9c8f7c';

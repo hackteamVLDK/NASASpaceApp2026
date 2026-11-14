@@ -9,7 +9,7 @@
 </head>
 <body>
   <div id="stage">
-    <canvas id="game" width="1920" height="1080"></canvas>
+    <canvas id="game" width="1920" height="1080" role="img" aria-label="The Mars base: tap rooms, drones and the Rover"></canvas>
 
     <div id="loading"><div class="logo">ARES-KIDS</div><div class="sub">The Jezero Signal</div><div id="loadbar"><i></i></div><button id="startBtn" hidden>Start mission</button></div>
     <button id="skipBtn" hidden>Skip &gt;&gt;</button>
@@ -17,9 +17,10 @@
     <div id="hud" hidden>
       <div id="clock"></div>
       <div id="gauges"></div>
-      <div id="speed"><button data-speed="0" title="Pause">II</button><button data-speed="1" class="on">1x</button><button data-speed="3">3x</button><button data-speed="8">8x</button></div>
-      <div id="uisize" title="Interface size"><button data-ui="-1">A-</button><button data-ui="1">A+</button></div>
-      <button id="muteBtn" title="Sound on / off">🔊</button>
+      <div id="speed"><button data-speed="0" title="Pause" aria-label="Pause">II</button><button data-speed="1" class="on" aria-label="Normal speed">1x</button><button data-speed="3" aria-label="Speed times 3">3x</button><button data-speed="8" aria-label="Speed times 8">8x</button></div>
+      <div id="uisize" title="Interface size"><button data-ui="-1" aria-label="Smaller interface">A-</button><button data-ui="1" aria-label="Bigger interface">A+</button></div>
+      <button id="muteBtn" title="Sound on / off" aria-label="Sound on or off">🔊</button>
+      <button id="settingsBtn" title="Settings" aria-label="Settings" aria-haspopup="dialog">⚙</button>
     </div>
 
     <div id="side" hidden>
@@ -28,14 +29,14 @@
       <section id="goals"><h3>Goals</h3><ul id="goalList"></ul></section>
     </div>
 
-    <div id="astra" class="closed">
+    <div id="astra" class="closed" role="status" aria-live="polite">
       <div class="badge">ASTRA 6.7 // STATION AI</div>
       <div class="body"><canvas id="astraFace" width="96" height="96"></canvas><div id="astraText"></div></div>
       <button id="astraBtn">Got it</button>
     </div>
 
     <div id="toast" hidden></div>
-    <div id="mgWrap" hidden><button id="mgBack" type="button" title="Leave this job (Esc)">&larr; Back</button><div class="mgTitle"></div><canvas id="mg" width="1100" height="620"></canvas><div class="mgHint"></div></div>
+    <div id="mgWrap" hidden role="dialog" aria-modal="true" aria-label="Mini-game"><button id="mgBack" type="button" title="Leave this job (Esc)">&larr; Back</button><div class="mgTitle"></div><canvas id="mg" width="1100" height="620"></canvas><div class="mgHint"></div></div>
     <div id="summary" hidden></div>
   </div>
   <script type="module" src="src/main.js"></script>

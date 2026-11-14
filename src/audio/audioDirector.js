@@ -261,9 +261,10 @@ export function createAudioDirector({ sfx = defaultSfx, now = () => (globalThis.
     // ---- settings (HUD mute button, Music/SFX sliders)
     toggleMute() { return sfx.toggleMute?.(); },
     setMuted(v) { sfx.setMuted?.(v); },
+    setMasterVolume(v) { sfx.setMasterVolume?.(v); },
     setMusicVolume(v) { sfx.setMusicVolume?.(v); },
     setSfxVolume(v) { sfx.setSfxVolume?.(v); },
-    get settings() { return { muted: Boolean(sfx.muted), musicVolume: sfx.musicVolume, sfxVolume: sfx.sfxVolume }; },
+    get settings() { return { muted: Boolean(sfx.muted), masterVolume: sfx.masterVolume ?? 1, musicVolume: sfx.musicVolume, sfxVolume: sfx.sfxVolume }; },
 
     /**
      * Forget timed state (new campaign or a loaded save). With the loaded state `s`, victory music

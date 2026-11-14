@@ -73,7 +73,7 @@ button:hover { background:#1a4668; } button:disabled { opacity:.45; cursor:defau
 #hud { zoom: calc(var(--ui) * 0.9); height: 84px; } #hud #gauges { gap: 10px; }
 #hud .gauge .val { font-size: 19px; } #hud .gauge canvas { width: 34px; height: 34px; }
 #uisize { display: flex; gap: 4px; } #uisize button { padding: 5px 9px; font-size: 16px; }
-#muteBtn { padding: 5px 9px; font-size: 18px; line-height: 1; }
+#muteBtn, #settingsBtn { padding: 5px 9px; font-size: 18px; line-height: 1; } #settingsBtn { font-size: 26px; padding: 2px 9px; }
 .mod { font-size: 16px; } .mod button { font-size: 15px; } .why { font-size: 14px; } .cardbtn { font-size: 14px; }
 .modal .card { zoom: calc(var(--ui) * 0.85); }
 #mgWrap { zoom: calc(var(--ui) * 0.85); }
@@ -155,3 +155,17 @@ button:hover { background:#1a4668; } button:disabled { opacity:.45; cursor:defau
 .cardbtn canvas { vertical-align: middle; margin-right: 6px; }
 .logcard .cardpic { margin-top: 44px; } /* below the round close button */
 .card a { color: var(--cyan); } .card a:visited { color: #9fd8ff; } /* links readable on the dark cards */
+
+/* ---- C15 Settings card, Reduce motion, Large text ---- */
+.card.settings { width: 640px; }
+.setrow { display: flex; align-items: center; gap: 16px; margin: 18px 0; font-size: 22px; }
+.setrow span { flex: 0 0 190px; } .setrow.check span { flex: 1; } .setrow small { color: #9bb; font-size: 16px; }
+.setrow input[type=range] { flex: 1; height: 44px; accent-color: var(--orange); }
+.setrow input[type=checkbox] { width: 32px; height: 32px; accent-color: var(--orange); }
+.setrow b { min-width: 64px; text-align: right; color: var(--amber); }
+html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after { animation: none !important; transition: none !important; }
+html.large-text #astraText { font-size: 24px; }
+html.large-text .card p, html.large-text .card li, html.large-text .card .choice { font-size: 1.2em; }
+html.large-text .mod, html.large-text .why, html.large-text #tabBody, html.large-text .ms, html.large-text #radioBox { font-size: 1.15em; }
+html.large-text #toast { font-size: 1.2em; }
+html.large-text .mgHint { font-size: 27px; }

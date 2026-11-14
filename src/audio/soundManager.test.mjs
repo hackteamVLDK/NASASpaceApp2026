@@ -93,3 +93,20 @@ test('A23: actionDenied is soft and does not stack on repeated taps', async () =
   s.actionDenied(); s.actionDenied(); s.actionDenied();
   assert.equal(stats.oscillators - before, 2); // one "uh-uh" (two notes), the rest throttled
 });
+
+test('C15: master and music volume are saved and loaded again', async () => {
+  installFakeBrowser();
+  const store = new Map();
+  globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)) };
+  const { SoundManager } = await import('./soundManager.js?fake-volume');
+  const a = new SoundManager();
+  a.setMasterVolume(0.4); a.setMusicVolume(0.2); a.setMasterVolume(7);
+  assert.equal(a.masterVolume, 1, 'clamped to 0..1');
+  a.setMasterVolume(0.4);
+  const b = new SoundManager();
+  assert.equal(b.masterVolume, 0.4);
+  assert.equal(b.musicVolume, 0.2);
+  b.unlock();
+  assert.equal(b.masterGain.gain.value, 0.4, 'the master gain uses the saved volume');
+  delete globalThis.localStorage;
+});

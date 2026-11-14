@@ -240,6 +240,7 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
 
   // ---------------------------------------------------------------- modals
   const modalRoot = el('div', 'modal');
+  modalRoot.setAttribute('role', 'dialog'); modalRoot.setAttribute('aria-modal', 'true'); // C15
   modalRoot.id = 'modal';
   modalRoot.hidden = true;
   $('stage').append(modalRoot);

@@ -11,6 +11,7 @@ import { drawCampaign, buildSoil, createWalker, SCREEN } from './render/campaign
 import { ROVER, arrived, place as placeBody } from './render/movers.js';
 import { garageSpots, entryGeometry } from './render/geometry.js';
 import { createCampaign, step, command, clockAt } from './campaign/engine.js';
+import { prefs, setPref, applyPrefs } from './ui/prefs.js';
 import { restoreSave } from './campaign/save-migrate.js';
 import { SECONDS_PER_SOL, SOL, RECIPES, MODULES } from './campaign/data.js';
 import { openingFrameAt, cuesBetween, skipTarget, T, GAMEPLAY_VIEW, INTRO_TEXT, introTextAt, flowStateAt, astronautPathAt, entryDoorsAt } from './flow/intro.js';
@@ -81,6 +82,7 @@ function showMute() {
   const muted = audio.director.settings.muted;
   muteBtn.textContent = muted ? '🔇' : '🔊';
   muteBtn.title = muted ? 'Sound off (click to turn on)' : 'Sound on (click to turn off)';
+  muteBtn.setAttribute('aria-label', muted ? 'Sound is off. Turn sound on' : 'Sound is on. Turn sound off');
   muteBtn.classList.toggle('on', !muted);
 }
 muteBtn?.addEventListener('click', () => { audio.unlock(); audio.director.toggleMute(); showMute(); });
@@ -93,6 +95,30 @@ function remindIfMuted() {
   if (audio.director.settings.muted) toast('Sound is off. Tap the speaker button (top right) to turn it on.', 4500);
 }
 if (muteBtn) showMute();
+
+// ------------------------------------------------------------------ settings (C15)
+
+applyPrefs();
+/** The Settings card: master and music volume (saved by the sound engine), Reduce motion, Large text. */
+function openSettings() {
+  if (!ui) return;
+  const st = audio.director.settings;
+  const pct = (v) => Math.round((v ?? 1) * 100);
+  ui.openModal(`<div class="card settings" aria-labelledby="setTitle"><div class="hd" id="setTitle">SETTINGS</div>
+    <label class="setrow"><span>Master volume</span><input type="range" id="setMaster" min="0" max="100" value="${pct(st.masterVolume)}" aria-label="Master volume"><b id="setMasterV">${pct(st.masterVolume)}%</b></label>
+    <label class="setrow"><span>Music volume</span><input type="range" id="setMusic" min="0" max="100" value="${pct(st.musicVolume)}" aria-label="Music volume"><b id="setMusicV">${pct(st.musicVolume)}%</b></label>
+    <label class="setrow check"><input type="checkbox" id="setMotion" ${prefs.reduceMotion ? 'checked' : ''}><span>Reduce motion <small>(no screen shake, no pulsing)</small></span></label>
+    <label class="setrow check"><input type="checkbox" id="setLarge" ${prefs.largeText ? 'checked' : ''}><span>Large text</span></label>
+    <button class="choice" id="setOk">Done</button></div>`, 'settings');
+  const bind = (id, fn) => $(id).addEventListener('input', (e) => { const v = Number(e.target.value) / 100; fn(v); $(`${id}V`).textContent = `${e.target.value}%`; });
+  bind('setMaster', (v) => { audio.unlock(); audio.director.setMasterVolume(v); });
+  bind('setMusic', (v) => { audio.unlock(); audio.director.setMusicVolume(v); });
+  $('setMotion').addEventListener('change', (e) => setPref('reduceMotion', e.target.checked));
+  $('setLarge').addEventListener('change', (e) => setPref('largeText', e.target.checked));
+  $('setOk').addEventListener('click', () => ui.closeModal());
+  $('setMaster').focus();
+}
+$('settingsBtn')?.addEventListener('click', () => { audio.play('click'); openSettings(); });
 
 // ------------------------------------------------------------------ helpers
 
@@ -479,7 +505,7 @@ function render(nowMs) {
   if (mode === 'intro') {
     const f = openingFrameAt(flowT);
     S = {
-      s, cx: f.cameraX, cy: f.cameraY, zoom: f.zoom, shake: f.shake, nowMs, worldMs, soil, walker, droneMovers, rover, dtMs: worldDtMs,
+      s, cx: f.cameraX, cy: f.cameraY, zoom: f.zoom, shake: prefs.reduceMotion ? null : f.shake, nowMs, worldMs, soil, walker, droneMovers, rover, dtMs: worldDtMs,
       cut: { lander: f.lander, landed: f.lander.landed, dust: f.dustBurst ? { age: flowT - 25 } : null, astronaut: { pose: astronautPathAt(flowT, entryGeometry()) }, airlockOpen: entryDoorsAt(flowT).airlockOpen, droneLedOn: f.droneLedOn, showMound: flowT < 31.0, buried: flowT < 31.0, parachuteDrift: Math.min(1, Math.max(0, (flowT - 22.2) / 3)) },
     };
   } else {
