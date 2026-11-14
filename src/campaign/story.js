@@ -197,6 +197,29 @@ export function choiceBlock(s, pending, choice) {
 }
 
 /** Run an action the player picked. Called by command({type:'choose'}). */
+/**
+ * B11: SCENARIO Dilemma 3 says choice B "stays available from the Lab menu" after A or C.
+ * Why it cannot be started now, or null.
+ */
+export function soilWashBlock(s) {
+  if (!s.flags.washUnlocked) return 'Nothing to wash yet.';
+  if (s.flags.soilBeds || s.flags.soilWashing) return 'The soil is already washed.';
+  if (!online(s, 'lab')) return 'Build the Lab first: it tests the soil while it is washed.';
+  if (s.res.water < 20) return 'Needs 20 Water: perchlorates dissolve in water and rinse away.';
+  return null;
+}
+/** Start washing the soil from the Lab: the same cost and result as Dilemma 3 choice B (Soil Beds after 2 Sols). */
+export function startSoilWash(s, emit) {
+  const why = soilWashBlock(s);
+  if (why) return why;
+  const { sol } = clockAt(s.minute);
+  setRes(s, 'water', -20);
+  s.flags.soilWashing = true;
+  after(s, at(sol + 2, 8), 'd3b');
+  emit({ type: 'soil-wash-started' });
+  return null;
+}
+
 export function applyChoice(s, pending, choice, emit, rand) {
   const key = `${pending.id}${choice}`;
   const { sol } = clockAt(s.minute);
@@ -316,7 +339,9 @@ export function runTimer(s, id, emit) {
     case 'd2b_fix': s.recycleEta = RECYCLER.ok; setRes(s, 'sp', -12); follow('astra.d2.b'); break;
     case 'd2c_fix': s.recycleEta = RECYCLER.ok; follow('astra.d2.c'); break;
     case 'd3a': setRes(s, 'morale', -3); s.flags.washUnlocked = true; follow('astra.d3.a', 'calm'); break;
-    case 'd3b': s.flags.soilBeds = true; addMod(s, 'd3b_beds', 'food', 3); s.research += 5; follow('astra.d3.b'); break;
+    case 'd3b': s.flags.soilBeds = true; addMod(s, 'd3b_beds', 'food', 3); s.research += 5; follow('astra.d3.b');
+      if (s.flags.soilWashing && !s.choices.includes('d3b')) s.choices.push('d3b'); // B11: washed later from the Lab; counts once it is done
+      break;
     case 'solar_normal': s.mult.solar = 1; break;
     case 'leak_returns': addMod(s, 'leak', 'oxygen', -2); addMod(s, 'leak_w', 'water', -1); break;
     case 'drift_fixed': s.mult.food = 1; break;

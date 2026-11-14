@@ -38,7 +38,23 @@ const GRIDS = {
 /** Sheets whose rows are not equal fractions of the image: measured cell rectangles (source pixels). */
 const CELL_RECTS = {
   solar: [[0, 120, 1254, 350], [0, 505, 1254, 350], [0, 885, 1254, 350]],
+  // A17: the generated icon sheet is not a clean 6 x 6 grid (rows drift down), so equal cells cut icons and let parts of
+  // their neighbours in (a bar above the star, a stub under the battery). Each icon's real outline, measured from the
+  // sheet (all its parts, 2 px margin, no pixel of another icon inside), in ICON order.
+  icons: [
+    [21, 26, 200, 200], [254, 35, 149, 190], [435, 26, 177, 199], [660, 27, 149, 198],
+    [871, 26, 135, 201], [1037, 45, 205, 177], [29, 263, 187, 184], [264, 250, 120, 207],
+    [429, 255, 184, 189], [625, 265, 198, 181], [827, 271, 202, 182], [1049, 250, 179, 201],
+    [25, 469, 179, 211], [240, 496, 165, 176], [421, 522, 199, 141], [626, 484, 210, 181],
+    [856, 484, 164, 174], [1046, 495, 189, 174], [13, 737, 214, 126], [233, 707, 189, 170],
+    [439, 702, 164, 183], [634, 702, 181, 183], [832, 699, 194, 190], [1036, 722, 208, 166],
+    [18, 921, 200, 145], [235, 921, 186, 143], [443, 901, 168, 169], [644, 901, 157, 171],
+    [838, 923, 185, 146], [1046, 909, 179, 162], [30, 1087, 171, 152], [237, 1095, 178, 144],
+  ],
 };
+
+/** Sheets whose cells are drawn whole and centred, keeping their shape (measured rectangles are not square). */
+const KEEP_ASPECT = new Set(['icons']);
 
 /** Crop of single-room pictures to the room itself (source pixels x, y, w, h). */
 const ROOM_CROP = { bedroom: [0, 160, 1536, 712], dining: [0, 205, 1536, 655], lifesupport: [0, 95, 1536, 790] };
@@ -122,6 +138,7 @@ export async function loadAtlas(onProgress = () => {}) {
   function cellRect(id, index) {
     if (CELL_RECTS[id]) { const [x, y, w, h] = CELL_RECTS[id][index]; return { x, y, w, h }; }
     const sheet = sheets[id];
+    if (!sheet) return { x: 0, y: 0, w: 64, h: 64 }; // B5: a missing sheet gets a safe placeholder size instead of throwing
     const [cols, rows] = GRIDS[id] ?? [1, 1];
     const cw = sheet.width / cols;
     const ch = sheet.height / rows;
@@ -133,6 +150,7 @@ export async function loadAtlas(onProgress = () => {}) {
     const key = `${id}:${index}`;
     if (boxCache.has(key)) return boxCache.get(key);
     const r = cellRect(id, index);
+    if (!sheets[id]) return r; // B5: nothing to measure; the caller draws a placeholder
     const data = sheets[id].getContext('2d').getImageData(r.x, r.y, r.w, r.h).data;
     let x0 = r.w, y0 = r.h, x1 = -1, y1 = -1;
     for (let y = 0; y < r.h; y++) {
@@ -211,6 +229,11 @@ export async function loadAtlas(onProgress = () => {}) {
     cell(ctx, id, index, dx, dy, dw, dh, source = null) {
       if (!sheets[id]) return placeholder(ctx, id.toUpperCase(), dx, dy, dw, dh);
       const r = source ? { x: source[0], y: source[1], w: source[2], h: source[3] } : cellRect(id, index);
+      if (!source && KEEP_ASPECT.has(id)) { // fit inside the box, centred, without stretching
+        const k = Math.min(dw / r.w, dh / r.h);
+        ctx.drawImage(sheets[id], r.x, r.y, r.w, r.h, dx + (dw - r.w * k) / 2, dy + (dh - r.h * k) / 2, r.w * k, r.h * k);
+        return;
+      }
       ctx.drawImage(sheets[id], r.x, r.y, r.w, r.h, dx, dy, dw, dh);
     },
 

@@ -144,7 +144,7 @@ export class SoundManager {
       this.compressor.connect(this.masterGain);
       this.masterGain.connect(this.ctx.destination);
     }
-    if (this.ctx.state === 'suspended' && !(typeof document !== 'undefined' && document.hidden)) {
+    if (this.ctx.state !== 'running' && this.ctx.state !== 'closed' && !(typeof document !== 'undefined' && document.hidden)) { // 'suspended', or Safari's 'interrupted'
       this.ctx.resume().catch(() => {});
     }
   }

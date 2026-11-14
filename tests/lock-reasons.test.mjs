@@ -17,3 +17,13 @@ test('each lock reason says what to do and why (has a ":" and stays short)', () 
 test('the greenhouse explains that the Workshop makes its parts', () => {
   assert.match(unlockReason(createCampaign(), 'greenhouse'), /Workshop first: it makes the pumps, pipes and LED panels/);
 });
+
+test('C9: worn-out Rover shielding is re-crafted for 15 SP only (SCENARIO Dilemma 5 C)', async () => {
+  const { recipeCost } = await import('../src/campaign/engine.js');
+  const s = createCampaign();
+  assert.deepEqual(recipeCost(s, 'rover_shielding').items, { titanium_plate: 1 });
+  s.flags.shieldCrafted = true;
+  const again = recipeCost(s, 'rover_shielding');
+  assert.equal(again.sp, 15);
+  assert.deepEqual(again.items, {});
+});

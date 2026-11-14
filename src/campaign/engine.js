@@ -16,7 +16,8 @@ import {
   MODULES, BUILD_SOLS, UPGRADE_SOLS, DRONE_BUILD_POWER, STORM, RECIPES, UPGRADES, MODULE_LINES, BREAKDOWN_RULES, RULES,
 } from './data.js';
 import { clockAt, isNight, online } from './util.js';
-import { storyMinute, onSol, applyChoice, choiceBlock, onModuleStart, onModuleBuilt, onKit, onMini, miniBlock, runTimer, onDroneAwake, onMove } from './story.js';
+import { storyMinute, onSol, applyChoice, choiceBlock, onModuleStart, onModuleBuilt, onKit, onMini, miniBlock, runTimer, onDroneAwake, onMove, startSoilWash, soilWashBlock } from './story.js';
+export { soilWashBlock };
 import { expeditionMinute, startExpedition, radioChoice } from './expeditions.js';
 
 export const STATE_VERSION = 1;
@@ -383,8 +384,18 @@ function finishCraft(s, emit) {
     s.upgrades[id] = true;
     emit({ type: 'crafted', recipe: id });
     if (id === 'suit_liner') emit({ type: 'astra', lineId: 'astra.rad.suit_liner', mood: 'cheerful' });
-    if (id === 'rover_shielding') emit({ type: 'astra', lineId: 'astra.rad.rover_shield', mood: 'cheerful' });
+    if (id === 'rover_shielding') { s.flags.shieldCrafted = true; emit({ type: 'astra', lineId: 'astra.rad.rover_shield', mood: 'cheerful' }); }
   }
+}
+
+/**
+ * C9: what a recipe costs right now. SCENARIO Dilemma 5 C: worn-out shielding is re-crafted for 15 SP only
+ * (the soil bricks are re-packed; the Titanium Plate frame is still there).
+ */
+export function recipeCost(s, id) {
+  const rec = RECIPES[id];
+  if (id === 'rover_shielding' && s.flags?.shieldCrafted) return { ...rec, sp: 15, items: {} };
+  return rec;
 }
 
 
@@ -515,9 +526,10 @@ export function command(s, cmd) {
       if (!online(s, 'workshop')) return fail('Build the Workshop first.');
       if (s.crafting) return fail('The Workshop is busy.');
       if (rec.kind !== 'kit' && s.upgrades[cmd.recipe]) return fail('Already crafted.');
-      const why = canPay(s, rec);
+      const cost = recipeCost(s, cmd.recipe);
+      const why = canPay(s, cost);
       if (why) return fail(why);
-      pay(s, rec);
+      pay(s, cost);
       s.crafting = { recipe: cmd.recipe, progress: 0 };
       emit({ type: 'craft-started', recipe: cmd.recipe });
       break;
@@ -551,6 +563,11 @@ export function command(s, cmd) {
       const why = miniBlock(s, cmd.game);
       if (why) return fail(why);
       onMini(s, cmd, emit);
+      break;
+    }
+    case 'washSoil': { // B11: Dilemma 3 choice B, started later from the Lab
+      const why = startSoilWash(s, emit);
+      if (why) return fail(why);
       break;
     }
     case 'melt': {

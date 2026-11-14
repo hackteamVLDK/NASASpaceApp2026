@@ -11,6 +11,7 @@ import { drawCampaign, buildSoil, createWalker, SCREEN } from './render/campaign
 import { ROVER, arrived, place as placeBody } from './render/movers.js';
 import { garageSpots, entryGeometry } from './render/geometry.js';
 import { createCampaign, step, command, clockAt } from './campaign/engine.js';
+import { restoreSave } from './campaign/save-migrate.js';
 import { SECONDS_PER_SOL, SOL, RECIPES, MODULES } from './campaign/data.js';
 import { openingFrameAt, cuesBetween, skipTarget, T, GAMEPLAY_VIEW, INTRO_TEXT, introTextAt, flowStateAt, astronautPathAt, entryDoorsAt } from './flow/intro.js';
 import { createGuide, say } from './flow/astra.js';
@@ -34,7 +35,9 @@ const ctx = canvas.getContext('2d');
 
 function fit() {
   const k = Math.min(window.innerWidth / SCREEN.w, window.innerHeight / SCREEN.h);
-  stage.style.transform = `translate(${(window.innerWidth - SCREEN.w * k) / 2}px, ${(window.innerHeight - SCREEN.h * k) / 2}px) scale(${k})`;
+  // A20: the game is pinned to the top of the window (only centred left-right). Centred top-bottom, a window that is
+  // taller than 16:9 pushed the whole game, top bar included, down behind a black band, so the bar seemed to move.
+  stage.style.transform = `translate(${(window.innerWidth - SCREEN.w * k) / 2}px, 0px) scale(${k})`;
 }
 window.addEventListener('resize', fit);
 fit();
@@ -81,6 +84,14 @@ function showMute() {
   muteBtn.classList.toggle('on', !muted);
 }
 muteBtn?.addEventListener('click', () => { audio.unlock(); audio.director.toggleMute(); showMute(); });
+// Music fix: every click or key wakes the audio. A browser can suspend it (another tab played sound, headphones
+// were unplugged, the laptop slept), and only a user gesture may start it again.
+window.addEventListener('pointerdown', () => audio.unlock(), { capture: true });
+window.addEventListener('keydown', () => audio.unlock(), { capture: true });
+/** Sound off is remembered between visits: say so once at the start, so silence is not mistaken for a bug. */
+function remindIfMuted() {
+  if (audio.director.settings.muted) toast('Sound is off. Tap the speaker button (top right) to turn it on.', 4500);
+}
 if (muteBtn) showMute();
 
 // ------------------------------------------------------------------ helpers
@@ -268,9 +279,13 @@ function finishTutorial() {
 
 // ------------------------------------------------------------------ save and load
 
+let saveWarned = false;
 function save() {
   if (s.status === 'over') return; // a finished mission is not saved
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(s)); } catch { /* storage may be blocked */ }
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(s)); } catch {
+    // B3: say it once instead of failing silently (private windows and some school computers block storage)
+    if (!saveWarned) { saveWarned = true; toast('Your progress cannot be saved in this browser (storage is blocked). Keep this tab open to keep playing.', 6000, 1); }
+  }
 }
 
 /** The Commander ran out of HP (docs/ERRORS.md A28): the clock stops, the old save goes, the loop shows the Game Over screen. */
@@ -378,7 +393,15 @@ function wakeDrone(d) {
   if (kit) ui.setTab('workshop');
 }
 
-$('skipBtn').addEventListener('click', () => { flowT = skipTarget(flowT); prevFlowT = flowT; audio.play('click'); });
+$('skipBtn').addEventListener('click', () => {
+  const target = skipTarget(flowT);
+  // B15: Skip keeps the transition sounds of the part it jumps over (the touchdown thud, the airlock hiss),
+  // each sound once and at most three, instead of dropping them; typing blips and ASTRA lines are skipped
+  const seen = new Map();
+  for (const cue of cuesBetween(flowT, target)) if (cue.type === 'sfx' && cue.char === undefined) seen.set(cue.id, cue);
+  [...seen.values()].slice(-3).forEach((cue) => audio.director.flowCue(cue));
+  flowT = target; prevFlowT = flowT; audio.play('click');
+});
 for (const b of document.querySelectorAll('#speed button')) {
   b.addEventListener('click', () => {
     speed = Number(b.dataset.speed);
@@ -498,6 +521,8 @@ function warnNewHazards(nowMs) {
 let saveTimer = 0;
 function scheduleSave() { clearTimeout(saveTimer); saveTimer = setTimeout(() => { if (mode === 'play') save(); }, 800); }
 window.addEventListener('pagehide', () => { if (mode === 'play') save(); });
+// B3: phones and tablets often close a hidden tab without 'pagehide': save when the game goes to the background
+document.addEventListener('visibilitychange', () => { if (document.hidden && mode === 'play') save(); });
 
 let last = performance.now();
 let savedSol = 0;
@@ -573,19 +598,21 @@ async function boot() {
   ui.launch = launchWithPrep;
   extras = createExtras({ s, ui, openMap: () => ui.showMap(launchWithPrep) });
   void savedSol;
-  const saved = loadSave();
+  const raw = loadSave();
+  const restored = raw && raw.status !== 'over' ? restoreSave(raw) : null; // B4: check and upgrade before loading
+  const saved = restored?.ok ? restored.state : null;
+  if (restored && !restored.ok) toast(`Your saved mission could not be loaded (${restored.reason}). Start a new mission!`, 6000);
   $('startBtn').hidden = false;
-  if (saved && saved.status !== 'over') {
+  if (saved) {
     const cont = document.createElement('button');
     cont.id = 'contBtn';
     cont.textContent = 'Continue mission';
     cont.addEventListener('click', () => {
       audio.unlock();
-      Object.assign(s, saved); // the UI and the renderer hold this same object
+      remindIfMuted();
+      Object.assign(s, saved); // the UI and the renderer hold this same object (already checked and upgraded by restoreSave)
       audio.director.reset(s); // music state that one-time events would have set (finale)
       rover.phase = s.away ? 'gone' : 'parked';
-      for (const d of s.drones) d.queue ??= []; // saves made before Drone Link have no queue
-      s.order ??= null;
       $('loading').hidden = true;
       mode = 'play';
     });
@@ -593,6 +620,7 @@ async function boot() {
   }
   $('startBtn').addEventListener('click', () => {
     audio.unlock();
+    remindIfMuted();
     $('loading').hidden = true;
     mode = 'intro';
     $('skipBtn').hidden = false;
