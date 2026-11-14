@@ -83,3 +83,13 @@ test('music priority', async () => {
   assert.equal(resolveMusicTrack({ emergency: true }), 'storm_alert');
   assert.equal(resolveMusicTrack({ victory: true, storm: true }), 'victory');
 });
+
+test('A23: actionDenied is soft and does not stack on repeated taps', async () => {
+  const stats = installFakeBrowser();
+  const { SoundManager } = await import('./soundManager.js?denied');
+  const s = new SoundManager();
+  s.unlock();
+  const before = stats.oscillators;
+  s.actionDenied(); s.actionDenied(); s.actionDenied();
+  assert.equal(stats.oscillators - before, 2); // one "uh-uh" (two notes), the rest throttled
+});

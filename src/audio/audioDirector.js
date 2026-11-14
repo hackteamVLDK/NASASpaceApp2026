@@ -43,7 +43,7 @@ export const LEGACY_CUES = Object.freeze({
 
 /** Sound-engine methods that `cue()` may call by name. */
 export const SFX_NAMES = Object.freeze([
-  'typewriterBlip', 'astraSlideIn', 'uiClick', 'uiTabSwitch', 'dilemmaChoice',
+  'typewriterBlip', 'astraSlideIn', 'uiClick', 'uiTabSwitch', 'dilemmaChoice', 'actionDenied',
   'landerDescent', 'landerTouchdown', 'alertWarning', 'alertEmergency', 'medRestActivate',
   'droneWake', 'droneBuildTick', 'moduleComplete', 'solDawnChime',
   'staticZap', 'brushWipe', 'pipeRotate', 'waterValveTurn', 'nutrientDrop', 'pebblePop',
