@@ -54,8 +54,8 @@ off-screen, an hour's drive from the airlock.
 Unfinished modules are built by the **crew** (job *Build*), with a work-hours cost each (14 h
 Battery & Heating, 18 h Workshop, 22 h Research & Comms Lab, 26 h Rover Garage; game values).
 **Awake drones help:** each adds one work-hour per daylight hour, as they are solar powered.
-Drones wake through the `DroneRepairMiniGame` (wipe dust, reconnect two wires); the rules are
-in `src/flow/drone-repair.js`. Finishing a module switches on what it is for:
+Drone #01 wakes in the tutorial (Solar Panel Static Wipe, then battery and cable; see
+`src/ui/minigames.js`). Finishing a module switches on what it is for:
 
 | Module | Switches on |
 |---|---|

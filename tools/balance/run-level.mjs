@@ -36,7 +36,7 @@ while (game.status === 'running') {
     const s = game.systems;
     const r = game.resources;
     const storm = game.shelterOrder || game.storms.some((x) => x.status === 'warned' || x.status === 'active');
-    // Wake every sleeping drone (in the game the player wins DroneRepairMiniGame for each).
+    // Wake every sleeping drone (in the game the player does the tutorial battery step).
     for (const d of game.drones) if (d.status !== 'awake') applyCommand(game, { type: 'wakeDrone', drone: d.id });
     // Finish unfinished modules in scenario order (power first), then the level's upgrades.
     if (!game.construction) {

@@ -11,13 +11,14 @@
  */
 import { ROOMS } from '../data/base-layout.js';
 import { PROVENANCE } from '../data/nasa/reference.js';
+import { t } from './strings.js';
 
 export const ASTRA = Object.freeze({
   name: 'ASTRA 6.7',
   role: 'onboard station AI',
   badge: 'ASTRA 6.7 // STATION AI',
   component: 'AstraGuidePanel',
-  props: Object.freeze(['isOpen', 'message', 'mood', 'onClose']),
+  props: Object.freeze(['isOpen', 'lineId', 'mood', 'onClose']),
   panel: Object.freeze({ side: 'left', leftPx: 24, bottomPx: 24, widthPx: 360, text: 'typewriter' }),
   buttons: Object.freeze({ next: 'Next', done: 'Got it' }),
   avatar: 'animated holographic portrait: cyan/amber waveforms or a friendly geometric AI core, animating while she speaks',
@@ -34,16 +35,21 @@ export function createGuide() {
 
 /**
  * Ask ASTRA to say something. If she is already talking, it waits its turn.
- * @param line {{ id: string, message: string, mood?: string, once?: boolean, button?: string }}
+ * A line is either a `lineId` (text comes from strings.js, SCENARIO rule: IDs, not raw text)
+ * or, for the event lines below that are not in the scenario yet, a `message` with its own `id`.
+ * @param line {{ id?: string, lineId?: string, message?: string, mood?: string, once?: boolean, button?: string }}
  *   `once` lines are never repeated in the same game.
  */
 export function say(guide, line) {
-  if (!line || typeof line.message !== 'string' || !line.message) return guide;
-  if (line.once && guide.said.includes(line.id)) return guide;
+  if (!line) return guide;
+  const id = line.lineId ?? line.id;
+  const message = line.lineId ? t(line.lineId) : line.message;
+  if (!id || typeof message !== 'string' || !message) return guide;
+  if (line.once && guide.said.includes(id)) return guide;
   const mood = ASTRA.moods.includes(line.mood) ? line.mood : 'calm';
-  const entry = { id: line.id, message: line.message, mood, button: line.button || ASTRA.buttons.done };
+  const entry = { id, lineId: line.lineId ?? null, message, mood, button: line.button || ASTRA.buttons.done };
   if (line.fact) entry.fact = line.fact;
-  if (!guide.said.includes(line.id)) guide.said.push(line.id);
+  if (!guide.said.includes(id)) guide.said.push(id);
   if (guide.current) guide.queue.push(entry);
   else guide.current = entry;
   return guide;
@@ -55,15 +61,18 @@ export function dismiss(guide) {
   return guide;
 }
 
-/** Props for <AstraGuidePanel>, exactly as named in the scenario. */
+/** Props for <AstraGuidePanel>, exactly as named in the scenario: { isOpen, lineId, mood, onClose }. */
 export function guideProps(guide, onClose = () => {}) {
   return {
     isOpen: guide.current !== null,
-    message: guide.current ? guide.current.message : '',
+    lineId: guide.current ? guide.current.id : '',
     mood: guide.current ? guide.current.mood : 'calm',
     onClose,
   };
 }
+
+/** The text the panel types out for the current line (resolved from the line ID). */
+export const currentMessage = (guide) => (guide.current ? guide.current.message : '');
 
 // ---------------------------------------------------------------- what ASTRA says
 

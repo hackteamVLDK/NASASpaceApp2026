@@ -21,7 +21,6 @@
     "assets:prompts": "node tools/assets/build-prompts.mjs",
     "assets:check": "node tools/assets/build-prompts.mjs --check",
     "assets:gen": "node tools/assets/generate.mjs",
-    "assets:verify": "node tools/assets/check-image.mjs",
-    "screenshot": "node tools/screenshot.mjs"
+    "assets:verify": "node tools/assets/check-image.mjs"
   }
 }

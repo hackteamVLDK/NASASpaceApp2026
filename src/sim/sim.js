@@ -322,7 +322,8 @@ export function step(state, minutes = 1) {
  *   { type: 'assign', crew, job }       give an astronaut a job
  *   { type: 'shelter', on }             give or lift the shelter order
  *   { type: 'autoAllClear', on }        lift the shelter order automatically when storms end
- *   { type: 'wakeDrone', drone }        a dormant drone wakes (sent when DroneRepairMiniGame is won)
+ *   { type: 'wakeDrone', drone }        a dormant drone wakes (sent when the battery step of the tutorial is done)
+ *   { type: 'repairSystem', system, value }  a mini-game was won: set a system's condition (0..1) if it improves it
  *   { type: 'buildModule', module }     start or resume finishing an unfinished module
  *   { type: 'startProject', project }   start or resume an upgrade (pays its costs once)
  *   { type: 'pauseConstruction' }       put the current construction on hold
@@ -365,6 +366,12 @@ export function applyCommand(state, cmd) {
       drone.status = 'awake';
       state.stats.dronesWoken += 1;
       events.push({ type: 'drone-awake', drone: drone.id, name: DRONES[drone.id].name });
+      break;
+    }
+    case 'repairSystem': {
+      if (!['solarClean', 'o2GenEff', 'recyclerEff'].includes(cmd.system)) return fail(`Unknown system: ${cmd.system}`);
+      if (!Number.isFinite(cmd.value) || cmd.value < 0 || cmd.value > 1) return fail('A system condition is between 0 and 1.');
+      state.systems[cmd.system] = Math.max(state.systems[cmd.system], cmd.value);
       break;
     }
     case 'buildModule': {

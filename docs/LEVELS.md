@@ -20,18 +20,21 @@ daylight.
 
 ## Game start, as the scenario specifies it
 
-Timings are in `src/flow/intro.js`; `tests/flow.test.mjs` keeps them equal to SCENARIO.md.
+Timings are in `src/flow/intro.js`; `tests/flow.test.mjs` keeps them equal to SCENARIO.md. All
+text is referenced by line ID (`content/data/strings.en.json`). The screens are in `src/main.js`.
 
 | Time | State | What happens |
 |---|---|---|
-| 0.0–10.0 s | `INTRO_TEXT` | Among Us-style text on black: five lines, typewriter blips, bass boom on the last. `Skip >>` top right. |
-| 10.0–14.0 s | `DESCENT` | Camera on the sky (Y 400). Lander on a red-and-white parachute, Y −150 → 650. Parachute detaches at 13.2 s. |
-| 14.0–17.5 s | `TOUCHDOWN` | 4 thrusters at 14.0 s; touchdown at 16.0 s on Y 1050 with camera shake (±4 px, 0.3 s) and a dust burst. |
-| 17.5–24.0 s | `UNDERGROUND_PAN` | Camera pans Y 850 → 2100 (ease-in-out). 20.0 s astronaut exits the airlock into the left wing, removes helmet. 22.0 s Drone #01 blinks red at 1 Hz. |
-| 24.0 s + | `TUTORIAL_HANDOFF` | ASTRA slides in from the left with a chime. Everything is dimmed except Drone #01, which has a pulsing yellow wrench. The player clicks the drone → `DroneRepairMiniGame` (wipe dust, reconnect 2 wires). |
-
-After the mini-game the screen sends `{ type: 'wakeDrone', drone: 'drone-01' }`, ASTRA
-suggests Battery & Heating first, and the player takes control of level 1.
+| 0.0-19.0 s | `INTRO_TEXT` | Among Us-style crawl on black: 8 lines (`crawl.01`-`crawl.08`) at 37 characters per second, blips per letter, bass boom on the last (orange). `Skip >>` top right. |
+| 19.0-23.0 s | `DESCENT` | Camera on the sky (Y 400). Lander on a red-and-white parachute, Y -150 to 650. Parachute detaches at 22.2 s. |
+| 23.0-26.5 s | `TOUCHDOWN` | 4 thrusters at 23.0 s; touchdown at 25.0 s with shake (4 px, 0.3 s) and a dust burst. ASTRA slides in with a chime: `astra.intro.landing`. |
+| 26.5-33.0 s | `UNDERGROUND_PAN` | Camera pans down into the base; `astra.intro.why_underground`. 29.0 s the astronaut leaves the shaft and removes the helmet. 31.0 s Drone #01 blinks red at 1 Hz and the camera settles on the gameplay framing. |
+| 33.0 s + | `TUT_HP` | ASTRA explains the base and the HP bar. |
+| | `TUT_DRONE_CLICK` | Everything dimmed except Drone #01, with a pulsing yellow wrench. Click the drone. |
+| | `TUT_SOLAR_WIPE` | Mini-game *Solar Panel Static Wipe*: tap the sparking clumps, then swipe. 90% clean in 20 s (+3 s solo). |
+| | `TUT_BATTERY` | Drag the charged battery into Drone #01's back hatch and snap one cable in. Drone #01 wakes (nickname Pip). |
+| | `TUT_BUILD` | Tap the Battery & Heating frame, then Build. |
+| | `PLAY` | Normal play. |
 
 ## What the backend gives the story and the UI
 
@@ -42,7 +45,7 @@ suggests Battery & Heating first, and the player takes control of level 1.
 | Sound cues with times (`type-blip`, `bass-boom`, `retro-rocket-roar` …) | `cuesBetween(t0, t1)` |
 | ASTRA's tutorial speech, mood values, panel props | `TUTORIAL_STEP_1`, `src/flow/astra.js` |
 | ASTRA's line for any game event (module built, storm, emergency …) | `astraLineFor(event)` |
-| Rules of the drone repair | `src/flow/drone-repair.js` |
+| The two tutorial mini-games | `src/ui/minigames.js` |
 | Crew names | [src/data/crew.js](../src/data/crew.js) — placeholders |
 
 ## Open points in the scenario

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ARES-KIDS: The Jezero Signal</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="styles/game.css">
+</head>
+<body>
+  <div id="stage">
+    <canvas id="game" width="1920" height="1080"></canvas>
+
+    <div id="loading"><div class="logo">ARES-KIDS</div><div class="sub">The Jezero Signal</div><div id="loadbar"><i></i></div><button id="startBtn" hidden>Start mission</button></div>
+    <button id="skipBtn" hidden>Skip &gt;&gt;</button>
+
+    <div id="hud" hidden>
+      <div id="clock"></div>
+      <div id="gauges"></div>
+      <div id="speed"><button data-speed="0" title="Pause">II</button><button data-speed="1" class="on">1x</button><button data-speed="3">3x</button><button data-speed="8">8x</button></div>
+    </div>
+
+    <div id="side" hidden>
+      <section id="crewPanel"><h3>Crew</h3><div id="crewList"></div></section>
+      <section id="actions"><h3>Base</h3><div id="selected"></div><button id="shelterBtn">Shelter order: off</button></section>
+      <section id="goals"><h3>Goals</h3><ul id="goalList"></ul></section>
+    </div>
+
+    <div id="astra" class="closed">
+      <div class="badge">ASTRA 6.7 // STATION AI</div>
+      <div class="body"><canvas id="astraFace" width="96" height="96"></canvas><div id="astraText"></div></div>
+      <button id="astraBtn">Got it</button>
+    </div>
+
+    <div id="toast" hidden></div>
+    <div id="mgWrap" hidden><div class="mgTitle"></div><canvas id="mg" width="1100" height="620"></canvas><div class="mgHint"></div></div>
+    <div id="summary" hidden></div>
+  </div>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

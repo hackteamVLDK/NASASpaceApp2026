@@ -8,10 +8,12 @@ src/
   flow/                    The opening of the game from SCENARIO.md as pure logic: intro.js (text
                            intro, landing cutscene, tutorial hand-off as functions of time),
                            astra.js (ASTRA 6.7: guide queue, lines for game events),
-                           drone-repair.js (rules of DroneRepairMiniGame). No rendering.
+                           strings.js (text by line ID). No rendering.
   data/                    Levels, base layout (world, modules, drones), crew roster, NASA data.
-  ui/, render/, main.js    NOT BUILT YET: HUD, canvas renderer, browser entry point. They read
-                           state from sim/ and flow/ and send commands; they never change state.
+  render/                  Canvas drawing: atlas.js (image loading, sprite frames), world.js (the cutaway).
+  ui/                      HUD, ASTRA panel, mini-games, sound. Read state, send commands, never change state.
+  main.js                  Browser entry: game loop, intro -> cutscene -> tutorial -> play.
+index.html, styles/        the page. `npm run dev` serves it (tools/dev-server.mjs).
 tests/                     node --test: simulation, flow (kept equal to SCENARIO.md), assets.
 tools/
   git-sync/                Two-way Git sync service.

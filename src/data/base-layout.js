@@ -67,7 +67,7 @@ export const ROOMS = Object.freeze({
   shaft4: { name: 'Shaft, level 4', zone: 'underground', floor: 4, rect: shaft(4), about: 'Bottom of the ladder shaft.' },
   // Left wing — operational, warm light (SCENARIO)
   bedroom: { name: 'Bedroom', zone: 'underground', module: true, wing: 'left', floor: 1, startsOnline: true, inScenario: true, rect: left(1), about: 'Bunks. Sleeping under the soil keeps the nightly radiation dose low.' },
-  dining: { name: 'Dining Room', zone: 'underground', module: true, wing: 'left', floor: 2, startsOnline: true, inScenario: true, rect: left(2), about: 'Meals, exercise and free time. Also where everyone gathers during a solar storm.' },
+  dining: { name: 'Kitchen', zone: 'underground', module: true, wing: 'left', floor: 2, startsOnline: true, inScenario: true, rect: left(2), about: 'Meals, exercise and free time. Also where everyone gathers during a solar storm.' },
   lifesupport: { name: 'Water & Air Life Support', zone: 'underground', module: true, wing: 'left', floor: 3, startsOnline: true, inScenario: true, rect: left(3), about: 'Oxygen generator and water recycler.' },
   // PROPOSAL — not in SCENARIO.md. The scenario has no place to grow food; this slot is empty soil at the start.
   hydroponics: { name: 'Hydroponics bay', zone: 'underground', module: true, wing: 'left', floor: 4, startsOnline: false, inScenario: false, buildHours: 20, rect: left(4), about: 'Proposed module: fresh food and a little oxygen. Needs power for its lights.' },
