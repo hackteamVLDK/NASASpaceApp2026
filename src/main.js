@@ -109,7 +109,7 @@ if (muteBtn) showMute();
 // ------------------------------------------------------------------ settings (C15)
 
 applyPrefs();
-/** The Settings card: master and music volume (saved by the sound engine), Reduce motion, Large text. */
+/** The Settings card: master, music and effects volume (saved by the sound engine), Reduce motion, Large text. */
 function openSettings() {
   if (!ui) return;
   const st = audio.director.settings;
@@ -117,12 +117,14 @@ function openSettings() {
   ui.openModal(`<div class="card settings" aria-labelledby="setTitle"><div class="hd" id="setTitle">SETTINGS</div>
     <label class="setrow"><span>Master volume</span><input type="range" id="setMaster" min="0" max="100" value="${pct(st.masterVolume)}" aria-label="Master volume"><b id="setMasterV">${pct(st.masterVolume)}%</b></label>
     <label class="setrow"><span>Music volume</span><input type="range" id="setMusic" min="0" max="100" value="${pct(st.musicVolume)}" aria-label="Music volume"><b id="setMusicV">${pct(st.musicVolume)}%</b></label>
+    <label class="setrow"><span>Effects volume</span><input type="range" id="setSfx" min="0" max="100" value="${pct(st.sfxVolume)}" aria-label="Sound effects volume"><b id="setSfxV">${pct(st.sfxVolume)}%</b></label>
     <label class="setrow check"><input type="checkbox" id="setMotion" ${prefs.reduceMotion ? 'checked' : ''}><span>Reduce motion <small>(no screen shake, no pulsing)</small></span></label>
     <label class="setrow check"><input type="checkbox" id="setLarge" ${prefs.largeText ? 'checked' : ''}><span>Large text</span></label>
     <button class="choice" id="setOk">Done</button></div>`, 'settings');
   const bind = (id, fn) => $(id).addEventListener('input', (e) => { const v = Number(e.target.value) / 100; fn(v); $(`${id}V`).textContent = `${e.target.value}%`; });
   bind('setMaster', (v) => { audio.unlock(); audio.director.setMasterVolume(v); });
   bind('setMusic', (v) => { audio.unlock(); audio.director.setMusicVolume(v); });
+  bind('setSfx', (v) => { audio.unlock(); audio.director.setSfxVolume(v); audio.play('click'); }); // C15: the effects have their own slider; a click lets the player hear the level
   $('setMotion').addEventListener('change', (e) => setPref('reduceMotion', e.target.checked));
   $('setLarge').addEventListener('change', (e) => setPref('largeText', e.target.checked));
   $('setOk').addEventListener('click', () => ui.closeModal());
