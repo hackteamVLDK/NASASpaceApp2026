@@ -122,3 +122,21 @@ underground is reduced, never exactly zero.
   `assets/manifests/asset-manifest.json` with an honest `status`.
 - Code-drawn sprites are development stand-ins (`status: "procedural-standin"`), never final
   art. Do not mark an asset `final` unless a real image file exists and renders correctly.
+
+## Task list, helpers and token economy
+
+- **One task list:** [docs/ERRORS.md](docs/ERRORS.md). Sections A-C are the known problems; section D cuts the
+  open ones into small tasks with a named helper and a "done when" check. Before adding a row, look for the
+  same problem; if it is there, extend that row. Duplicates get the status `MERGED into <row>`.
+- **Cut big work into small tasks** (one file or one function, one check), so a cheap helper can do each.
+- **Use the cheapest helper that can do the job:**
+
+  | Helper | Command | Good for | Not for |
+  |---|---|---|---|
+  | Local model (Ollama `gemma4:12b`) | `node tools/local-llm/ask.mjs --prompt "..." --files a,b` | free and offline: duplicates in a list, summaries, tables from a text, wording for children, 1-5 line patch drafts, test ideas | long or many files (small context, slow), final decisions |
+  | Codex CLI (ChatGPT login) | `node tools/codex/delegate.mjs run ...` | root cause, review of a diff, a bounded patch in its own worktree (`--write --owns`) | trivial edits; it has a usage limit |
+  | Main agent | — | joining the pieces, SCENARIO judgement, running tests, commits | reading big files again, work a helper can do |
+
+- A helper's answer is a draft. The main agent checks it against the code and the tests before it is used.
+- **Save tokens:** send a helper only the lines it needs (cut the section out of a big file); search before
+  reading; do not re-read a file that did not change; batch small edits into one script; report in a few lines.
