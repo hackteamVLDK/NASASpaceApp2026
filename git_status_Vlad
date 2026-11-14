@@ -31,6 +31,10 @@
 - Readability pass changed ASTRA line texts (not IDs/numbers). tests/flow.test.mjs compares texts with SCENARIO.md.
 - "(fiction)" in Line cells is a writers' note: please strip it in the strings module.
 
+## NOTE FOR PAVLO (2026-11-14, PR #12)
+- PR #12 fixes ERRORS A13 (landing flames hang below the nozzles: atlas.sprite anchor 'top') and A14 (thin cyan
+  scroll bars) in your files (src/render/atlas.js, campaign-world.js, styles/game.css, docs/ERRORS.md). Please review and merge; I won't.
+
 ## NOTE FOR PAVLO (2026-11-14)
 - A16 decided (ERRORS.md, SCENARIO 4.1): Solar Wipe has no tapping/zapping any more. Please change
   src/ui/minigames.js startSolarWipe: swipe only; sparks on clumps are a hint; a clump needs 1-2 extra swipes
