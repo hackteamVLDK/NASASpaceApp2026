@@ -57,7 +57,7 @@ lander that do not exist but light up as clickable → A11. If one of them still
 | A22 | In the cracked-filter event I could pick the water option before the Garage was built. | Not checked yet; probably a Dilemma 2 choice that needs the Garage is not locked (`story.js`, Mykhailo's file). | Grey out a choice whose building is missing and say why. | PLAYER | OPEN (Mykhailo's file) |
 | A23 | No sound when an action fails (for example, the queue is full, or a build cannot start because one is already running). | Not checked yet. | Play a soft "no" sound with every refused command. | PLAYER | OPEN |
 | A24 | There is no normal way to close pop-up windows; add a close button in the top-right corner. | Not checked yet. | A close button (×) in the top-right corner of every card and window, and Esc closes it too. | PLAYER | OPEN |
-| A25 | The Repair Kit and Drone #02 mission should be two sub-tasks. | It is one mission step. | Two steps: "Craft a Repair Kit", then "Drag it onto Drone #02". | PLAYER | OPEN |
+| A25 | The Repair Kit and Drone #02 mission should be two sub-tasks. | `missions.js` had one step, done only when Drone #02 woke. | Two steps: "Craft a Repair Kit" (done when a kit is in stock or the drone is awake; shows the Workshop's progress; "Show me" opens the Workshop tab), then "Drag the Repair Kit onto Drone #02". The same split for the Reboot Kit and Drone #03. Main list 19 → 21 missions; checked in `tests/missions.test.mjs`. | PLAYER | FIXED |
 
 ## B. Found by Codex reviews (not yet fixed unless marked)
 

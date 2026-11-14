@@ -13,7 +13,7 @@ setStrings(JSON.parse(readFileSync(new URL('../content/data/strings.en.json', im
 test('the mission list starts at "Wake Drone #01" and shows the current three', () => {
   const s = createCampaign();
   const m = missions(s);
-  assert.equal(m.main.length, 19);
+  assert.equal(m.main.length, 21);
   assert.equal(m.main[0].state, 'current');
   assert.equal(m.main[0].title, 'Wake Drone #01');
   assert.equal(m.currentAct, 1);
@@ -94,4 +94,21 @@ test('radiation view: Bedroom is the safest, the surface the worst, the roof lay
   s.modules.roof.status = 'online';
   assert.equal(shieldingByPlace(s).workshop, a.kitchen);
   assert.ok(shieldingByPlace(s).bedroom > 0, 'underground is never exactly zero');
+});
+
+test('A25: crafting a kit and waking the drone are two separate missions', () => {
+  const s = createCampaign();
+  const kit = () => missions(s).main.find((x) => x.id === 'repair-kit');
+  const wake = () => missions(s).main.find((x) => x.id === 'pumble');
+  assert.equal(kit().done, false);
+  s.crafting = { recipe: 'repair_kit', progress: 0.5 };
+  assert.deepEqual(kit().progress, [50, 100]);
+  s.crafting = null;
+  s.kits.repair_kit = 1;
+  assert.equal(kit().done, true);
+  assert.equal(wake().done, false);
+  s.kits.repair_kit = 0; // the kit is used up when it wakes the drone
+  s.drones[1].status = 'awake';
+  assert.equal(kit().done, true);
+  assert.equal(wake().done, true);
 });

@@ -11,6 +11,9 @@ const done = (s, k) => Boolean(s.flags.done?.[k]);
 const on = (s, id) => s.modules[id].status === 'online';
 const awake = (s, i) => s.drones[i].status === 'awake';
 const chose = (s, d) => s.choices.some((c) => c.startsWith(d));
+const hasKit = (s, k) => (s.kits?.[k] ?? 0) >= 1;
+/** While the Workshop is making this kit, show its progress; otherwise no bar. */
+const kitProgress = (s, k) => (s.crafting?.recipe === k ? [Math.floor(s.crafting.progress * 100), 100] : null);
 
 /** [id, act, title, why, doneTest, progress([have, need]) or null, reward, focus] */
 const MAIN = [
@@ -19,11 +22,13 @@ const MAIN = [
   ['storm-ready', 1, 'Get ready for the dust storm', 'A storm is coming on Sol 3. Pick a plan.', (s) => chose(s, 'd1'), null, 'Storm Ready badge for planning ahead', null],
   ['workshop', 1, 'Build the Workshop', 'On Mars we make our own spare parts.', (s) => on(s, 'workshop'), (s) => [Math.floor(s.modules.workshop.progress * 100), 100], 'Crafting', 'module:workshop'],
   ['storm', 1, 'Get through the storm', 'Sols 4 to 6. Save power and keep warm.', (s) => Boolean(s.flags._stormBegin) && !s.storm, null, 'A calm sky and a cleaning job', null],
-  ['pumble', 1, 'Craft a Repair Kit and wake Drone #02', 'Two builders can build two rooms at once.', (s) => awake(s, 1), null, 'A second builder', 'drone:drone-02'],
+  ['repair-kit', 1, 'Craft a Repair Kit', 'The Workshop can fix Drone #02\'s dusty joints.', (s) => hasKit(s, 'repair_kit') || awake(s, 1), (s) => kitProgress(s, 'repair_kit'), 'A Repair Kit', 'workshop'],
+  ['pumble', 1, 'Drag the Repair Kit onto Drone #02', 'Two builders can build two rooms at once.', (s) => awake(s, 1), null, 'A second builder', 'drone:drone-02'],
   ['greenhouse', 2, 'Build the Greenhouse', 'Fresh food and a little oxygen.', (s) => on(s, 'greenhouse'), (s) => [Math.floor(s.modules.greenhouse.progress * 100), 100], 'Food, oxygen and extra HP', 'module:greenhouse'],
   ['garage', 2, 'Build the Garage & Airlock', 'Home of the Rover. Time to explore.', (s) => on(s, 'garage'), (s) => [Math.floor(s.modules.garage.progress * 100), 100], 'The Rover and the crater map', 'module:garage'],
   ['exp1', 2, 'Visit the weather probe Breeze-7', 'Its power core can wake Drone #03.', (s) => done(s, 1), null, 'Probe Power Core, parts', 'map'],
-  ['zip', 2, 'Craft a Reboot Kit and wake Drone #03', 'All three builders awake.', (s) => awake(s, 2), null, 'A third builder', 'drone:drone-03'],
+  ['reboot-kit', 2, 'Craft a Reboot Kit', 'It uses the probe\'s power core.', (s) => hasKit(s, 'reboot_kit') || awake(s, 2), (s) => kitProgress(s, 'reboot_kit'), 'A Reboot Kit', 'workshop'],
+  ['zip', 2, 'Drag the Reboot Kit onto Drone #03', 'All three builders awake.', (s) => awake(s, 2), null, 'A third builder', 'drone:drone-03'],
   ['exp2', 2, 'Find Pathfinder-X', 'Its black box and big dish are out there.', (s) => done(s, 2), null, 'Black Box and Dish Antenna', 'map'],
   ['lab', 3, 'Build the Research & Comms Lab', 'It needs the dish from Pathfinder-X.', (s) => on(s, 'lab'), (s) => [Math.floor(s.modules.lab.progress * 100), 100], 'Contact with Earth', 'module:lab'],
   ['rec', 3, 'Build Recreation & Storage', 'Rest, play and spare supplies.', (s) => on(s, 'recreation'), (s) => [Math.floor(s.modules.recreation.progress * 100), 100], 'Morale', 'module:recreation'],
