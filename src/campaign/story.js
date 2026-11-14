@@ -5,7 +5,7 @@
  * Delayed effects are timers with a name (`runTimer`), so the whole state stays plain data.
  */
 import { SOL, MODULE_LINES, RECYCLER } from './data.js';
-import { clockAt, online, at, addMod, after, clampTo } from './util.js';
+import { clockAt, online, at, addMod, after, clampTo, powerCapOf } from './util.js';
 
 const say = (emit, lineId, mood = 'calm') => emit({ type: 'astra', lineId, mood });
 const once = (s, id, cond, fn) => {
@@ -14,7 +14,8 @@ const once = (s, id, cond, fn) => {
 };
 export const addTask = (s, game, why) => { if (!s.tasks.some((t) => t.game === game)) s.tasks.push({ game, why }); };
 const dropTask = (s, game) => { s.tasks = s.tasks.filter((t) => t.game !== game); };
-const setRes = (s, k, delta) => { s.res[k] = clampTo(s.res[k] + delta, 0, k === 'sp' ? 999 : 100); };
+// Power is capped by the battery (100, 250 or 400), not by 100: "Top Up" must not throw stored Power away.
+const setRes = (s, k, delta) => { s.res[k] = clampTo(s.res[k] + delta, 0, k === 'sp' ? 999 : k === 'power' ? powerCapOf(s) : 100); };
 const hurt = (s, hp) => { s.hp = clampTo(s.hp - hp, 0, s.hpMax); };
 
 /** Scripted storm of Act I: Sols 4-6, solar x0.3 (3.3, Dilemma 1). */
@@ -153,6 +154,19 @@ export function startPending(s, emit, kind, id) {
   emit({ type: kind, id });
 }
 
+/**
+ * Why a choice cannot be picked right now, or null. A choice that costs Spare Parts or Water
+ * needs them in stock, and the Cargo Trailer needs a Garage to hang it on.
+ */
+export function choiceBlock(s, pending, choice) {
+  const key = `${pending.id}${choice}`;
+  if ((key === 'd2a' || key === 'd2b') && s.res.sp < 12) return 'Not enough Spare Parts for that. Pick another way.';
+  if (key === 'd2b' && !['building', 'online'].includes(s.modules.garage.status)) return 'The Cargo Trailer needs the Garage & Airlock. Start building it first, or pick another way.';
+  if (key === 'd3a' && s.res.water < 10) return 'Not enough Water for that. Pick another way.';
+  if (key === 'd3b' && s.res.water < 20) return 'Not enough Water for that. Pick another way.';
+  return null;
+}
+
 /** Run an action the player picked. Called by command({type:'choose'}). */
 export function applyChoice(s, pending, choice, emit, rand) {
   const key = `${pending.id}${choice}`;
@@ -243,7 +257,7 @@ export function applyChoice(s, pending, choice, emit, rand) {
     case 'e2c': hurt(s, 5); s.mult.solar = 1.1; after(s, at(sol + 3, 6), 'solar_normal'); follow('astra.e2.c'); break;
     // ---- Event 3: airlock micro-leak
     case 'e3a': addTask(s, 'valve_balance', 'Hunt the leak.'); break;
-    case 'e3b': setRes(s, 'sp', -1); after(s, at(sol + 3, 6), 'leak_returns'); follow('astra.e3.b'); break;
+    case 'e3b': setRes(s, 'sp', -1); s.mods = s.mods.filter((m) => m.id !== 'leak' && m.id !== 'leak_w'); after(s, at(sol + 3, 6), 'leak_returns'); follow('astra.e3.b'); break; // the tape stops the leak at once
     case 'e3c': s.flags.noLaunchUntil = at(sol + 1, 6); follow('astra.e3.c'); break;
     // ---- Event 4: nutrient drift
     case 'e4a': addTask(s, 'nutrient_match', 'Match the nutrients.'); s.mult.food = 0.6; s.flags.freshOff = true; break;
@@ -263,7 +277,11 @@ export function runTimer(s, id, emit) {
     case 'd1b': follow('astra.d1.b'); break;
     case 'd1c':
       s.flags._d1c = true;
-      if (s.res.power > 0) { s.res.power = 0; setRes(s, 'morale', -10); }
+      // 6, Dilemma 1 C: Power hits 0, a Power Emergency, Static Wipe and Heat Pump, Morale -10 — whatever Power was left.
+      s.res.power = 0;
+      setRes(s, 'morale', -10);
+      addTask(s, 'solar_wipe', 'The storm drained the batteries. Clean the panels.');
+      addTask(s, 'heat_pump', 'No power for heating. Reroute the heat.');
       follow('astra.d1.c', 'calm');
       break;
     case 'd2b_fix': s.recycleEta = RECYCLER.ok; setRes(s, 'sp', -12); follow('astra.d2.b'); break;
@@ -273,7 +291,7 @@ export function runTimer(s, id, emit) {
     case 'solar_normal': s.mult.solar = 1; break;
     case 'leak_returns': addMod(s, 'leak', 'oxygen', -2); addMod(s, 'leak_w', 'water', -1); break;
     case 'drift_fixed': s.mult.food = 1; break;
-    case 'drift_wilt': setRes(s, 'food', -10); addTask(s, 'nutrient_match', 'The plants wilted. Fix the mix.'); break;
+    case 'drift_wilt': if (s.mult.food < 1) { setRes(s, 'food', -10); addTask(s, 'nutrient_match', 'The plants wilted. Fix the mix.'); } break; // nothing wilts if the mix was fixed in time
     case 'harvest': say(emit, 'astra.act2.first_harvest', 'cheerful'); break;
     case 'd4_cold_end': s.flags.freshOff = false; s.mult.food = 1; break;
     case 'finale_earth': follow('astra.finale.earth'); after(s, s.minute + 60, 'finale_closing'); break;
@@ -300,6 +318,7 @@ const TUTORIAL_GAMES = ['solar_wipe', 'battery']; // the Sol 1 tutorial plays th
  * Without this, reporting wins over and over gave free Spare Parts and free Heat.
  */
 export function miniBlock(s, game) {
+  if (s.away) return 'The Commander is out with the Rover.'; // base jobs wait until he is home (2.1)
   if (s.tasks.some((t) => t.game === game)) return null;
   if (PREP_GAMES.includes(game)) return s.away ? 'The Rover is already out.' : null;
   if (TUTORIAL_GAMES.includes(game) && clockAt(s.minute).sol === 1 && !s.flags.mini?.[game]) return null;
@@ -355,7 +374,7 @@ export function onMini(s, { game, win }, emit) {
         say(emit, 'astra.d4.b', 'calm');
         addTask(s, 'nutrient_match', 'The plants got chilly. Fix the mix.');
       }
-    } else if (s.flags.d4b) { s.flags.d4b = false; }
+    } // a failed try keeps Dilemma 4 B open: the retry still brings the full call home
   } else if (game === 'wheel_vacuum') {
     if (win) dropTask(s, 'wheel_vacuum'); // also clears the extra check after a Bumpy or Rough ride
     s.flags.prepWheel = win ? 'ok' : 'failed';

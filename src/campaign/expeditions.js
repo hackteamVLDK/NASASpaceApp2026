@@ -216,12 +216,16 @@ export function expeditionMinute(s, emit) {
       a.fired.push(mark);
       if (ex.id === 4 && mark === 20) s.flags.passedIngenuity = true;
       emit({ type: 'radio', id: radioId(s, ex, mark), percent: mark });
-      if (ex.astra?.[mark] && !a.second) emit({ type: 'astra', lineId: ex.astra[mark], mood: 'cheerful' });
       if (ex.decision?.at === mark && !a.decisionDone) {
         if (ex.decision.dilemma) { s.pending = { kind: 'dilemma', id: ex.decision.dilemma }; if (ex.decision.dilemma === 'd5') s.flags.flare = true; emit({ type: 'dilemma', id: ex.decision.dilemma }); } else { s.pending = { kind: 'radio', id: `exp${ex.id}.${mark}` }; emit({ type: 'radio-decision', id: `exp${ex.id}.${mark}` }); }
         return;
       }
     }
+  }
+  // ASTRA's lines have their own progress marks (the finale speaks at 75% and 85%, between radio lines)
+  for (const [mark, lineId] of Object.entries(ex.astra ?? {})) {
+    const key = `astra${mark}`;
+    if (pct >= Number(mark) && !a.fired.includes(key) && !a.second) { a.fired.push(key); emit({ type: 'astra', lineId, mood: 'cheerful' }); }
   }
   // the rescue rule: HP 0 on the trip sends a rescue drone
   if (s.hp <= 0 && !a.rescued) {

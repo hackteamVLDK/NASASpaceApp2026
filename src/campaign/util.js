@@ -1,5 +1,5 @@
 /** Small helpers shared by the campaign modules (kept apart to avoid circular imports). */
-import { SOL, SLEEP_FROM, SLEEP_TO } from './data.js';
+import { SOL, SLEEP_FROM, SLEEP_TO, MODULES, CAP } from './data.js';
 
 /** Calendar for a minute count. */
 export function clockAt(minute) {
@@ -28,3 +28,6 @@ export function after(s, minute, id) {
 }
 
 export const clampTo = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+/** How much Power the base can store: 100, or 250 / 400 with Battery & Heating (3.1). */
+export const powerCapOf = (s) => (online(s, 'battery') ? MODULES.battery.powerCap[s.modules.battery.tier - 1] : CAP.power);

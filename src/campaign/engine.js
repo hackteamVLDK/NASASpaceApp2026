@@ -16,7 +16,7 @@ import {
   MODULES, BUILD_SOLS, UPGRADE_SOLS, DRONE_BUILD_POWER, STORM, RECIPES, UPGRADES, MODULE_LINES, RULES,
 } from './data.js';
 import { clockAt, isNight, online } from './util.js';
-import { storyMinute, onSol, applyChoice, onModuleStart, onModuleBuilt, onKit, onMini, miniBlock, runTimer, onDroneAwake, onMove } from './story.js';
+import { storyMinute, onSol, applyChoice, choiceBlock, onModuleStart, onModuleBuilt, onKit, onMini, miniBlock, runTimer, onDroneAwake, onMove } from './story.js';
 import { expeditionMinute, startExpedition, radioChoice } from './expeditions.js';
 
 export const STATE_VERSION = 1;
@@ -529,6 +529,9 @@ export function command(s, cmd) {
       if (!s.pending) return fail('Nothing to decide.');
       const p = s.pending;
       if (!['a', 'b', 'c'].includes(cmd.choice)) return fail('Pick a, b or c.');
+      if (p.kind === 'radio') return fail('Answer on the radio.');
+      const blocked = choiceBlock(s, p, cmd.choice);
+      if (blocked) return fail(blocked);
       s.pending = null;
       if (p.kind === 'dilemma' || p.kind === 'event') s.choices.push(`${p.id}${cmd.choice}`);
       applyChoice(s, p, cmd.choice, emit, () => nextRandom(s));
