@@ -597,6 +597,8 @@ async function boot() {
     get hits() { return hits; }, view: () => currentView(), get mode() { return mode; }, get tut() { return tut; }, get s() { return s; },
     get rover() { return rover; }, get walker() { return walker; }, get droneMovers() { return droneMovers; },
     send, jump: (sec) => { flowT = sec; prevFlowT = sec; }, state: () => flowStateAt(flowT), openMini,
+    // jump over the two tutorial mini-games to the "build the Battery" step (Drone #01 repaired)
+    tutorialBuild: () => { if (mode === 'tutorial') { s.flags.panelsCleaned = true; onBatteryDone(); } },
   };
   if (q.has('autostart')) { $('loading').hidden = true; mode = 'intro'; flowT = Number(q.get('autostart')) || 0; prevFlowT = flowT; }
   if (q.has('play')) { $('loading').hidden = true; mode = 'play'; command(s, { type: 'wakeDrone', drone: 'drone-01' }); s.flags.panelsCleaned = true; }
