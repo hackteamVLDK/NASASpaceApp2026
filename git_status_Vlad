@@ -1,9 +1,9 @@
 # git_status_Vlad
 
 ## DOING NOW
-- Fact-checking every real-world science claim in SCENARIO.md against NASA / peer-reviewed sources.
-  Branch: content/science-fact-check. Output: content/science/FACT_CHECK.md (docs/ is Mykhailo's).
-  Codex review record: content/ai-collaboration/. SCENARIO.md is NOT edited by this task.
+- PR ready: branch content/science-fact-check. Science fact-check of SCENARIO.md
+  (content/science/FACT_CHECK.md) + agreed wording fixes in SCENARIO.md (text only, no numbers).
+  Heads-up for sim/flow code: no state names, IDs or numbers changed; ASTRA line texts changed.
 
 ## EARLIER HEADS-UP FOR MYKHAILO (PR #1 is now merged into main)
 - State `TUTORIAL_HANDOFF` is replaced by: `TOUCHDOWN -> UNDERGROUND_PAN -> TUT_HP -> TUT_DRONE_CLICK -> TUT_SOLAR_WIPE -> TUT_BATTERY -> TUT_BUILD -> PLAY`. `CUTSCENE_LANDING` and `TUTORIAL_STEP_1` are removed.
@@ -22,7 +22,7 @@
 - Show the team the 'needs fix' science rows; apply agreed fixes to SCENARIO.md in a separate PR.
 
 ## FILES / FOLDERS I AM EDITING (please do not edit these right now)
-- content/science/, content/ai-collaboration/
+- content/science/, content/ai-collaboration/, SCENARIO.md (until the fact-check PR is merged)
 
 ## FREE FOR OTHERS
 - Everything else. I am not touching docs/ (Mykhailo owns it).
