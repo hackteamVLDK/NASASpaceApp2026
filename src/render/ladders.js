@@ -1,10 +1,13 @@
 /**
  * The climbing frames of both crew sheets were painted together with a ladder (crew.eva 16-17: an orange one, crew.indoor 18-21: a grey one)
  * that stands beside the climber. The shaft already has its own ladder, so the player saw two ladders and a climber hanging off the wrong
- * one (docs/ERRORS.md A31). This takes the painted ladder out and keeps the person, so the climber can be placed on the shaft's ladder.
+ * one (docs/ERRORS.md A36). This takes the painted ladder out and keeps the person, so the climber can be placed on the shaft's ladder.
  *
  * Pure pixel code (no DOM), so it runs under node --test. Provenance: `gameplay` (art clean-up, not a claim about Mars).
  */
+
+/** The frames each crew sheet climbs with (reading order, see assets/manifests/asset-manifest.json). */
+export const CLIMB_FRAMES = Object.freeze({ crewEva: Object.freeze([16, 17]), crewIndoor: Object.freeze([18, 19, 20, 21]) });
 
 /**
  * Which frames hold a painted ladder and what colour it is. `from` lists [x, y] corners in cell pixels: everything right of x and below y
@@ -142,12 +145,15 @@ export function patchBakedLadders(sheets, grids) {
     const sheet = sheets[id];
     if (!sheet) continue;
     const [cols, rows] = grids[id];
-    const cw = Math.floor(sheet.width / cols);
-    const ch = Math.floor(sheet.height / rows);
     const g = sheet.getContext('2d');
     for (const [frame, { from }] of Object.entries(spec.frames)) {
-      const ox = (frame % cols) * cw;
-      const oy = Math.floor(frame / cols) * ch;
+      // the cell as the atlas cuts it (rows need not be a whole number of pixels: crew.eva has 5 rows in 1536 pixels)
+      const col = frame % cols;
+      const row = Math.floor(frame / cols);
+      const ox = Math.round((col * sheet.width) / cols);
+      const oy = Math.round((row * sheet.height) / rows);
+      const cw = Math.round(((col + 1) * sheet.width) / cols) - ox;
+      const ch = Math.round(((row + 1) * sheet.height) / rows) - oy;
       const img = g.getImageData(ox, oy, cw, ch);
       eraseLadder(img.data, cw, ch, { kind: spec.kind, from });
       g.putImageData(img, ox, oy);

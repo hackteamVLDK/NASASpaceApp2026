@@ -7,6 +7,7 @@
  */
 import { play, director } from './audio.js';
 import { LAYOUTS, scramble, reach, tap, canTurn, ROWS, COLS, N, E, S, W as WEST } from './pipes.js';
+import { createSuit, pointerDown, pointerMove, pointerUp, pressureAt, steps, complete, nextStep, STAGE, PRESSURE } from './suit-seal.js';
 import { t } from '../flow/strings.js';
 import { formatDelay } from '../data/nasa/lightTime.js';
 
@@ -334,30 +335,149 @@ function wheelVacuum() {
 }
 
 // ------------------------------------------------------------------ 4.8 Spacesuit Radiation & Pressure Seal Check
-function suitSeal() {
-  const leaks = [{ x: 470, y: 150 }, { x: 330, y: 330 }, { x: 640, y: 480 }].map((l) => ({ ...l, sealed: false }));
-  let badge = { x: 880, y: 220, on: false }, drag = false, hold = null, pressure = 0, pressed = false;
+// The rules (random seals, the badge, the liner, the pressure gauge) are in suit-seal.js and are tested under node (docs/ERRORS.md A37).
+// The suit is drawn from code: a development stand-in for a front-view suit picture, not final art.
+const RINGS = { helmet: [550, 222, 58, 14], gloveL: [449, 372, 32, 9], gloveR: [651, 372, 32, 9], bootL: [513, 536, 36, 9], bootR: [587, 536, 36, 9] };
+const pulse = (now, ms = 320) => 0.5 + 0.5 * Math.sin(now / ms);
+
+function drawSuit(c) {
+  const fill = '#ece6da', line = '#6e6759', dark = '#9c8f7c';
+  const part = (x, y, w, h, r, color = fill) => { c.fillStyle = color; rr(c, x, y, w, h, r); c.fill(); c.strokeStyle = line; c.lineWidth = 3; c.stroke(); };
+  part(488, 392, 58, 150, 22); part(554, 392, 58, 150, 22); // legs
+  part(476, 534, 74, 50, 16, dark); part(550, 534, 74, 50, 16, dark); // boots
+  part(424, 236, 52, 140, 26); part(624, 236, 52, 140, 26); // arms
+  for (const x of [449, 651]) { c.fillStyle = dark; c.beginPath(); c.arc(x, 398, 30, 0, Math.PI * 2); c.fill(); c.stroke(); } // gloves
+  part(478, 226, 144, 176, 38); // body
+  c.fillStyle = '#2b3a4a'; rr(c, 584, 258, 44, 34, 6); c.fill(); // the control box on the chest
+  c.fillStyle = '#43e060'; c.fillRect(592, 266, 10, 6); c.fillStyle = '#ffb000'; c.fillRect(608, 266, 10, 6); c.fillStyle = '#00E5FF'; c.fillRect(592, 278, 26, 6);
+  c.fillStyle = '#b9b3a6'; rr(c, 544, 300, 12, 92, 6); c.fill(); c.strokeStyle = line; c.stroke(); // the zipper
+  c.fillStyle = dark; rr(c, 541, 296, 18, 14, 4); c.fill(); // its pull tab
+  c.fillStyle = fill; c.beginPath(); c.arc(550, 150, 64, 0, Math.PI * 2); c.fill(); c.strokeStyle = line; c.lineWidth = 3; c.stroke(); // helmet
+  c.fillStyle = '#7a5410'; c.beginPath(); c.ellipse(556, 152, 46, 36, 0, 0, Math.PI * 2); c.fill(); c.stroke(); // visor
+  c.fillStyle = 'rgba(255,225,140,.75)'; c.beginPath(); c.ellipse(538, 138, 14, 8, -0.5, 0, Math.PI * 2); c.fill();
+  c.strokeStyle = '#a49c8c'; c.lineWidth = 7; // the seals: rings round the neck, wrists and ankles
+  for (const [x, y, rx, ry] of Object.values(RINGS)) { c.beginPath(); c.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); c.stroke(); }
+}
+
+function drawBadge(c, x, y, { on = false, lift = false, glow = 0 } = {}) {
+  c.save();
+  c.translate(x, y); if (lift) c.scale(1.12, 1.12);
+  if (glow) { c.shadowColor = '#ffd600'; c.shadowBlur = 10 + 22 * glow; }
+  c.fillStyle = on ? '#ffb000' : '#ff8a2a'; rr(c, -34, -24, 68, 48, 8); c.fill();
+  c.shadowBlur = 0; c.strokeStyle = '#5a2d00'; c.lineWidth = 3; c.stroke();
+  c.fillStyle = '#5a2d00'; rr(c, -10, -32, 20, 12, 3); c.fill(); // the clip
+  c.fillStyle = '#000'; c.font = 'bold 30px sans-serif'; c.textAlign = 'center'; c.fillText('☢', 0, 11);
+  c.restore();
+}
+
+function drawLiner(c, x, y, { on = false, lift = false, glow = 0 } = {}) {
+  c.save();
+  c.translate(x, y); if (lift) c.scale(1.12, 1.12);
+  if (glow) { c.shadowColor = '#00E5FF'; c.shadowBlur = 10 + 22 * glow; }
+  const w = on ? 56 : 92, h = on ? 40 : 62;
+  c.fillStyle = '#2c6f9a'; rr(c, -w / 2, -h / 2, w, h, 8); c.fill();
+  c.shadowBlur = 0; c.strokeStyle = '#00E5FF'; c.lineWidth = 3; c.stroke();
+  c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 2; for (let i = -1; i <= 1; i++) { c.beginPath(); c.moveTo(-w / 2 + 8, i * h / 4); c.lineTo(w / 2 - 8, i * h / 4); c.stroke(); }
+  if (!on) label(c, 'LINER', 0, h / 2 + 22, 18, '#9fd8ff');
+  c.restore();
+}
+
+function suitSeal(opts = {}) {
+  const g = createSuit({ liner: Boolean(opts.liner) });
+  let first = true; // the hand shows over the first leak until a leak is sealed
+  let said = null; // what the gauge or the suit told the player: { text, color, until }
+  let shown = null; // the needle after a release, shown for a moment: { pressure, until }
+  let dragging = null; // 'badge' | 'liner' while one is held
+  const say = (text, color = '#fff', ms = 1700) => { said = { text, color, until: performance.now() + ms }; };
   return {
     down(p) {
-      leaks.forEach((l) => { if (!l.sealed && Math.hypot(p.x - l.x, p.y - l.y) < 50) { l.sealed = true; director.minigame('suit_seal', 'clamp'); } });
-      if (!badge.on && Math.hypot(p.x - badge.x, p.y - badge.y) < 50) drag = true;
-      if (inR(p, 120, 470, 220, 80)) { hold = performance.now(); pressed = false; }
+      const what = pointerDown(g, p, performance.now());
+      if (what === 'clamp') { director.minigame('suit_seal', 'clamp'); first = false; }
+      else if (what === 'grab') { dragging = g.badge.drag ? 'badge' : 'liner'; said = null; }
+      else if (what === 'locked') say('Seal every leak first!', '#ffd600');
+      else if (what === 'press') shown = null;
     },
-    move(p) { if (drag) { badge.x = p.x; badge.y = p.y; } },
+    move(p) { pointerMove(g, p); },
     up(p) {
-      if (drag) { drag = false; if (Math.hypot(p.x - 550, p.y - 280) < 90) { badge = { x: 550, y: 280, on: true }; director.minigame('suit_seal', 'badge'); } else badge = { x: 880, y: 220, on: false }; }
-      if (hold) { hold = null; if (pressure > 0.62 && pressure < 0.82) pressed = true; pressure = 0; }
+      const r = pointerUp(g, p, performance.now());
+      dragging = null;
+      if (r.kind === 'badge') director.minigame('suit_seal', 'badge');
+      else if (r.kind === 'liner') director.minigame('suit_seal', 'liner');
+      else if (r.kind === 'back') say('Drop it on the suit!', '#ffd600');
+      else if (r.kind === 'release') {
+        shown = { pressure: r.pressure, until: performance.now() + 900 };
+        if (r.verdict === 'good') say('Pressure is perfect!', '#9affb0');
+        else say(r.verdict === 'low' ? 'A little more pressure!' : 'A little less pressure!', '#ffd600');
+      }
     },
     draw(c, now) {
-      label(c, 'Seal the leaks, badge on, then hold PRESSURIZE and release in the green', W / 2, 60, 24, '#ffb000');
-      c.fillStyle = '#e8e2d6'; rr(c, 400, 90, 300, 440, 60); c.fill(); c.fillStyle = '#c9a24a'; rr(c, 450, 120, 200, 110, 50); c.fill();
-      leaks.forEach((l) => { if (!l.sealed) { c.fillStyle = `rgba(160,220,255,${0.5 + Math.sin(now / 120) * 0.3})`; c.beginPath(); c.arc(l.x, l.y, 30, 0, Math.PI * 2); c.fill(); } else { c.fillStyle = '#43e060'; c.fillRect(l.x - 18, l.y - 6, 36, 12); } });
-      c.fillStyle = badge.on ? '#ffb000' : '#ff8a2a'; rr(c, badge.x - 30, badge.y - 22, 60, 44, 6); c.fill(); label(c, '☢', badge.x, badge.y + 10, 28, '#000');
-      if (hold) pressure = Math.min(1, (now - hold) / 1800);
-      c.fillStyle = '#16293c'; rr(c, 120, 380, 220, 40); c.fill(); c.fillStyle = 'rgba(67,224,96,.6)'; c.fillRect(120 + 220 * 0.62, 380, 220 * 0.2, 40); c.fillStyle = '#fff'; c.fillRect(120 + 220 * pressure - 2, 372, 5, 56);
-      c.fillStyle = hold ? '#ff8a2a' : '#12304a'; rr(c, 120, 470, 220, 80); c.fill(); c.strokeStyle = '#00E5FF'; c.stroke(); label(c, 'PRESSURIZE', 230, 520, 24);
-      this._ok = leaks.every((l) => l.sealed) && badge.on && pressed;
+      const t = performance.now();
+      const next = nextStep(g);
+      const ready = g.leaks.every((l) => l.sealed);
+      label(c, 'Seal the leaks, badge on, then hold PRESSURIZE and release in the green', W / 2, 52, 24, '#ffb000');
+      drawSuit(c);
+      // the hook the badge hangs on, and the places things go
+      c.strokeStyle = '#b9b3a6'; c.lineWidth = 6; c.beginPath(); c.moveTo(STAGE.badge.x, 130); c.lineTo(STAGE.badge.x, 168); c.arc(STAGE.badge.x + 14, 168, 14, Math.PI, Math.PI * 0.2, true); c.stroke();
+      const beat = dragging ? pulse(now, 180) : 0;
+      if (dragging) { // the whole suit is the target
+        c.setLineDash([12, 9]); c.lineWidth = 4; c.strokeStyle = `rgba(0,229,255,${0.5 + 0.4 * beat})`; rr(c, STAGE.suit.x0, STAGE.suit.y0, STAGE.suit.x1 - STAGE.suit.x0, STAGE.suit.y1 - STAGE.suit.y0, 28); c.stroke(); c.setLineDash([]);
+        label(c, dragging === 'badge' ? 'Drop the badge on the suit' : "Drop the liner on the suit's back", 550, H - 38, 22, '#00E5FF');
+      } else if (next?.kind === 'badge') { // an empty badge pocket on the chest
+        c.setLineDash([8, 7]); c.lineWidth = 3; c.strokeStyle = `rgba(0,229,255,${0.45 + 0.4 * pulse(now)})`; rr(c, STAGE.chest.x - 34, STAGE.chest.y - 24, 68, 48, 8); c.stroke(); c.setLineDash([]);
+      }
+      // leaks: puffs of air at the open seals, a clamp on the sealed ones
+      g.leaks.forEach((l) => {
+        if (l.sealed) {
+          const r = RINGS[l.id];
+          if (r) { c.strokeStyle = '#43e060'; c.lineWidth = 6; c.beginPath(); c.ellipse(r[0], r[1], r[2], r[3], 0, 0, Math.PI * 2); c.stroke(); }
+          c.fillStyle = '#3a4756'; rr(c, l.x - 17, l.y - 10, 34, 20, 6); c.fill(); c.strokeStyle = '#43e060'; c.lineWidth = 3; c.stroke();
+          c.fillStyle = '#43e060'; c.beginPath(); c.arc(l.x, l.y, 4, 0, Math.PI * 2); c.fill();
+          return;
+        }
+        const glow = pulse(now, 150);
+        c.strokeStyle = `rgba(255,138,42,${0.6 + 0.4 * glow})`; c.lineWidth = 5; c.beginPath(); c.arc(l.x, l.y, 30 + 5 * glow, 0, Math.PI * 2); c.stroke();
+        for (let i = 0; i < 4; i++) {
+          const ph = ((now / 650) + i * 0.25) % 1;
+          const px = l.x + Math.sin(i * 2.3 + now / 280) * 14, py = l.y - 6 - ph * 52;
+          c.fillStyle = `rgba(210,245,255,${0.9 * (1 - ph)})`; c.strokeStyle = `rgba(11,21,34,${0.7 * (1 - ph)})`; c.lineWidth = 2;
+          c.beginPath(); c.arc(px, py, 6 + ph * 11, 0, Math.PI * 2); c.fill(); c.stroke();
+        }
+      });
+      if (first && next?.kind === 'leak') tapHand(c, next.x, next.y, now);
+      // what the player carries, and the things already on
+      if (g.liner) drawLiner(c, g.liner.x, g.liner.y, { on: g.liner.on, lift: g.liner.drag, glow: next?.kind === 'liner' ? pulse(now) : g.liner.drag ? 1 : 0 });
+      drawBadge(c, g.badge.x, g.badge.y, { on: g.badge.on, lift: g.badge.drag, glow: next?.kind === 'badge' ? pulse(now) : g.badge.drag ? 1 : 0 });
+      // the checklist
+      const list = steps(g);
+      const current = list.find((x) => !x.done);
+      list.forEach((s, i) => {
+        const y = 128 + i * 44;
+        c.fillStyle = s.done ? '#1d5b32' : '#16293c'; rr(c, 60, y - 22, 28, 28, 6); c.fill(); c.strokeStyle = s.done ? '#43e060' : s === current ? '#ffb000' : '#3b5670'; c.lineWidth = 3; c.stroke();
+        if (s.done) label(c, '✔', 74, y, 22, '#9affb0');
+        label(c, s.text, 102, y, 20, s.done ? '#9affb0' : s === current ? '#ffd600' : '#dfe9f3', 'left');
+      });
+      // the gauge: the needle moves only while PRESSURIZE is held
+      const B = STAGE.button, G = STAGE.gauge;
+      const holding = g.hold != null;
+      const level = holding ? pressureAt(g, t) : shown && shown.until > t ? shown.pressure : 0;
+      c.save(); c.globalAlpha = ready ? 1 : 0.4;
+      label(c, 'PRESSURE', G.x, G.y - 10, 18, '#9fd8ff', 'left');
+      c.fillStyle = '#16293c'; rr(c, G.x, G.y, G.w, G.h, 10); c.fill();
+      c.fillStyle = 'rgba(67,224,96,.65)'; c.fillRect(G.x + G.w * PRESSURE.from, G.y, G.w * (PRESSURE.to - PRESSURE.from), G.h);
+      c.strokeStyle = '#3b5670'; c.lineWidth = 2; rr(c, G.x, G.y, G.w, G.h, 10); c.stroke();
+      c.fillStyle = '#fff'; c.fillRect(G.x + G.w * level - 3, G.y - 8, 6, G.h + 16);
+      c.restore();
+      const glowBtn = next?.kind === 'pressure' && !holding ? pulse(now) : 0;
+      if (glowBtn) { c.shadowColor = '#00E5FF'; c.shadowBlur = 8 + 20 * glowBtn; }
+      c.fillStyle = holding ? '#ff8a2a' : ready ? '#12304a' : '#0e1a28'; rr(c, B.x, B.y, B.w, B.h, 14); c.fill();
+      c.shadowBlur = 0; c.strokeStyle = ready ? '#00E5FF' : '#3b5670'; c.lineWidth = 3; c.stroke();
+      label(c, 'PRESSURIZE', B.x + B.w / 2, B.y + 52, 26, ready ? '#fff' : '#7f93a8');
+      label(c, ready ? 'Hold it down, let go in the green' : 'Seal the leaks first', B.x + B.w / 2, B.y + B.h + 28, 17, ready ? '#9fd8ff' : '#ffd600');
+      if (said && said.until > t) { c.fillStyle = 'rgba(0,0,0,.55)'; rr(c, W / 2 - 230, H - 86, 460, 44, 12); c.fill(); label(c, said.text, W / 2, H - 55, 26, said.color); }
+      if (this.wonAt != null) { c.fillStyle = 'rgba(0,0,0,.6)'; rr(c, W / 2 - 250, 250, 500, 80, 16); c.fill(); label(c, 'Suit ready for Mars!', W / 2, 303, 36, '#9affb0'); }
+      this._ok = complete(g);
     },
+    outroMs: 1100,
     done() { return Boolean(this._ok); },
   };
 }

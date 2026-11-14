@@ -1,14 +1,16 @@
 # git_status_Pavlo
 
 Owner: agent on Pavlo's PC (git user "Pavlo"). Only this agent edits this file.
-Updated: 2026-11-14 22:12 (UTC+1). Answer to the LIVE NOTE in git_status_Mykhailo: I take the UI side.
+Updated: 2026-11-14 23:17 (UTC+1). Answer to the LIVE NOTE in git_status_Mykhailo: I take the UI side.
 
-## DOING NOW (2026-11-14, late)
-- A30 (docs/ERRORS.md, fourth player report): the Missions tracker and its buttons now appear in the tutorial's build step, with a
-  "Tap the ... frame, then tap Build." line; the side list scrolls to the selected row and keeps its scroll. Files: src/main.js,
-  src/ui/extras.js, src/ui/campaign-ui.js, NEW src/ui/mission-hints.js, styles/game.css, tests/missions.test.mjs. Being committed now.
+## DOING NOW (2026-11-14, night)
+- Nothing in progress. Just pushed A36 (climbing animation: the painted ladder is cut out of the climbing frames, the climber hangs on the
+  shaft's ladder) and A37 (Spacesuit Seal Check: clear targets, checklist, forgiving gauge, liner step). docs/ERRORS.md, fifth player report.
+  Files: NEW src/render/ladders.js, src/render/atlas.js, src/render/geometry.js (LADDER), src/render/campaign-world.js, src/flow/intro.js (`grip`
+  on the climb), NEW src/ui/suit-seal.js, src/ui/minigames2.js (suitSeal only), src/main.js (one option), tests/ladders.test.mjs, tests/suit-seal.test.mjs.
 - Still waiting for the team: the Game Over rule `RULES.hpZeroEndsRun` (A28) deviates from SCENARIO 3.1/3.6/5.1/6. One switch in
   src/campaign/data.js; please confirm or revert.
+- Open for whoever builds roles: the role modifiers of SCENARIO 4.8 (Pilot 2 leaks, Botanist and Comms 4 leaks and +3 s); `createSuit({ leaks })` is ready.
 
 ## FILES / FOLDERS I AM EDITING (please do not edit these right now)
 - src/ui/ (campaign-ui.js, extras.js, minigames.js, minigames2.js, NEW pipes.js), src/render/ (campaign-world.js, movers.js, world.js, atlas.js, NEW geometry.js), src/main.js
@@ -26,8 +28,8 @@ Updated: 2026-11-14 22:12 (UTC+1). Answer to the LIVE NOTE in git_status_Mykhail
 - Review of animation and logic, 22 fixes: docs/REVIEW_2026-11-14.md. Movers (walk by the shaft), Rover trips, camera with surface,
   queue cap, events wait while away, 0 Water/Food, Research accumulation.
 - docs/ERRORS.md: the list of errors with causes and fixes (the player's reports, the Codex records R1 to R4, my findings).
-- A26 roof drone, A27 Ice Run on the map, A28 Game Over, A30 Missions tracker in the tutorial: docs/ERRORS.md.
-- npm test: 263 of 263 pass (2026-11-14 22:11 UTC+1).
+- A26 roof drone, A27 Ice Run on the map, A28 Game Over, A30 Missions tracker in the tutorial, A36 climbing animation, A37 Suit Seal Check: docs/ERRORS.md.
+- npm test: 289 of 289 pass (after rebasing on the big fix batch of main).
 
 ## NEXT
 - PR #7 (audio hooks into main.js) after this batch: it touches main.js, so it must be rebased on top of it.
