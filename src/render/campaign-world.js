@@ -267,11 +267,50 @@ export function drawCampaign(ctx, atlas, S) {
       atlas.cell(ctx, 'icons', ICON.wrench, h.x + h.w / 2 - k / 2, h.y - k - 22 + bob, k, k);
     }
   }
-  for (const [id, color, w] of [[S.highlight, `rgba(255,214,0,${0.6 + Math.sin(nowMs / 200) * 0.35})`, 8], [S.hover, 'rgba(255,255,255,0.7)', 5]]) {
+  // A15: a soft glow instead of a hard white frame. Rooms get a blurred rounded edge; drones and people get a
+  // glowing ring at their feet plus a faint halo, like a selection light. Highlight (the "do this" pointer) pulses gold.
+  const pulse = 0.5 + Math.sin(nowMs / 200) * 0.5;
+  for (const [id, rgb, strength] of [[S.highlight, '255,214,0', 0.75 + pulse * 0.25], [S.hover, '160,235,255', 0.6]]) {
     const h = id && hits.find((x) => x.id === id);
-    if (h && (h.id.startsWith('module:') || h.id.startsWith('drone:') || h.id.startsWith('crew:'))) { ctx.strokeStyle = color; ctx.lineWidth = w; ctx.strokeRect(h.x + 3, h.y + 3, h.w - 6, h.h - 6); }
+    if (h && (h.id.startsWith('module:') || h.id.startsWith('drone:') || h.id.startsWith('crew:'))) drawGlow(ctx, h, rgb, strength);
   }
   ctx.restore();
   void MODULES; void feetY;
   return hits;
+}
+
+/** A15: soft selection glow. `rgb` like '160,235,255'; `strength` 0..1. */
+function drawGlow(ctx, h, rgb, strength) {
+  ctx.save();
+  if (h.id.startsWith('module:')) {
+    const r = 18;
+    ctx.shadowColor = `rgba(${rgb},${0.9 * strength})`;
+    ctx.shadowBlur = 28;
+    ctx.strokeStyle = `rgba(${rgb},${0.55 * strength})`;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(h.x + 6, h.y + 6, h.w - 12, h.h - 12, r);
+    else ctx.rect(h.x + 6, h.y + 6, h.w - 12, h.h - 12);
+    ctx.stroke();
+    ctx.stroke(); // a second pass makes the blur fuller without a harder line
+  } else {
+    const cx = h.x + h.w / 2;
+    const feet = h.y + h.h - 6;
+    ctx.globalCompositeOperation = 'lighter';
+    // halo behind and around the body
+    const halo = ctx.createRadialGradient(cx, h.y + h.h * 0.55, 4, cx, h.y + h.h * 0.55, Math.max(h.w, h.h) * 0.7);
+    halo.addColorStop(0, `rgba(${rgb},${0.22 * strength})`);
+    halo.addColorStop(1, `rgba(${rgb},0)`);
+    ctx.fillStyle = halo;
+    ctx.fillRect(h.x - h.w * 0.4, h.y - 10, h.w * 1.8, h.h + 20);
+    // glowing ring on the floor
+    ctx.shadowColor = `rgba(${rgb},${strength})`;
+    ctx.shadowBlur = 16;
+    ctx.strokeStyle = `rgba(${rgb},${0.8 * strength})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(cx, feet, h.w * 0.42, 9, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
 }

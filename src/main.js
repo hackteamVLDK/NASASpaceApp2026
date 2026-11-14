@@ -11,7 +11,7 @@ import { drawCampaign, buildSoil, createWalker, SCREEN } from './render/campaign
 import { ROVER, arrived, place as placeBody } from './render/movers.js';
 import { garageSpots, entryGeometry } from './render/geometry.js';
 import { createCampaign, step, command, clockAt } from './campaign/engine.js';
-import { SECONDS_PER_SOL, SOL, RECIPES } from './campaign/data.js';
+import { SECONDS_PER_SOL, SOL, RECIPES, MODULES } from './campaign/data.js';
 import { openingFrameAt, cuesBetween, skipTarget, T, GAMEPLAY_VIEW, INTRO_TEXT, introTextAt, flowStateAt, astronautPathAt, entryDoorsAt } from './flow/intro.js';
 import { createGuide, say } from './flow/astra.js';
 import { createAstraPanel } from './ui/astra-panel.js';
@@ -337,8 +337,32 @@ canvas.addEventListener('pointerdown', (e) => {
     }
     return;
   }
-  ui.select(id);
+  pickInWorld(id);
 });
+
+/** A21: a tap on anything that lights up always gives a visible answer (a list row, a tip, or the crater map). */
+function pickInWorld(id) {
+  ui.select(id);
+  if (id.startsWith('module:')) {
+    const mod = id.slice(7);
+    const m = s.modules[mod];
+    if (mod === 'garage' && m?.status === 'online' && !s.away) { ui.showMap(); return; }
+    ui.setTab('base');
+    ui.revealSelected();
+    if (!m || !MODULES[mod]) return;
+    const nm = t(MODULES[mod].nameId);
+    const msg = m.status === 'unbuilt' ? `${nm}: not built yet. Tap Build in the Base list, or tap an awake drone and then this frame.`
+      : m.status === 'building' ? `${nm}: building, ${Math.round(m.progress * 100)}% done.`
+        : `${nm}: ${m.tier === 2 ? 'Tier 2, working' : 'working'}.`;
+    toast(msg, 3200);
+  } else if (id.startsWith('drone:')) {
+    ui.setTab('drones');
+    ui.revealSelected();
+    toast(`${NICK[id.slice(6)] ?? 'Drone'} is ready. Now tap a room frame to send it there.`, 3200);
+  } else if (id === 'crew:cmdr') {
+    toast('Commander selected. Tap a room, or the ground outside, to walk there.', 3200);
+  }
+}
 
 const KIT = { 'drone-02': 'repair_kit', 'drone-03': 'reboot_kit' };
 /** A sleeping drone was tapped: use its kit if there is one, else say how to get it. */
@@ -573,6 +597,8 @@ async function boot() {
     get hits() { return hits; }, view: () => currentView(), get mode() { return mode; }, get tut() { return tut; }, get s() { return s; },
     get rover() { return rover; }, get walker() { return walker; }, get droneMovers() { return droneMovers; },
     send, jump: (sec) => { flowT = sec; prevFlowT = sec; }, state: () => flowStateAt(flowT), openMini,
+    // jump over the two tutorial mini-games to the "build the Battery" step (Drone #01 repaired)
+    tutorialBuild: () => { if (mode === 'tutorial') { s.flags.panelsCleaned = true; onBatteryDone(); } },
   };
   if (q.has('autostart')) { $('loading').hidden = true; mode = 'intro'; flowT = Number(q.get('autostart')) || 0; prevFlowT = flowT; }
   if (q.has('play')) { $('loading').hidden = true; mode = 'play'; command(s, { type: 'wakeDrone', drone: 'drone-01' }); s.flags.panelsCleaned = true; }
