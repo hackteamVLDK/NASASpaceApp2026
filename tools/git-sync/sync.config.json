@@ -1,0 +1,25 @@
+{
+  "remote": "origin",
+  "branch": "",
+  "intervalSeconds": 15,
+  "debounceSeconds": 4,
+  "maxDebounceWaitSeconds": 60,
+  "maxFileSizeMB": 50,
+  "commitPrefix": "sync",
+  "blockedPatterns": [
+    ".env",
+    ".env.*",
+    "*.pem",
+    "*.key",
+    "*.pfx",
+    "*.p12",
+    "id_rsa*",
+    "id_ed25519*",
+    "auth.json",
+    "*.token"
+  ],
+  "notify": {
+    "bell": true,
+    "desktop": true
+  }
+}

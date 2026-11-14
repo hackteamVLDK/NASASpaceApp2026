@@ -1,0 +1,27 @@
+# Dependencies and build output
+node_modules/
+dist/
+
+# Local runtime state (sync daemon state lives in .git/colony-sync, never tracked)
+*.log
+*.tmp
+*.swp
+~$*
+.DS_Store
+Thumbs.db
+
+# Secrets — never synced, even though the repository is private
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+id_rsa*
+id_ed25519*
+auth.json
+*.token
+
+# Codex worktrees created for isolated write tasks
+.codex-worktrees/

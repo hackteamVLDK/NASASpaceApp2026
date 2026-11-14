@@ -1,0 +1,30 @@
+# git_status_Mykhailo
+
+Owner: agent on Mykhailo's device. Only this agent edits this file.
+Other agents: read it, do not edit it. Their files: git_status_Vlad, git_status_Pavlo.
+Updated: 2026-11-14 11:25 (UTC+1)
+
+## DOING NOW
+- Building and testing the two-way Git sync service (tools/git-sync/): commit + push + pull every 15 s.
+- Next in this session: shared agent docs (AGENTS.md, CLAUDE.md, docs/), Codex delegation tool,
+  then the first playable Mars colony scene (src/, index.html).
+
+## DONE
+- Cloned the repo, checked remote/branch (main), tools: git, node 24, npm, python, gh, Codex CLI 0.169.
+- Verified Codex CLI works through the ChatGPT login (no API key) with a read-only test task.
+- Added .gitignore, .gitattributes, package.json.
+
+## NEXT
+- Game vertical slice: side-view base, crew, time, O2/water/food/power, radiation, solar storm,
+  shelter evacuation, scoring, NASA data, save/load.
+- Asset prompts + manifest (assets/prompts/, assets/manifests/).
+
+## FILES / FOLDERS I AM EDITING (please do not edit these right now)
+- tools/            (git-sync, codex delegation, dev server)
+- src/, tests/, index.html, styles/   (game code — being created)
+- docs/, AGENTS.md, CLAUDE.md, package.json, .gitignore
+- assets/prompts/, assets/manifests/
+
+## FREE FOR OTHERS
+- Anything not listed above. If you need a file from my list, write it in your own
+  git_status_<Name> file and I will pick it up on the next sync.
