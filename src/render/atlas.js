@@ -15,13 +15,13 @@ import { patchBakedLadders } from './ladders.js';
 
 const DIR = 'assets/incoming/';
 
-/** id -> asset file name (assets/manifests/asset-manifest.json). */
+/** id -> image path relative to DIR (assets/manifests/asset-manifest.json). */
 const FILES = {
   sky: 'bg.sky', terrain: 'terrain.tiles', airlock: 'surface.airlock', solar: 'surface.solar-panels',
   antenna: 'surface.antenna', mound: 'surface.mound', lander: 'lander.craft', parachute: 'lander.parachute',
   dust: 'fx.dust-burst', crewIndoor: 'crew.indoor', crewEva: 'crew.eva', drone: 'drone.builder',
   astra: 'astra.avatar', bedroom: 'module.bedroom', dining: 'module.dining', lifesupport: 'module.lifesupport',
-  unfinished: 'module.unfinished', finished: 'module.finished', shaft: 'prop.shaft', rover: 'vehicle.rover',
+  unfinished: 'module.unfinished', finished: 'module.finished', garage: '../art/surface/garage', shaft: 'prop.shaft', rover: 'vehicle.rover',
   icons: 'ui.icons', weather: 'fx.weather', upgrades: 'ext.upgrades', astraPanel: 'ui.astra-panel', solarGame: 'minigame.drone-repair', greenhouse: 'module.greenhouse', recreation: 'module.recreation',
 };
 
@@ -32,7 +32,7 @@ const SPRITES = new Set(['airlock', 'solar', 'antenna', 'mound', 'lander', 'para
 const GRIDS = {
   airlock: [1, 2], solar: [1, 3], antenna: [2, 1], mound: [1, 2], lander: [1, 2], parachute: [2, 2], dust: [2, 3],
   crewIndoor: [4, 6], crewEva: [4, 5], drone: [4, 6], astra: [3, 3], unfinished: [1, 4], finished: [1, 4],
-  shaft: [2, 1], rover: [1, 3], solarGame: [2, 2], greenhouse: [1, 2], recreation: [1, 2], icons: [6, 6], weather: [2, 4], upgrades: [1, 3], terrain: [6, 4],
+  garage: [1, 2], shaft: [2, 1], rover: [1, 3], solarGame: [2, 2], greenhouse: [1, 2], recreation: [1, 2], icons: [6, 6], weather: [2, 4], upgrades: [1, 3], terrain: [6, 4],
 };
 
 /** Sheets whose rows are not equal fractions of the image: measured cell rectangles (source pixels). */

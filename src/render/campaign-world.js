@@ -17,7 +17,7 @@ import { onSurface, createMover, setGoal, advance, place as placeAt, arrived, ro
 export { SCREEN, buildSoil, roomRect, anchor };
 
 /** Frame of each unfinished room in the shared sheets module.unfinished / module.finished. */
-const FRAME = { workshop: 0, lab: 1, battery: 2, garage: 3 };
+const FRAME = { workshop: 0, lab: 1, battery: 2 };
 const LEFT_PIC = { bedroom: 'bedroom', kitchen: 'dining', lifesupport: 'lifesupport' };
 const SOIL_X = { x0: SOIL.x0, x1: SOIL.x1 };
 const NICK = { 'drone-01': 'Pip', 'drone-02': 'Bumble', 'drone-03': 'Zip' };
@@ -135,7 +135,7 @@ export function drawCampaign(ctx, atlas, S) {
       atlas.cell(ctx, 'unfinished', FRAME[id], r.x, r.y, r.w, r.h);
       if (progress > 0) { ctx.globalAlpha = built ? 1 : 0.15 + progress * 0.8; atlas.cell(ctx, 'finished', FRAME[id], r.x, r.y, r.w, r.h); ctx.globalAlpha = 1; }
     } else {
-      // Greenhouse and Recreation have their own two-frame sheets (unfinished | finished)
+      // Greenhouse, Recreation and the surface Garage each have unfinished | finished frames.
       atlas.cell(ctx, id, 0, r.x, r.y, r.w, r.h);
       if (progress > 0) { ctx.globalAlpha = built ? 1 : 0.15 + progress * 0.8; atlas.cell(ctx, id, 1, r.x, r.y, r.w, r.h); ctx.globalAlpha = 1; }
     }
@@ -144,7 +144,8 @@ export function drawCampaign(ctx, atlas, S) {
       ctx.fillStyle = '#FFB000'; ctx.fillRect(r.x + 20, r.y + r.h - 40, (r.w - 40) * m.progress, 16);
     }
     if (m.status === 'unbuilt') {
-      ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(r.x, r.y, r.w, r.h);
+      // The outdoor garage has a transparent curved outline; keep the sky outside it clear.
+      if (id !== 'garage') { ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(r.x, r.y, r.w, r.h); }
       atlas.cell(ctx, 'icons', ICON.lock, r.x + r.w - 76, r.y + 14, 56, 56);
     }
     if (m.tier === 2) { ctx.fillStyle = '#FFB000'; ctx.font = 'bold 34px sans-serif'; ctx.textAlign = 'right'; ctx.fillText('T2', r.x + r.w - 16, r.y + 44); }

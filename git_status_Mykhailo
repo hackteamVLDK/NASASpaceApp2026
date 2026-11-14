@@ -25,6 +25,19 @@ Updated: 2026-11-14 (UTC+1), after the backend was aligned with SCENARIO.md
   "in the same style"). The team generates images and drops them in assets/incoming/.
 
 ## DOING NOW
+- User requested publishing all surface Garage changes to origin/main. Two incoming team commits
+  will be merged without rewriting history; the combined tree will be tested before pushing.
+- Surface Garage integrated: assets/incoming/surface.garage.png (generated reference),
+  assets/art/surface/garage.png (processed 120x108 RGBA sheet, unfinished + finished, 24 colours).
+  Manifest + assets/prompts/surface.garage.md are updated; asset tests 8/8 and full npm test 268/268 pass.
+  Visual check: assets/incoming/_garage-preview/preview.png (actual game atlas and renderer,
+  unfinished / 50% built / finished; separate Rover and drones). No scenario changes.
+  Mykhailo explicitly approved connecting the art despite Pavlo's renderer reservation (chat: yes).
+  Owned paths for integration: src/render/atlas.js and src/render/campaign-world.js, plus garage assets/manifest/prompts.
+  Reviewed in .codex-worktrees/surface-garage, then integrated. New garage sheet bypasses legacy baked-Rover patch.
+  Removed the rectangular unbuilt dimming overlay around its transparent roof. No scenario or gameplay changes.
+  Asset checks + layout/mover checks pass (27/27); final full npm test 268/268 pass. No ongoing renderer edits after this task.
+  Isolated worktree: .codex-worktrees/surface-garage, branch codex/surface-garage.
 - Done: the playable game on SCENARIO v2 (src/campaign = engine, story, expeditions, logbook; src/render, src/ui, src/main.js).
   npm run dev. The old src/sim is no longer used by the game. Review of animation and logic done (docs/REVIEW_2026-11-14.md):
   camera now shows the surface; Commander and drones walk by the shaft (src/render/movers.js); Rover drives out and in;
@@ -39,6 +52,8 @@ Updated: 2026-11-14 (UTC+1), after the backend was aligned with SCENARIO.md
   SCENARIO.md.
 
 ## DONE
+- Surface Garage art: generated raw reference + processed two-state sheet + prompt/manifest, visual preview checked;
+  runtime connected with Mykhailo's explicit approval for the two reserved renderer files. Status: integrated, not final.
 - 2026-11-14: Completed and pushed merge recovery; incorporated remote updates through A30. Full suite: 268/268 pass.
 - 2026-11-14 21:38: Resumed Git sync at the user's request; the daemon completed a cycle successfully.
 - tools/git-sync/: two-way sync every 15 s. Start with: npm run sync   (docs/GIT_SYNC.md)

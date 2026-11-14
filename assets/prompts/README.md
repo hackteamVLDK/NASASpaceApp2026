@@ -14,6 +14,7 @@ asset is then generated with that image attached as the style reference. See
 | 1 | [surface.airlock](surface.airlock.md) | Surface habitat with the Airlock dome | received | style.anchor |
 | 1 | [surface.solar-panels](surface.solar-panels.md) | Solar panels — dusty and clean | received | style.anchor |
 | 1 | [surface.antenna](surface.antenna.md) | Radio tower and dish — bent and repaired | received | style.anchor |
+| 1 | [surface.garage](surface.garage.md) | Surface Garage & Airlock - outdoor hangar, two states | integrated | style.anchor, surface.airlock |
 | 1 | [surface.mound](surface.mound.md) | Regolith mound with buried drones | received | style.anchor, drone.builder |
 | 1 | [lander.craft](lander.craft.md) | Mars lander | received | style.anchor |
 | 1 | [lander.parachute](lander.parachute.md) | Parachute and thruster flames | received | style.anchor |

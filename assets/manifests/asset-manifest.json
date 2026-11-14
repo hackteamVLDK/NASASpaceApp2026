@@ -154,6 +154,26 @@
       "notes": "SCENARIO section 4: 'bent antenna'. The team's reference shows the tower intact; frame 2 is the reference design, frame 1 is its bent version required by the scenario. The upgrade doubles storm-warning time in the simulation."
     },
     {
+      "id": "surface.garage",
+      "tier": 1,
+      "title": "Surface Garage & Airlock - outdoor hangar, two states",
+      "purpose": "The standalone surface Garage & Airlock, unfinished and finished, with space for separately animated drones and Rover.",
+      "kind": "prop-sheet",
+      "perspective": "Flat orthographic side elevation; no perspective or visible receding floor.",
+      "logicalSize": [120, 108],
+      "frames": { "cell": [120, 54], "columns": 1, "rows": 2, "order": "unfinished rounded steel frame with partial roof panels | finished cream-clad rounded hangar with warm lamp and empty bay" },
+      "generate": "landscape sheet, two equal rows",
+      "background": "transparent outside the building silhouette; opaque dark bay interior",
+      "subject": "Two aligned states of one ABOVE-GROUND Mars Rover Garage & Airlock. Match the existing module.unfinished and module.finished pixel art and the rounded cream-grey surface habitat reference. A broad barrel-vault roof with curved slate-steel ribs, rust-orange joints, riveted cream insulation panels, a large empty central parking bay, a compact utility airlock on the right, and a low level threshold with amber parking markings. Top: exposed curved steel ribs, partial cream roof and side panels, no lights. Bottom: complete cream exterior cladding, warm amber lamp above the bay and a small cyan console on the right. Keep the same roof silhouette, supports and ground level in both states so construction can crossfade. The central bay stays empty for the separately animated Rover and drones. No painted vehicles, drones, people, terrain, sand piles, sky, scenery, text, letters, numbers or watermark. Crisp chunky pixels, dark outlines, upper-left light, cream, slate and amber palette.",
+      "layout": "One column, two equal cells; unfinished above finished. Identical exterior bounds and aligned feet. Each building nearly fills a 120:54 cell; transparency follows its curved outline.",
+      "dependsOn": ["style.anchor", "surface.airlock"],
+      "references": ["assets/reference/surface-reference.png", "assets/incoming/module.unfinished.png", "assets/incoming/module.finished.png"],
+      "incoming": "assets/incoming/surface.garage.png",
+      "file": "assets/art/surface/garage.png",
+      "status": "integrated",
+      "notes": "PROPOSAL exterior detailing approved by the user's request for outdoor art. SCENARIO reconciliation lists Garage airlock as a surface structure; placement, names, unlocks and gameplay stay unchanged. Built-in image_gen generated the raw two-state reference. Processing crops source rectangles (36,46,1376,491) and (36,565,1376,491), nearest-neighbour scales each to 120x54, thresholds alpha at 110 and quantises to 24 colours. The legacy fourth underground garage cells remain only for older rendering; new surface art has no baked Rover and needs no patchBakedRover correction. Raw reference has slightly different state silhouettes; processed bounds and ground levels are aligned. User approved runtime integration. Atlas loads the processed sheet; campaign-world draws its two states and preserves the transparent exterior outline. Checked in Edge at unbuilt, 50 percent construction and finished states with separate drones and Rover. Not marked final."
+    },
+    {
       "id": "surface.mound",
       "tier": 1,
       "title": "Regolith mound with buried drones",
