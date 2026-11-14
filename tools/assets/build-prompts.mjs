@@ -23,12 +23,50 @@ export function loadManifest() {
 
 const size = ([w, h]) => `${w} x ${h} px`;
 
+const SIZES = [
+  { ratio: 1, text: '1:1', size: '1024x1024' },
+  { ratio: 1.5, text: '3:2 landscape', size: '1536x1024' },
+  { ratio: 2 / 3, text: '2:3 portrait', size: '1024x1536' },
+];
+const nearestSize = (r) => SIZES.reduce((best, s) => (Math.abs(Math.log(r / s.ratio)) < Math.abs(Math.log(r / best.ratio)) ? s : best));
+
+/**
+ * How to ask the image tool for this asset. The tool only makes 1:1, 3:2 and 2:3 images, so
+ * wide or tall sprite sheets are re-flowed into a grid whose overall shape fits one of them
+ * (frames keep reading order); processing later puts the frames back into the logical grid.
+ * Single pictures are generated in the nearest format and cropped afterwards.
+ */
+export function generationPlan(asset) {
+  const f = asset.frames;
+  if (f && Array.isArray(f.cell)) {
+    const [cw, ch] = f.cell;
+    const total = f.columns * f.rows;
+    let best = null;
+    for (let columns = 1; columns <= total; columns++) {
+      const rows = Math.ceil(total / columns);
+      const canvas = (columns * cw) / (rows * ch);
+      const fmt = nearestSize(canvas);
+      const score = Math.abs(Math.log(canvas / fmt.ratio)) + ((columns * rows - total) / total) * 0.4;
+      if (!best || score < best.score) best = { columns, rows, canvas, fmt, score };
+    }
+    return { sheet: true, columns: best.columns, rows: best.rows, reflowed: best.columns !== f.columns || best.rows !== f.rows, format: best.fmt, crop: false, cell: f.cell };
+  }
+  const ratio = asset.logicalSize[0] / asset.logicalSize[1];
+  const fmt = nearestSize(ratio);
+  return { sheet: false, format: fmt, crop: Math.abs(Math.log(ratio / fmt.ratio)) > 0.05, ratio };
+}
+
+
 /** One complete prompt for one asset, ready to paste. */
 export function promptFor(asset, manifest) {
   const anchor = asset.id === manifest.anchor;
   const lines = [];
   lines.push(`Create a pixel-art game asset: ${asset.title}.`);
   lines.push('');
+  if (asset.references?.length) {
+    lines.push('SURFACE REFERENCE: One attached image is the design reference of the team for the Mars surface (habitat with a central airlock dome and lit windows, dish, lattice radio tower with a red beacon, boxy yellow-white rover, red-brown mountains, violet-pink dusty sky). Copy its design language, shapes and palette for everything on the surface; do not copy it pixel for pixel, and follow the brief below where it differs.');
+    lines.push('');
+  }
   if (!anchor) {
     lines.push('STYLE: Use the attached reference image(s) as the exact style guide: same palette, pixel size, outline, lighting and level of detail. Make this asset in the same style.');
     lines.push('');
@@ -37,18 +75,24 @@ export function promptFor(asset, manifest) {
   lines.push('');
   lines.push(`VIEW: ${asset.perspective}`);
   if (asset.layout) lines.push(`LAYOUT: ${asset.layout}`);
-  if (asset.frames) lines.push(`FRAMES: ${asset.frames.columns} columns x ${asset.frames.rows} rows. ${typeof asset.frames.cell === 'string' ? asset.frames.cell : `Each cell ${asset.frames.cell[0]} x ${asset.frames.cell[1]} logical pixels.`} Order: ${asset.frames.order}.`);
+  const plan = generationPlan(asset);
+  if (asset.frames) {
+    if (plan.sheet) {
+      const order = plan.reflowed ? asset.frames.order.replace(/row \d+( \([^)]*\))?:\s*/g, '') : asset.frames.order;
+      lines.push(`FRAMES: a strict grid of ${plan.columns} columns x ${plan.rows} rows of EQUAL cells that exactly fill the image, each cell with the proportions ${plan.cell[0]}:${plan.cell[1]}. ${plan.reflowed ? 'Read the cells left to right, then top to bottom. ' : ''}Cell contents in order: ${order}. Any unused trailing cells stay empty background.`);
+    } else lines.push(`FRAMES: ${asset.frames.order}.`);
+  }
   lines.push(`BACKGROUND: ${asset.background}.`);
   lines.push('');
   lines.push(`STYLE RULES: ${manifest.common.styleRules}`);
   lines.push(`AVOID: ${manifest.common.avoid}`);
   lines.push('');
-  lines.push(`OUTPUT: ${asset.generate}. Logical size in the game: ${size(asset.logicalSize)} (the image is generated larger and scaled down by a whole-number factor, so keep every shape chunky).`);
+  lines.push(`OUTPUT: ${plan.format.text} image, ${plan.format.size}. Logical size in the game: ${size(asset.logicalSize)}; the image is scaled down later, so keep every shape chunky.${plan.crop ? ` The picture will be cropped to a ${asset.logicalSize[0]}:${asset.logicalSize[1]} band, so keep everything important in the middle band and let the top and bottom edges continue plainly.` : ''}`);
   return lines.join('\n');
 }
 
 export function promptFile(asset, manifest) {
-  const refs = asset.dependsOn.length ? asset.dependsOn.map((id) => `\`${id}\``).join(', ') : 'none (this one is generated first)';
+  const refs = [...asset.dependsOn.map((id) => `\`${id}\``), ...(asset.references ?? []).map((r) => `\`${r}\``)].join(', ') || 'none (this one is generated first)';
   return [
     `# ${asset.id} — ${asset.title}`,
     '',

@@ -40,6 +40,11 @@ test('every asset has the fields the prompt needs, honest status and unique path
   }
 });
 
+test('design references exist', () => {
+  assert.ok(existsSync(new URL(manifest.surfaceReference.split(' ')[0], root)));
+  for (const a of manifest.assets) for (const r of a.references ?? []) assert.ok(existsSync(new URL(r, root)), `${a.id}: missing reference ${r}`);
+});
+
 test('sprite sheets are exactly columns x rows of their cell', () => {
   for (const a of manifest.assets.filter((x) => x.frames && Array.isArray(x.frames.cell))) {
     const [cw, ch] = a.frames.cell;

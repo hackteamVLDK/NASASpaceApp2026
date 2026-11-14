@@ -1,6 +1,7 @@
 {
   "version": 2,
   "about": "Single source of truth for every visual asset. Prompt files in assets/prompts/ are GENERATED from this file by tools/assets/build-prompts.mjs — edit here, then run `npm run assets:prompts`.",
+  "surfaceReference": "assets/reference/surface-reference.png — the team's design reference for the SURFACE (low cream-and-grey habitat with a central airlock dome and lit windows, dish, lattice radio tower with a red beacon, boxy yellow-white rover, red mountains, violet-pink dusty sky). Every surface asset is built on it. SCENARIO.md still wins where they differ: the reference sky is dusk, the scenario says dusty orange daytime, so the sky is orange-pink fading to violet; the scenario antenna is BENT.",
   "scenario": "Rebuilt for SCENARIO.md (Ares-1, Jezero Crater, ASTRA 6.7, builder drones). Every subject below is taken from SCENARIO sections 2-5; anything the scenario does not describe is marked PROPOSAL in `notes`.",
   "anchor": "style.anchor",
   "statuses": {
@@ -42,15 +43,16 @@
       "kind": "illustration",
       "perspective": "Side view, flat orthographic cutaway (like an ant farm).",
       "logicalSize": [384, 640],
-      "generate": "Tall portrait, the closest ratio to 3:5 the tool offers (2:3 or 9:16), the largest size it allows",
+      "generate": "2:3 portrait, 1024x1536 (computed by tools/assets/build-prompts.mjs generationPlan)",
       "background": "opaque",
-      "subject": "The whole Mars base Ares-1 in Jezero Crater as one tall cross-section through the ground. TOP FIFTH, sky: dusty orange Martian daytime sky with a small pale sun and a distant jagged line of crater-rim mountains. THE GROUND LINE sits about a third of the way down. Standing on it, left to right: a few solar panels thickly covered in rust-coloured dust; a short white cylindrical airlock dome with a round hatch; a bent, crooked antenna mast; an empty landing spot; a heap of loose regolith with two small robot drones half-buried in it, dormant, with dark dead lights. BELOW THE GROUND, a thick layer of reddish soil with horizontal strata and small stones, then the base in a 2 by 4 grid of rooms with a vertical ladder shaft between the two wings. LEFT WING, finished and cosy, lit with warm yellow ceiling light, top to bottom: a Bedroom with bunk beds; a Dining Room with a table, stools and an exercise bike; a Water and Air Life Support room with tanks, pipes and a glowing teal oxygen machine; the fourth room below is empty rock. RIGHT WING, unfinished and dark: bare dark-steel frames, girders and scaffolding standing in loose sand with no walls and no lights, top to bottom: a Workshop frame; a Research and Comms Lab frame; a Battery and Heating frame; a Rover Garage frame in which a small builder drone (a round body, four little arms, a solar panel on top) sits motionless with a single blinking red LED. One small astronaut in a cream jumpsuit, helmet off, stands in the Bedroom. Under the rooms, more soil and bedrock.",
+      "subject": "The whole Mars base Ares-1 in Jezero Crater as one tall cross-section through the ground. TOP FIFTH, sky and mountains: a dusty orange-pink Martian sky fading to violet at the top, with layers of red-brown crater-rim mountains and a violet haze, exactly in the look of the attached SURFACE REFERENCE image. THE GROUND LINE sits about a third of the way down. Standing on it, left to right: a few solar panels thickly covered in rust-coloured dust; a long low cream-and-grey surface habitat with rounded roofs, a central AIRLOCK DOME with a round hatch and lit orange windows (designed like the habitat in the reference); the bent antenna: a tall lattice radio tower with a dish on it, BENT and crooked and dusty, with a dark beacon on top; an empty landing pad; a heap of loose regolith with two small robot drones half-buried in it, dormant, with dark dead lights. BELOW THE GROUND, a thick layer of reddish soil with horizontal strata and small stones, then the base in a 2 by 4 grid of rooms with a vertical ladder shaft between the two wings. LEFT WING, finished and cosy, lit with warm yellow ceiling light, top to bottom: a Bedroom with bunk beds; a Dining Room with a table, stools and an exercise bike; a Water and Air Life Support room with tanks, pipes and a glowing teal oxygen machine; the fourth room below is empty rock. RIGHT WING, unfinished and dark: bare dark-steel frames, girders and scaffolding standing in loose sand with no walls and no lights, top to bottom: a Workshop frame; a Research and Comms Lab frame with a dish base; a Battery and Heating frame with empty battery shelves; a Rover Garage frame in which a small builder drone (a round body, four little arms, a solar panel on top) sits motionless with a single blinking red LED. One small astronaut in a cream jumpsuit, helmet off, stands in the Bedroom. Under the rooms, more soil and bedrock.",
       "layout": "One full tall scene edge to edge. Sky and surface in the top 35%, soil band, then the rooms on a regular grid (2 columns of 4 rows, shaft in the middle), soil and bedrock at the bottom.",
       "dependsOn": [],
+      "references": ["assets/reference/surface-reference.png"],
       "incoming": "assets/incoming/style.anchor.png",
       "file": "assets/art/style/anchor.png",
-      "status": "awaiting-generation",
-      "notes": "Generate several candidates and choose ONE together. Everything else copies its palette, pixel size, outline and lighting, so this choice is the important one. The tall ratio matches the 1920 x 3200 world; the game itself only ever shows a 16:9 window of it."
+      "status": "received",
+      "notes": "PROVISIONAL: candidate v3 (assets/incoming/style.anchor.v3.png, copied to style.anchor.png) is used as the reference while the team has not confirmed it; candidates v1 and v2 are kept. If the team picks another, every generated asset must be redone. Generate several candidates and choose ONE together. Everything else copies its palette, pixel size, outline and lighting, so this choice is the important one. The tall ratio matches the 1920 x 3200 world; the game itself only ever shows a 16:9 window of it."
     },
     {
       "id": "bg.sky",
@@ -62,13 +64,14 @@
       "logicalSize": [384, 210],
       "generate": "16:9 (e.g. 1920x1080); crop to the right proportions afterwards",
       "background": "opaque",
-      "subject": "A dusty orange-butterscotch Martian sky, lighter near the horizon and a deeper rust at the top, with faint thin cloud streaks and a small pale sun. Two layers of distant jagged crater-rim mountains and mesas in rust and dusty violet along the bottom edge. The very bottom edge is flat, so the ground can be placed over it.",
+      "subject": "A dusty Martian sky in the colours of the attached SURFACE REFERENCE image: warm orange-pink near the horizon, fading through dusty rose to violet at the top, with faint thin cloud streaks and a small pale sun. Two or three layers of distant jagged red-brown crater-rim mountains and mesas along the bottom edge, with a violet haze between the layers. The very bottom edge is flat, so the ground can be placed over it. No buildings.",
       "layout": "One wide scene. Mountains only in the bottom 20%. The left and right edges must match so it can scroll sideways without a seam.",
       "dependsOn": ["style.anchor"],
+      "references": ["assets/reference/surface-reference.png"],
       "incoming": "assets/incoming/bg.sky.png",
       "file": "assets/art/bg/sky.png",
-      "status": "awaiting-generation",
-      "notes": "SCENARIO section 4: 'dusty orange Martian sky, distant Jezero Crater mountains'. Used behind the lander during the descent (camera Y 400)."
+      "status": "received",
+      "notes": "SCENARIO section 4: 'dusty orange Martian sky, distant Jezero Crater mountains'. The reference is a dusk sky; the scenario says dusty orange, so it is orange-pink fading to violet (daylight is needed for solar power). Used behind the lander during the descent (camera Y 400)."
     },
     {
       "id": "terrain.tiles",
@@ -84,29 +87,31 @@
       "subject": "Seamless ground tiles for a cross-section of Martian soil. Rust and orange-brown regolith with faint horizontal layers, getting darker and more violet with depth. Small stones and a few larger rocks. Ice pockets are pale blue-white crystals surrounded by soil. Row 5 is lighter, finer, drifted sand. Each tile must tile seamlessly with the others in its row, left-right.",
       "layout": "A strict grid of 4 columns x 5 rows of equal square tiles with no gaps and no borders between them.",
       "dependsOn": ["style.anchor"],
+      "references": ["assets/reference/surface-reference.png"],
       "incoming": "assets/incoming/terrain.tiles.png",
       "file": "assets/art/terrain/tiles.png",
-      "status": "awaiting-generation",
+      "status": "received",
       "notes": "SCENARIO section 4: 'dark steel frames in sand' (right wing) and 'red Martian soil layers' (the camera pan slices through them)."
     },
     {
       "id": "surface.airlock",
       "tier": 1,
-      "title": "Airlock dome",
-      "purpose": "The only door from the surface to the base, next to which the lander touches down. The astronaut leaves it at 20.0 s.",
+      "title": "Surface habitat with the Airlock dome",
+      "purpose": "The only door from the surface to the base, next to which the lander touches down: a long low surface habitat with the AIRLOCK dome in its middle. The astronaut leaves through it at 20.0 s.",
       "kind": "sprite-sheet",
       "perspective": "Side view.",
-      "logicalSize": [72, 24],
-      "frames": { "cell": [36, 24], "columns": 2, "rows": 1, "order": "closed | open (hatch swung up, warm light inside)" },
+      "logicalSize": [120, 24],
+      "frames": { "cell": [60, 24], "columns": 2, "rows": 1, "order": "closed | open (airlock hatch open in the central dome, warm light spilling out)" },
       "generate": "2:1 (e.g. 2048x1024)",
       "background": "transparent, or solid #FF00FF if transparency is not available",
-      "subject": "A short white-and-grey cylindrical airlock dome with a rounded top, a round hatch, a small yellow warning stripe and a little status light. A thin layer of rust-coloured dust on the top and the foot. Frame 2 shows the same dome with the hatch open and warm light spilling out.",
-      "layout": "Two equal cells side by side, the dome centred, its bottom on the same baseline in both.",
+      "subject": "A long, low surface habitat designed exactly like the one in the attached SURFACE REFERENCE image: cream-and-grey modules with rounded roofs, a larger central AIRLOCK DOME with a round hatch door, a smaller dome on each side, rows of small lit orange-yellow windows, a ramp, little vents and pipes, a thin layer of rust-coloured dust on the roofs and at the foot. Frame 1: the hatch closed. Frame 2: the same habitat with the central hatch open and warm light spilling out.",
+      "layout": "Two equal cells side by side, the habitat centred, its bottom on the same baseline in both.",
       "dependsOn": ["style.anchor"],
+      "references": ["assets/reference/surface-reference.png"],
       "incoming": "assets/incoming/surface.airlock.png",
       "file": "assets/art/surface/airlock.png",
-      "status": "awaiting-generation",
-      "notes": "Size follows the surface room rectangle (180 x 120 units = 36 x 24 px). Fallback label in code: AIRLOCK."
+      "status": "received",
+      "notes": "SCENARIO section 4: 'Airlock dome'. Drawn as the central dome of a small surface habitat, as in the team's reference. The simulation's airlock room is 180 x 120 units (36 x 24 px); the habitat is wider (about 60 px) and its centre sits on x 960. Fallback label in code: AIRLOCK."
     },
     {
       "id": "surface.solar-panels",
@@ -122,29 +127,31 @@
       "subject": "A row of four tilted solar panels on short grey stands, wired together with a cable. Frame 1: covered in thick rust-coloured dust, the blue barely visible. Frame 2: dust wiped away in diagonal streaks. Frame 3: clean, dark blue cells with a bright highlight.",
       "layout": "Three equal cells side by side, same stands in each, same baseline.",
       "dependsOn": ["style.anchor"],
+      "references": ["assets/reference/surface-reference.png"],
       "incoming": "assets/incoming/surface.solar-panels.png",
       "file": "assets/art/surface/solar-panels.png",
-      "status": "awaiting-generation",
-      "notes": "SCENARIO section 4: 'dust-covered solar panels'. The game cross-fades between frames according to solarClean."
+      "status": "received",
+      "notes": "SCENARIO section 4: 'dust-covered solar panels'. The game cross-fades between frames according to solarClean. Same colour world as the surface reference (red-brown ground, cream-grey hardware)."
     },
     {
       "id": "surface.antenna",
       "tier": 1,
-      "title": "Bent antenna — broken and repaired",
+      "title": "Radio tower and dish — bent and repaired",
       "purpose": "Scenery that tells the story (the storm bent it) and the 'Repair the bent antenna' upgrade.",
       "kind": "sprite-sheet",
       "perspective": "Side view.",
-      "logicalSize": [48, 48],
-      "frames": { "cell": [24, 48], "columns": 2, "rows": 1, "order": "bent and crooked | repaired, straight, small light on top" },
+      "logicalSize": [64, 60],
+      "frames": { "cell": [32, 60], "columns": 2, "rows": 1, "order": "bent and crooked after the storm | repaired, straight, red beacon lit" },
       "generate": "1:2 portrait",
       "background": "transparent, or solid #FF00FF if transparency is not available",
-      "subject": "A slim grey antenna mast on a small base with a dish at the top. Frame 1: the mast is bent like a bow and the dish hangs sideways, a bit of dust on it. Frame 2: the same antenna straight, the dish pointing up at the sky, a small green light on top.",
+      "subject": "A tall steel lattice radio tower on a small base, with a communications dish mounted near the top and a red beacon light on the very top, designed like the tower and dish in the attached SURFACE REFERENCE image. Frame 1: after the dust storm the tower is bent like a bow and leans, the dish hangs sideways, the beacon is dark, dust on the steelwork. Frame 2: the same tower straight and repaired, the dish pointing up at the sky, the beacon glowing red.",
       "layout": "Two equal tall cells side by side, same base position.",
       "dependsOn": ["style.anchor"],
+      "references": ["assets/reference/surface-reference.png"],
       "incoming": "assets/incoming/surface.antenna.png",
       "file": "assets/art/surface/antenna.png",
-      "status": "awaiting-generation",
-      "notes": "SCENARIO section 4: 'bent antenna'. The upgrade doubles storm-warning time in the simulation."
+      "status": "received",
+      "notes": "SCENARIO section 4: 'bent antenna'. The team's reference shows the tower intact; frame 2 is the reference design, frame 1 is its bent version required by the scenario. The upgrade doubles storm-warning time in the simulation."
     },
     {
       "id": "surface.mound",
@@ -160,6 +167,7 @@
       "subject": "A low heap of loose rust-coloured regolith. Frame 1: two small round robots are half-buried, you see a dusty solar panel and an arm of each sticking out, their lights are dark. Frame 2: the same two drones sitting on the heap, brushed clean, small lights glowing.",
       "layout": "Two equal cells side by side, the same heap shape in both.",
       "dependsOn": ["style.anchor", "drone.builder"],
+      "references": ["assets/reference/surface-reference.png"],
       "incoming": "assets/incoming/surface.mound.png",
       "file": "assets/art/surface/mound.png",
       "status": "awaiting-generation",
@@ -179,9 +187,10 @@
       "subject": "A stocky white-and-grey crewed Mars lander like a rounded cone with a flat bottom, four rocket thrusters on its underside, four folding legs, a small round window, a side hatch and a thin orange stripe. Slightly scorched at the bottom. Frame 1: legs folded against the body. Frame 2: legs extended and planted, hatch ajar.",
       "layout": "Two equal cells side by side, the lander centred; in frame 2 the feet touch the bottom of the cell.",
       "dependsOn": ["style.anchor"],
+      "references": ["assets/reference/surface-reference.png"],
       "incoming": "assets/incoming/lander.craft.png",
       "file": "assets/art/lander/craft.png",
-      "status": "awaiting-generation",
+      "status": "received",
       "notes": "SCENARIO section 4: 'Mars Lander', '4 bottom thrusters'. Size is a PROPOSAL (about 5 m wide). Fallback label in code: LANDER."
     },
     {
@@ -200,7 +209,7 @@
       "dependsOn": ["style.anchor"],
       "incoming": "assets/incoming/lander.parachute.png",
       "file": "assets/art/lander/parachute.png",
-      "status": "awaiting-generation",
+      "status": "received",
       "notes": "SCENARIO section 4: 'red-and-white parachute', 'animated flame sprites'. The game draws one flame per thruster."
     },
     {
@@ -219,7 +228,7 @@
       "dependsOn": ["style.anchor"],
       "incoming": "assets/incoming/fx.dust-burst.png",
       "file": "assets/art/fx/dust-burst.png",
-      "status": "awaiting-generation",
+      "status": "received",
       "notes": "SCENARIO section 4: 'red dust particle burst'."
     },
     {
@@ -238,7 +247,7 @@
       "dependsOn": ["style.anchor"],
       "incoming": "assets/incoming/crew.indoor.png",
       "file": "assets/art/crew/indoor.png",
-      "status": "awaiting-generation",
+      "status": "received",
       "notes": "Simulation activities: sleep, walk, work, meal, exercise, free, shelter, recover. 'free', 'shelter' and 'recover' reuse idle and sitting. SCENARIO section 4: at 20.0 s the astronaut exits the airlock and removes the helmet. How many people arrive and who they are is an open question (docs/LEVELS.md, point 7), so for now one design recoloured per person."
     },
     {
@@ -276,7 +285,7 @@
       "dependsOn": ["style.anchor"],
       "incoming": "assets/incoming/drone.builder.png",
       "file": "assets/art/drone/builder.png",
-      "status": "awaiting-generation",
+      "status": "received",
       "notes": "SCENARIO section 4: 'Drone #01 with a blinking red LED'; the LED blinks at 1 Hz from 22.0 s. Awake drones help build by daylight only (they are solar powered) - hence the night frames. Fallback label in code: DRONE_01. Drone shape is a PROPOSAL."
     },
     {
@@ -295,7 +304,7 @@
       "dependsOn": ["style.anchor"],
       "incoming": "assets/incoming/astra.avatar.png",
       "file": "assets/art/astra/avatar.png",
-      "status": "awaiting-generation",
+      "status": "received",
       "notes": "SCENARIO section 2: 'animated holographic/digital avatar portrait (cyan/amber waveforms or friendly geometric AI core that animates while speaking)'. Mood values (calm, cheerful, curious, alert) are a PROPOSAL; 'proud' is spare."
     },
     {
@@ -313,7 +322,7 @@
       "dependsOn": ["style.anchor"],
       "incoming": "assets/incoming/module.bedroom.png",
       "file": "assets/art/modules/bedroom.png",
-      "status": "awaiting-generation",
+      "status": "received",
       "notes": "SCENARIO section 4: 'Left Wing (Operational, warm light): Bedroom'. Floor and position are PROPOSALS (floor 1)."
     },
     {
@@ -331,7 +340,7 @@
       "dependsOn": ["style.anchor"],
       "incoming": "assets/incoming/module.dining.png",
       "file": "assets/art/modules/dining.png",
-      "status": "awaiting-generation",
+      "status": "received",
       "notes": "SCENARIO section 4: 'Dining Room'. Whether it is usable at the start is an open question (docs/LEVELS.md, point 1)."
     },
     {
@@ -349,7 +358,7 @@
       "dependsOn": ["style.anchor"],
       "incoming": "assets/incoming/module.lifesupport.png",
       "file": "assets/art/modules/lifesupport.png",
-      "status": "awaiting-generation",
+      "status": "received",
       "notes": "SCENARIO section 4: 'basic Water & Air Life Support'. Fallback label in code: LIFE_SUPPORT. The room needs a variant with a dim light for a power cut (optional, tier 2)."
     },
     {
@@ -368,7 +377,7 @@
       "dependsOn": ["style.anchor", "drone.builder"],
       "incoming": "assets/incoming/module.unfinished.png",
       "file": "assets/art/modules/unfinished.png",
-      "status": "awaiting-generation",
+      "status": "received",
       "notes": "SCENARIO section 4: 'Right Wing (Unfinished, dark steel frames in sand)'. Build progress (0-100%) is shown by the game fading this frame into module.finished."
     },
     {
@@ -406,7 +415,7 @@
       "dependsOn": ["style.anchor"],
       "incoming": "assets/incoming/prop.shaft.png",
       "file": "assets/art/props/shaft.png",
-      "status": "awaiting-generation",
+      "status": "received",
       "notes": "Shaft position is a PROPOSAL (x 900-1020 units)."
     },
     {
@@ -420,13 +429,14 @@
       "frames": { "cell": [60, 30], "columns": 3, "rows": 1, "order": "parked | driving A | driving B (wheels turned)" },
       "generate": "3:1 or the widest the tool offers",
       "background": "transparent, or solid #FF00FF if transparency is not available",
-      "subject": "A small six-wheeled cream-and-orange Mars rover with a mast camera, a robotic arm folded in front and a solar roof, a little dust on the wheels.",
+      "subject": "A small boxy four-wheeled Mars rover designed like the one at the right of the attached SURFACE REFERENCE image: a rounded cream-white and yellow body with a dark window strip, a roof rack with a light bar, chunky dark wheels with grey hubs, a mast camera, a little dust on the wheels. Facing right.",
       "layout": "Three equal cells side by side, wheels on the same baseline.",
       "dependsOn": ["style.anchor"],
+      "references": ["assets/reference/surface-reference.png"],
       "incoming": "assets/incoming/vehicle.rover.png",
       "file": "assets/art/vehicles/rover.png",
-      "status": "awaiting-generation",
-      "notes": "The Explore job needs the Rover Garage to be finished."
+      "status": "received",
+      "notes": "The Explore job needs the Rover Garage to be finished. Design follows the team's surface reference (yellow-white boxy rover)."
     },
     {
       "id": "room.hydroponics",
@@ -462,7 +472,7 @@
       "dependsOn": ["style.anchor", "drone.builder"],
       "incoming": "assets/incoming/minigame.drone-repair.png",
       "file": "assets/art/minigame/drone-repair.png",
-      "status": "awaiting-generation",
+      "status": "received",
       "notes": "SCENARIO section 5: 'wipe Martian dust off solar panel + reconnect 2 colored wires'. Wire colours (orange, cyan) are a PROPOSAL (src/flow/drone-repair.js). The dust layer on cell 1 is drawn separately by the game so it can be wiped away: ask for the clean panel as the base image if the tool allows."
     },
     {
@@ -536,6 +546,7 @@
       "subject": "Three variants of the airlock dome, each with one upgrade: a smooth bank of reddish regolith heaped against and over it; translucent blue water bags stacked on top and sides; a second row of shiny blue solar panels next to it.",
       "layout": "Three equal cells side by side, same baseline.",
       "dependsOn": ["style.anchor", "surface.airlock"],
+      "references": ["assets/reference/surface-reference.png"],
       "incoming": "assets/incoming/ext.upgrades.png",
       "file": "assets/art/surface/upgrades.png",
       "status": "awaiting-generation",

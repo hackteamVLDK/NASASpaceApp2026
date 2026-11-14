@@ -2,7 +2,7 @@
 
 > Generated from assets/manifests/asset-manifest.json. Do not edit by hand.
 
-- **Status:** awaiting-generation
+- **Status:** received
 - **Tier:** 1
 - **Attach as reference images:** `style.anchor`
 - **Save the result as:** `assets/incoming/astra.avatar.png`
@@ -21,11 +21,11 @@ WHAT IT SHOWS: A friendly station AI shown as a glowing geometric core: a round 
 
 VIEW: Front view, centred, on a plain dark panel-coloured background.
 LAYOUT: A strict grid of 4 columns x 2 rows of equal cells. The core centred in each cell.
-FRAMES: 4 columns x 2 rows. Each cell 64 x 64 logical pixels. Order: row 1 (calm, cyan): idle x2, speaking x2 | row 2: cheerful (amber-cyan, bright) | curious (head tilt, ring lifted) | alert (amber-orange, ring flashing) | proud (soft glow).
+FRAMES: a strict grid of 3 columns x 3 rows of EQUAL cells that exactly fill the image, each cell with the proportions 64:64. Read the cells left to right, then top to bottom. Cell contents in order: idle x2, speaking x2 | cheerful (amber-cyan, bright) | curious (head tilt, ring lifted) | alert (amber-orange, ring flashing) | proud (soft glow). Any unused trailing cells stay empty background.
 BACKGROUND: transparent, or solid #FF00FF if transparency is not available.
 
 STYLE RULES: Pixel art with crisp, un-blurred pixels. Flat orthographic side view (like an ant farm): no perspective, no vanishing point. A limited palette of about 24 colours shared by the whole game. One-pixel dark outline on characters and props, none on terrain. Light comes from the upper left. Warm Martian oranges, rusts and butterscotch for the world; cream and white for hulls; cyan (#00E5FF) and amber (#FFB000) for ASTRA and electronics; Martian Orange #FF6B35 only for highlights. Friendly and tidy for children aged 7-12: rounded corners, no gore, no frightening shapes.
 AVOID: No text or letters inside the image (the game draws all text), no watermarks, no anti-aliased gradients, no photorealism, no 3D rendering, no perspective, no extra characters unless asked.
 
-OUTPUT: 2:1 (e.g. 2048x1024). Logical size in the game: 256 x 128 px (the image is generated larger and scaled down by a whole-number factor, so keep every shape chunky).
+OUTPUT: 1:1 image, 1024x1024. Logical size in the game: 256 x 128 px; the image is scaled down later, so keep every shape chunky.
 ```

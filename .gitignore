@@ -25,3 +25,6 @@ auth.json
 
 # Codex worktrees created for isolated write tasks
 .codex-worktrees/
+
+# Rejected and superseded generations (kept locally for comparison)
+assets/incoming/_*/
