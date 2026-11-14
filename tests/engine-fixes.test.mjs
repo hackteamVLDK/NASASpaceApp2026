@@ -21,6 +21,14 @@ function readyBase(extra = {}) {
   s.res.power = 200;
   return s;
 }
+function setQuietSol(s, sol) {
+  s.minute = (sol - 1) * 1440 + 7 * 60;
+  s.flags._stormBegin = true;
+  for (const id of ['d1', 'd2', 'd3', 'd4']) s.flags[`_${id}`] = true;
+  s.flags.lastEvent = { e1: 1000, e2: 1000, e3: 1000, e4: 1000 };
+  s.tasks = [];
+  s.pending = null;
+}
 /** Run until the Rover is home, answering cards with `choice`. Returns every event. */
 function trip(s, key, choice = 'b') {
   const first = command(s, { type: 'launch', expedition: key });
@@ -154,7 +162,7 @@ test('base jobs wait while the Commander is away', () => {
 
 test('breakdowns: about one per two Sols, at most two open, and each weakens its system until fixed', () => {
   const s = readyBase();
-  s.minute = 8 * 1440 + 7 * 60; // Sol 9, morning
+  setQuietSol(s, 9);
   const opened = [];
   for (let i = 0; i < 12 * 24; i++) for (const e of step(s, 60)) if (e.type === 'breakdown') opened.push([e.kind, Math.floor(s.minute / 1440) + 1]);
   assert.ok(opened.length >= 2, 'breakdowns happen');
@@ -176,7 +184,7 @@ test('breakdowns: about one per two Sols, at most two open, and each weakens its
 
 test('breakdowns wait while the Commander is away and start when the Rover is home', () => {
   const s = readyBase();
-  s.minute = 8 * 1440 + 7 * 60;
+  setQuietSol(s, 9);
   command(s, { type: 'launch', expedition: 'run' });
   const events = [];
   while (s.away) events.push(...step(s, 30));

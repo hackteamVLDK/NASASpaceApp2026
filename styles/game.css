@@ -128,3 +128,10 @@ button:hover { background:#1a4668; } button:disabled { opacity:.45; cursor:defau
 .card.gameover { text-align: center; max-width: 760px; border-color: #ff5252; box-shadow: 0 0 60px #ff525255; }
 .card.gameover h1 { margin: 6px 0 10px; font-size: 64px; letter-spacing: 6px; color: #ff6b6b; }
 .card.gameover .stats { color: #9fb5c8; font-size: 20px; } .card.gameover .choices { display: flex; gap: 14px; justify-content: center; margin-top: 16px; }
+
+/* A24: close button in the top-right corner of every window that does not need an answer */
+.card { position: relative; }
+.card > .xClose { position: absolute; top: 10px; right: 12px; width: 44px; height: 44px; padding: 0; border-radius: 50%; font-size: 28px; line-height: 38px; text-align: center; background: rgba(18,48,74,.9); z-index: 2; }
+.card > .xClose:hover { background: var(--orange); }
+/* A18: where to find a missing component */
+.why.where { color: #9fd8ff; }

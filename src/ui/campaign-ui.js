@@ -12,6 +12,7 @@ import { ICON } from '../render/atlas.js';
 import { play, director } from './audio.js';
 import { CARDS, BADGES, buildReport } from '../campaign/logbook.js';
 import { LOW_LIMITS } from '../campaign/hazards.js';
+import { missingItems, whereText } from '../campaign/sources.js';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
@@ -19,6 +20,8 @@ const name = (id) => (hasString(id) ? t(id) : id);
 const itemName = (it) => t(`ui.item.${it}.name`);
 const costText = (c = {}) => [c.sp ? `${c.sp} SP` : null, c.water ? `${c.water} Water` : null, ...Object.entries(c.items ?? {}).map(([i, n]) => `${n}× ${itemName(i)}`)].filter(Boolean).join(', ');
 const MINI_NAME = { solar_wipe: 'ui.mg.solar_wipe.title', heat_pump: 'ui.mg.heat_pump_reroute.title', valve_balance: 'ui.mg.valve_balance.title', water_sort: 'ui.mg.water_sort.title', nutrient_match: 'ui.mg.nutrient_match.title', air_filter: 'ui.mg.air_filter_scrub.title', antenna: 'ui.mg.dish_antenna_alignment.title', wheel_vacuum: 'ui.mg.wheel_pebble_vacuum.title', suit_seal: 'ui.mg.suit_seal_check.title' };
+/** A18: one hint row per missing component, saying where to find it. */
+const whereRows = (s, cost) => missingItems(s, cost).map(({ item, need, have }) => el('div', 'why where', `${need}× ${itemName(item)} (you have ${have}): ${whereText(s, item, name)}.`));
 export const miniTitle = (g) => (hasString(MINI_NAME[g]) ? t(MINI_NAME[g]) : g.replaceAll('_', ' '));
 
 export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }) {
@@ -77,6 +80,7 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
         b.addEventListener('click', () => send({ type: 'build', module: id, drone: selectedDrone() }));
         actions.append(b);
         if (info.reason) row.append(el('div', 'why', info.reason)); else row.append(el('div', 'why', `Cost: ${costText(info.cost)}`));
+        row.append(...whereRows(s, info.cost));
       } else if (info.status === 'online' && info.upgrade && info.tier === 1 && !info.upgrading) {
         const b = el('button', '', 'Upgrade');
         b.title = `${name(info.upgrade.nameId)}: ${costText(info.upgrade)}`;
@@ -84,6 +88,7 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
         b.addEventListener('click', () => send({ type: 'upgrade', module: id, drone: selectedDrone() }));
         actions.append(b);
         row.append(el('div', 'why', `${name(info.upgrade.nameId)}: ${costText(info.upgrade)}`));
+        row.append(...whereRows(s, info.upgrade));
       }
       row.prepend(actions);
       row.addEventListener('click', (e) => { if (e.target.tagName !== 'BUTTON') { selected = `module:${id}`; sig = ''; } });
@@ -103,6 +108,7 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
       b.disabled = Boolean(s.crafting);
       b.addEventListener('click', () => send({ type: 'craft', recipe: id }));
       row.prepend(b);
+      row.append(...whereRows(s, r));
       body.append(row);
     }
     const inv = Object.entries(s.items).filter(([, n]) => n > 0);
@@ -210,6 +216,27 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
   $('stage').append(modalRoot);
   let modalKey = null;
   const closeModal = () => { modalRoot.hidden = true; modalRoot.innerHTML = ''; modalKey = null; closeModalHook(); };
+  // A24: every window gets a close button (top right) and Esc closes it, except the ones that need an answer:
+  // a decision (dilemma, event, radio) must be chosen, and Game Over has its own two buttons.
+  const mustAnswer = () => !modalKey || modalKey.startsWith('choice:') || modalKey === 'gameover';
+  const addCloseButton = () => {
+    if (modalRoot.hidden || mustAnswer()) return;
+    const card = modalRoot.querySelector('.card');
+    if (!card || card.querySelector(':scope > .xClose')) return;
+    const x = el('button', 'xClose', '\u00D7');
+    x.type = 'button';
+    x.title = 'Close (Esc)';
+    x.setAttribute('aria-label', 'Close');
+    x.addEventListener('click', () => { play('click'); closeModal(); });
+    card.prepend(x);
+  };
+  new MutationObserver(addCloseButton).observe(modalRoot, { childList: true });
+  window.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || modalRoot.hidden || mustAnswer()) return;
+    if (!document.getElementById('mgWrap')?.hidden) return; // a mini-game on top handles its own Esc
+    e.preventDefault();
+    closeModal();
+  });
   const openModal = (html, key) => { modalKey = key; modalRoot.hidden = false; modalRoot.innerHTML = html; };
 
   function showChoice(kind, id) {

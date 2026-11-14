@@ -166,7 +166,7 @@ function handleEvents(events) {
 function send(cmd) {
   if (cmd.type === 'say') { say(guide, { lineId: cmd.lineId, mood: 'curious' }); return { ok: true }; }
   const res = command(s, cmd);
-  if (!res.ok) { toast(res.error); return res; }
+  if (!res.ok) { toast(res.error); audio.play('actionDenied'); return res; } // A23: a soft "no" with every refused command
   handleEvents(res.events);
   if (tut?.state === 'TUT_BUILD' && cmd.type === 'build' && cmd.module === 'battery') finishTutorial();
   if (mode === 'play') scheduleSave();
