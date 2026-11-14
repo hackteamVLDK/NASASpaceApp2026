@@ -1,6 +1,7 @@
 # git_status_Vlad
 
 ## DOING NOW
+- 2026-11-14: soundManager.js + test replaced with the new engine (marimba/space-ambient); same API, director and hooks unchanged.
 - Done: audio engine + director in src/audio (PR #6 merged). Hooks for the game UI wait in PR #7 (Pavlo)
   and PR #8 (Mykhailo, src/flow/intro.js one line). Hook list: content/handoff/AUDIO_HOOKS.md.
 - Now: content/game-data (dilemmas, events, expeditions, roles, modules, logbook as JSON in content/data/),

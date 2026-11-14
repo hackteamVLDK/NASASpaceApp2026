@@ -1,46 +1,21 @@
 // src/audio/soundManager.js
 // ARES-KIDS Complete Procedural Audio Engine (Web Audio API)
-//
-// Safe to import in Node (no window access at import time; every call is a no-op without a
-// browser). No AudioContext is created before unlock(), which must run inside a user gesture.
-// Volumes and mute are saved in localStorage. Game code should call updateMusic(state) and let
-// resolveMusicTrack pick the track, instead of choosing tracks itself.
+// - No audio files: every sound is synthesized.
+// - Safe to import in Node (tests): nothing touches `window` until unlock().
+// - Silent until unlock() is called from a user gesture (browser autoplay policy).
 // Aesthetic: Warm Terraria-inspired Soft Marimba & Bouncy Bass + Stereo Space Reverb (Zero Ear Fatigue)
 // Includes SpaceAmbient / Ken Lusk - Chronicles style swells for Dust Storms & Solar Flares
 
-const SETTINGS_KEY = 'ares-kids.audio';
-const BLIP_MIN_GAP_MS = 35;   // typewriter: at most ~28 blips per second
-const TICK_MIN_GAP_MS = 120;  // drone build ticks
+const SETTINGS_KEY = 'ares-kids.audio.v1';
 
-const now_ms = () => (globalThis.performance && typeof globalThis.performance.now === 'function'
-  ? globalThis.performance.now() : Date.now());
-
-/**
- * Music priority, highest first: victory > storm/emergency > canyon > expedition > night > day.
- * @param {{victory?:boolean, storm?:boolean, emergency?:boolean, canyon?:boolean, expedition?:boolean, night?:boolean}} state
- */
+// Music priority (highest first). Pure function so it can be unit-tested.
+// state: { victory, canyon, storm, emergency, expedition, night }
 export function resolveMusicTrack(state = {}) {
   if (state.victory) return 'victory';
   if (state.storm || state.emergency) return 'storm_alert';
   if (state.canyon) return 'canyon_mystery';
   if (state.expedition) return 'expedition';
-  if (state.night) return 'base_night';
-  return 'base_day';
-}
-
-function loadSettings() {
-  try {
-    const raw = globalThis.localStorage && globalThis.localStorage.getItem(SETTINGS_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
-}
-
-function saveSettings(s) {
-  try {
-    if (globalThis.localStorage) {
-      globalThis.localStorage.setItem(SETTINGS_KEY, JSON.stringify({ muted: s.muted, musicVolume: s.musicVolume, sfxVolume: s.sfxVolume }));
-    }
-  } catch { /* private mode or blocked storage: settings just aren't remembered */ }
+  return state.night ? 'base_night' : 'base_day';
 }
 
 export class SoundManager {
@@ -50,66 +25,93 @@ export class SoundManager {
     this.musicGain = null;
     this.sfxGain = null;
     this.compressor = null;
-    this.musicReverb = null; // each category has its own reverb send, so its volume also scales the reverb
-    this.sfxReverb = null;
+    this.reverbNode = null;
 
     this.muted = false;
     this.musicVolume = 0.75;
     this.sfxVolume = 0.85;
 
     this.currentMusic = 'off';
-    this.wantedMusic = 'off';
     this.musicTimer = null;
     this.ambientNodes = [];
-    this.unlocked = false;
-    this.hidden = false; // tab in the background: nothing is scheduled, the context is suspended
-    this._trackGen = 0;  // bumped on every stop, so old storm-echo timeouts never play into a new track
-    this._lastBlip = -Infinity;
-    this._lastTick = -Infinity;
 
-    const saved = loadSettings();
-    if (saved) {
-      this.muted = Boolean(saved.muted);
-      if (Number.isFinite(saved.musicVolume)) this.musicVolume = Math.max(0, Math.min(1, saved.musicVolume));
-      if (Number.isFinite(saved.sfxVolume)) this.sfxVolume = Math.max(0, Math.min(1, saved.sfxVolume));
-    }
+    this.unlocked = false;      // becomes true on the first user gesture
+    this.wantedMusic = 'off';   // track to (re)start after unlock or tab return
+    this._lastBlip = 0;
+    this._lastBuildTick = 0;
+    this._visibilityHandler = null;
+
+    this._loadSettings();
   }
 
-  /** True once a context exists and sound may play. */
-  get ready() {
-    return this.unlocked && this.ctx !== null;
-  }
-
-  /**
-   * Call from the first user gesture (click/tap/key). Creates the AudioContext, resumes it,
-   * and starts any music requested before the unlock. Safe to call many times.
-   */
+  // --- UNLOCK (call from the first click: Start Mission / role select) ---
   unlock() {
-    const win = globalThis.window;
-    if (!win) return false;
-    if (!(win.AudioContext || win.webkitAudioContext)) return false;
+    if (typeof window === 'undefined') return false;
     this.unlocked = true;
     this.init();
-    if (!this._visibilityHooked && globalThis.document && typeof globalThis.document.addEventListener === 'function') {
-      this._visibilityHooked = true;
-      globalThis.document.addEventListener('visibilitychange', () => {
-        this.hidden = Boolean(globalThis.document.hidden);
-        if (!this.ctx) return;
-        if (this.hidden) { try { this.ctx.suspend(); } catch { /* ignore */ } }
-        else { try { this.ctx.resume(); } catch { /* ignore */ } }
-      });
+    if (!this.ctx) return false;
+    if (!this._visibilityHandler && typeof document !== 'undefined') {
+      this._visibilityHandler = () => this._onVisibilityChange();
+      document.addEventListener('visibilitychange', this._visibilityHandler);
     }
-    if (this.wantedMusic !== 'off' && this.currentMusic !== this.wantedMusic) {
-      this._startTrack(this.wantedMusic);
+    if (this.wantedMusic !== 'off' && this.currentMusic === 'off') {
+      const track = this.wantedMusic;
+      this.wantedMusic = 'off';
+      this.playMusic(track);
     }
     return true;
   }
 
+  _ready() {
+    if (!this.unlocked || this.muted) return false;
+    this.init();
+    return Boolean(this.ctx);
+  }
+
+  _onVisibilityChange() {
+    if (!this.ctx) return;
+    if (document.hidden) {
+      // Background tabs throttle timers, which would garble the loops: pause cleanly.
+      const track = this.currentMusic;
+      this.stopMusic();
+      this.wantedMusic = track;
+      this.ctx.suspend().catch(() => {});
+    } else {
+      this.ctx.resume().catch(() => {});
+      if (this.wantedMusic !== 'off') {
+        const track = this.wantedMusic;
+        this.wantedMusic = 'off';
+        this.playMusic(track);
+      }
+    }
+  }
+
+  // --- SETTINGS PERSISTENCE (per browser; storage may be unavailable) ---
+  _loadSettings() {
+    try {
+      if (typeof localStorage === 'undefined') return;
+      const raw = localStorage.getItem(SETTINGS_KEY);
+      if (!raw) return;
+      const v = JSON.parse(raw);
+      if (typeof v.muted === 'boolean') this.muted = v.muted;
+      if (typeof v.musicVolume === 'number') this.musicVolume = Math.max(0, Math.min(1, v.musicVolume));
+      if (typeof v.sfxVolume === 'number') this.sfxVolume = Math.max(0, Math.min(1, v.sfxVolume));
+    } catch (e) { /* ignore: defaults stay */ }
+  }
+
+  _saveSettings() {
+    try {
+      if (typeof localStorage === 'undefined') return;
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+        muted: this.muted, musicVolume: this.musicVolume, sfxVolume: this.sfxVolume
+      }));
+    } catch (e) { /* ignore */ }
+  }
+
   init() {
-    if (!this.unlocked) return;
+    if (!this.unlocked || typeof window === 'undefined') return;
     if (!this.ctx) {
-      const win = globalThis.window;
-      const AudioCtx = win && (win.AudioContext || win.webkitAudioContext);
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (!AudioCtx) return;
       this.ctx = new AudioCtx();
 
@@ -129,15 +131,12 @@ export class SoundManager {
       this.sfxGain = this.ctx.createGain();
       this.sfxGain.gain.value = this.sfxVolume * 0.9;
 
-      this.musicReverb = this._createStereoReverb(2.4, 2.6);
-      this.sfxReverb = this.ctx.createConvolver();
-      this.sfxReverb.buffer = this.musicReverb.buffer;
-      for (const [rev, bus] of [[this.musicReverb, this.musicGain], [this.sfxReverb, this.sfxGain]]) {
-        const wetGain = this.ctx.createGain();
-        wetGain.gain.value = 0.42;
-        rev.connect(wetGain);
-        wetGain.connect(bus);
-      }
+      this.reverbNode = this._createStereoReverb(2.4, 2.6);
+      const wetGain = this.ctx.createGain();
+      wetGain.gain.value = 0.42;
+
+      this.reverbNode.connect(wetGain);
+      wetGain.connect(this.compressor);
 
       this.musicGain.connect(this.compressor);
       this.sfxGain.connect(this.compressor);
@@ -145,8 +144,8 @@ export class SoundManager {
       this.compressor.connect(this.masterGain);
       this.masterGain.connect(this.ctx.destination);
     }
-    if (this.ctx.state === 'suspended' && !this.hidden) {
-      try { this.ctx.resume(); } catch { /* ignore */ }
+    if (this.ctx.state === 'suspended' && !(typeof document !== 'undefined' && document.hidden)) {
+      this.ctx.resume().catch(() => {});
     }
   }
 
@@ -171,7 +170,7 @@ export class SoundManager {
     if (this.masterGain && this.ctx) {
       this.masterGain.gain.setTargetAtTime(this.muted ? 0 : 1.0, this.ctx.currentTime, 0.05);
     }
-    saveSettings(this);
+    this._saveSettings();
   }
 
   toggleMute() {
@@ -180,24 +179,24 @@ export class SoundManager {
   }
 
   setMusicVolume(val0to1) {
-    this.musicVolume = Math.max(0, Math.min(1, Number(val0to1) || 0));
+    this.musicVolume = Math.max(0, Math.min(1, val0to1));
     if (this.musicGain && this.ctx) {
       this.musicGain.gain.setTargetAtTime(this.musicVolume * 0.9, this.ctx.currentTime, 0.05);
     }
-    saveSettings(this);
+    this._saveSettings();
   }
 
   setSfxVolume(val0to1) {
-    this.sfxVolume = Math.max(0, Math.min(1, Number(val0to1) || 0));
+    this.sfxVolume = Math.max(0, Math.min(1, val0to1));
     if (this.sfxGain && this.ctx) {
       this.sfxGain.gain.setTargetAtTime(this.sfxVolume * 0.9, this.ctx.currentTime, 0.05);
     }
-    saveSettings(this);
+    this._saveSettings();
   }
 
   // --- CORE WARM SYNTH HELPERS (1C STYLE) ---
   _playMusicNote(freq, wave = 'sine', duration = 0.5, vol = 0.28, cutoff = 850, sendReverb = true) {
-    if (this.muted || !this.ready || this.hidden) return;
+    if (!this._ready()) return;
     const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const filter = this.ctx.createBiquadFilter();
@@ -217,16 +216,14 @@ export class SoundManager {
     osc.connect(filter);
     filter.connect(gain);
     gain.connect(this.musicGain);
-    if (sendReverb) gain.connect(this.musicReverb);
+    if (sendReverb) gain.connect(this.reverbNode);
 
     osc.start(now);
     osc.stop(now + duration + 0.05);
   }
 
   _playSfxNote(freq, wave = 'sine', duration = 0.14, vol = 0.25, slideTo = null, delay = 0, cutoff = 1200, sendReverb = true) {
-    if (this.muted || !this.unlocked || this.hidden) return;
-    this.init();
-    if (!this.ctx) return;
+    if (!this._ready()) return;
     const now = this.ctx.currentTime + delay;
 
     const osc = this.ctx.createOscillator();
@@ -249,16 +246,14 @@ export class SoundManager {
     osc.connect(filter);
     filter.connect(gain);
     gain.connect(this.sfxGain);
-    if (sendReverb) gain.connect(this.sfxReverb);
+    if (sendReverb) gain.connect(this.reverbNode);
 
     osc.start(now);
     osc.stop(now + duration + 0.05);
   }
 
   _playSoftNoise(duration = 0.15, vol = 0.15, filterType = 'bandpass', freq = 900, q = 1.5, delay = 0) {
-    if (this.muted || !this.unlocked || this.hidden) return;
-    this.init();
-    if (!this.ctx) return;
+    if (!this._ready()) return;
     const now = this.ctx.currentTime + delay;
     const bufferSize = Math.floor(this.ctx.sampleRate * duration);
     const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
@@ -295,14 +290,12 @@ export class SoundManager {
   // =========================================================================
   // 1. SOUNDTRACKS (6 DYNAMIC LOOPS)
   // =========================================================================
-  /** Stops the music and forgets any track requested before unlock. */
-  stopMusic() {
-    this.wantedMusic = 'off';
-    this._stopTrack();
+  _ctxAvailable() {
+    this.init();
+    return Boolean(this.ctx);
   }
 
-  _stopTrack() {
-    this._trackGen++;
+  stopMusic() {
     if (this.musicTimer) {
       clearInterval(this.musicTimer);
       this.musicTimer = null;
@@ -315,26 +308,19 @@ export class SoundManager {
     this.currentMusic = 'off';
   }
 
-  /** Requests a track. Before unlock() it is remembered and started on unlock. */
-  playMusic(trackName) {
-    this.wantedMusic = trackName;
-    if (!this.ready) return;
-    if (this.currentMusic === trackName) return;
-    this._startTrack(trackName);
-  }
-
-  /** Picks the track from game state (see resolveMusicTrack) and plays it. Returns the track. */
+  // Convenience: pick the track from game state (see resolveMusicTrack).
   updateMusic(state) {
-    const track = resolveMusicTrack(state);
-    this.playMusic(track);
-    return track;
+    this.playMusic(resolveMusicTrack(state));
   }
 
-  _startTrack(trackName) {
-    this._stopTrack();
-    this.init();
-    if (!this.ctx) return;
-    this.currentMusic = trackName;
+  playMusic(trackName) {
+    if (this.currentMusic === trackName) return;
+    if (!this.unlocked || !this._ctxAvailable()) {
+      this.wantedMusic = trackName; // start it after unlock()
+      return;
+    }
+    this.stopMusic();
+    this.currentMusic = trackName; // loops keep time while muted; notes are skipped
 
     if (trackName === 'base_day') this._startBaseDayMusic();
     else if (trackName === 'base_night') this._startBaseNightMusic();
@@ -395,7 +381,7 @@ export class SoundManager {
 
   // Helper for lush SpaceAmbient / Ken Lusk - Chronicles style evolving pads
   _playSpaceAmbientSwell(freqs, stepSec = 5.5, fadeSec = 2.2, cutoff = 620) {
-    if (this.muted || !this.ready || this.hidden || this.currentMusic !== 'storm_alert') return;
+    if (!this._ready() || this.currentMusic !== 'storm_alert') return;
     const now = this.ctx.currentTime;
     const total = stepSec + fadeSec;
 
@@ -404,7 +390,7 @@ export class SoundManager {
     filter.frequency.setValueAtTime(cutoff * 0.7, now);
     filter.frequency.linearRampToValueAtTime(cutoff * 1.15, now + stepSec * 0.6);
     filter.frequency.linearRampToValueAtTime(cutoff * 0.75, now + total);
-    filter.connect(this.musicReverb);
+    filter.connect(this.reverbNode);
     filter.connect(this.musicGain);
 
     freqs.forEach((f, idx) => {
@@ -423,6 +409,7 @@ export class SoundManager {
       gain.connect(filter);
       osc.start(now);
       osc.stop(now + total + 0.1);
+      if (idx === 0) osc.onended = () => { try { filter.disconnect(); } catch (e) {} };
     });
   }
 
@@ -459,7 +446,7 @@ export class SoundManager {
 
     noise.connect(windFilter);
     windFilter.connect(windGain);
-    windGain.connect(this.musicReverb);
+    windGain.connect(this.reverbNode);
     windGain.connect(this.musicGain);
     noise.start();
     lfo.start();
@@ -474,14 +461,13 @@ export class SoundManager {
     const echoNotes = [659.25, 587.33, 523.25, 440.00];
 
     let step = 0;
-    const gen = this._trackGen;
     const run = () => {
       if (this.currentMusic !== 'storm_alert') return;
       const chordIdx = step % chroniclesChords.length;
       this._playSpaceAmbientSwell(chroniclesChords[chordIdx], 5.2, 2.2, 640);
 
       setTimeout(() => {
-        if (this.currentMusic === 'storm_alert' && this._trackGen === gen) {
+        if (this.currentMusic === 'storm_alert') {
           this._playMusicNote(echoNotes[chordIdx], 'sine', 2.4, 0.14, 780, true);
         }
       }, 2400);
@@ -545,11 +531,11 @@ export class SoundManager {
   // =========================================================================
 
   // --- Intro & UI ---
-  /** One blip per typed character; whitespace is silent and the rate is capped. */
-  typewriterBlip(char = 'x') {
-    if (typeof char === 'string' && char.trim() === '') return;
-    const t = now_ms();
-    if (t - this._lastBlip < BLIP_MIN_GAP_MS) return;
+  // Pass the typed character: spaces are silent, and blips are capped at ~25/s.
+  typewriterBlip(char) {
+    if (char === ' ' || char === '\n') return;
+    const t = Date.now();
+    if (t - this._lastBlip < 40) return;
     this._lastBlip = t;
     const pitch = 540 + Math.random() * 90;
     this._playSfxNote(pitch, 'sine', 0.04, 0.09, null, 0, 1100, false);
@@ -608,10 +594,11 @@ export class SoundManager {
     this._playSfxNote(783.99, 'sine', 0.22, 0.24, null, 0.27, 1200, true);
   }
 
+  // Shared across all drones: at most one tick every 0.7 s, so 3 builders don't buzz.
   droneBuildTick() {
-    const t = now_ms();
-    if (t - this._lastTick < TICK_MIN_GAP_MS) return;
-    this._lastTick = t;
+    const t = Date.now();
+    if (t - this._lastBuildTick < 700) return;
+    this._lastBuildTick = t;
     const pitch = 420 + Math.random() * 120;
     this._playSfxNote(pitch, 'triangle', 0.05, 0.12, pitch * 0.8, 0, 850, false);
   }
