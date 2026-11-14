@@ -8,7 +8,7 @@ written down here instead.
 
 > **OPEN and PARTIAL both mean unfinished work.** A passing test suite does not close a missing feature.
 
-Checked against `main` at `dd32f9b`, including incoming fixes after the earlier `92d2428` audit.
+Checked against `main` at `18da9f1`, including incoming fixes after the earlier `92d2428` audit.
 The sections below remain the single task list; this table is an index of their existing IDs, not new tickets.
 
 | State | Existing tickets |
@@ -20,14 +20,14 @@ The sections below remain the single task list; this table is an index of their 
 **Section D: 19 FIXED, 5 PARTIAL, 2 OPEN.** Each of its 26 tasks now has a status and evidence/remainder column.
 
 **Recently fixed — do not redo:** D-T17b-g (Greenhouse, drone kits, Suit Liner, drone chores, event durations, forecasts),
-D-T14/B11 (Lab soil-wash job), C13 (automatic stores), C14 (Rover sleep), and the main Settings/mobile layout work.
-Settings/mobile acceptance is still partial under C15/C16; C20/C21 track remaining text/motion issues.
+D-T14/B11 (Lab soil-wash job), C13 (automatic stores), C14 (Rover sleep), regular Earth windows (C11), and main Settings/mobile layout work.
+C11 still needs the bent-dish step. Settings/mobile acceptance is partial under C15/C16; C20/C21 track remaining text/motion issues.
 
 **Verified residual failures:** B4 malformed saves; B2 free victory after three failures; B6 missing final samples;
 C7 balance; C15/C16 remaining settings/device acceptance; C21 LED blinking; C22 ASTRA/scenario alignment.
 B9 already has a tested scheduler and penalties; only its B2/C7 remainder stays open.
 
-**Validation:** current code was inspected; 291 project/content/audio tests passed, and the strategy lab was rerun.
+**Validation:** current code was inspected; 292 project/content/audio tests passed, and the strategy lab was rerun.
 Strategy lab (`--seeds 1`, 30 Sols): recommended finale Sol 19 / 9 stars; ignore-minigames Sol 20 / 9 stars;
 always-C Sol 21. This is a single-seed balance check, not exhaustive play-testing.
 
@@ -166,7 +166,7 @@ Rows C4-C9 come from `node tools/balance/strategy-lab.mjs` (14 kinds of player x
 | C8 | Oxygen never falls below 80 and Morale never below 53 in any strategy; Spare Parts pile up past 300 with nothing to buy. | Keep the balance decision open. The historical Oxygen claim is no longer universal: the audited idle strategy reaches Oxygen 28 on seed 1. Breakdown penalties work; Morale/Spare Parts and the mission rating still need a team decision. | **DECISION** |
 | C9 | The always-C path finishes late (Sol 28) or not within 30 Sols: Dilemma 5 C wears out the shielding and the re-craft asks for a Titanium Plate, but SCENARIO says 15 SP only. | D-T17a. | FIXED |
 | C10 | Role modifiers of the 9 mini-games (SCENARIO 4.1-4.9, "Role modifiers") are not implemented: no mini-game reads a role, and the engine has no player role. | First the one-player / four-people decision (GAMEPLAY_PLAN section 2, B12); then pass `role` to `startSolarWipe` and `startMini2` and apply each game's line from SCENARIO 4.x, one game per task. | **OPEN** |
-| C11 | Lab Earth windows every 3 Sols (SCENARIO 3.3 Lab row, plan P7) and the bent-dish step after a storm (4.9 step 1) are missing: only the Dilemma 4 windows exist, and the Dish Alignment game has no dish step. | `story.js`: with the Lab online, open an Earth window every 3 Sols (adds the `antenna` task); set `flags.dishBent` at storm end; `minigames2.js` dish game: one swipe to straighten the edge first when the flag is set. | **OPEN** |
+| C11 | Lab Earth windows every 3 Sols (SCENARIO 3.3 Lab row, plan P7) and the bent-dish step after a storm (4.9 step 1) are missing: only the Dilemma 4 windows exist, and the Dish Alignment game has no dish step. | `story.js`: with the Lab online, open an Earth window every 3 Sols (adds the `antenna` task); set `flags.dishBent` at storm end; `minigames2.js` dish game: one swipe to straighten the edge first when the flag is set. | **PARTIAL ? OPEN:** Earth windows every 3 Sols and the one-time first reply are implemented/tested (18da9f1); the bent-dish repair step is still missing. |
 | C12 | Research is never spent (plan P5): it grows by +5/+8 per Sol but gates nothing; the Deep Scan is only "Lab T2 and Sol 19". | Give the Deep Scan a Research cost in `constants.js` (tagged `gameplay`) and require it before Expedition 5; show Research in the Lab row. | **OPEN** |
 | C13 | Recreation emergency refill (once per 5 Sols, T2 every 3; SCENARIO 3.3, plan P6) is not built. | Implemented as the automatic refill now specified in SCENARIO 3.3: below 10 Water/Food/Oxygen, add 30 to the lowest, then a 5-Sol cooldown (T2: 3). storageRefill(), STORAGE_REFILL, ASTRA line and tests/recreation-rover-rest.test.mjs are present. No manual button is required by the current scenario. | FIXED (automatic refill and tier cooldowns tested). |
 | C14 | Resting in the Rover on a 2-Sol trip (+6 HP, SCENARIO line 719) is not modelled; `hpCost()` has no rest term. | Implemented in engine.js stepHp(): while away at night, +0.75 HP per hour (8 hours = +6). Tests compare day and night on an actual trip. Do not subtract it again in hpCost(), which would heal twice. | FIXED (Rover night rest tested). |
