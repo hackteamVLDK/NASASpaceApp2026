@@ -190,46 +190,100 @@ function valveBalance() {
   };
 }
 
-// ------------------------------------------------------------------ 4.4 Water Sort
+// ------------------------------------------------------------------ shared helpers for a clear screen
+// Every game below follows the Scrubber Valve rework: a goal line that changes with each step, an animated hand
+// for the first move, visible progress, and a calm message after a wrong move (readable from the screen alone).
+
+/** A hand that slides from (x0, y0) to (x1, y1) again and again: "drag this there". */
+function dragHand(c, x0, y0, x1, y1, now) {
+  const k = (now % 1600) / 1600;
+  const f = k < 0.15 ? 0 : k > 0.85 ? 1 : (k - 0.15) / 0.7;
+  const e = f < 0.5 ? 2 * f * f : 1 - 2 * (1 - f) * (1 - f);
+  c.save(); c.globalAlpha = k > 0.92 ? (1 - k) / 0.08 : 1;
+  c.setLineDash([8, 10]); c.strokeStyle = 'rgba(255,214,0,.55)'; c.lineWidth = 4; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); c.setLineDash([]);
+  tapHand(c, x0 + (x1 - x0) * e, y0 + (y1 - y0) * e, 0);
+  c.restore();
+}
+
+/** A short line in a dark box near the bottom: what went wrong, or what is next. */
+function sayBox(c, said, now) {
+  if (!said || said.until < now) return;
+  c.font = 'bold 24px sans-serif';
+  const w = Math.min(W - 80, c.measureText(said.text).width + 48);
+  c.fillStyle = 'rgba(0,0,0,.65)'; rr(c, W / 2 - w / 2, H - 96, w, 46, 12); c.fill();
+  label(c, said.text, W / 2, H - 64, 24, said.color);
+}
+const saying = (text, color = '#ffd600', ms = 1900) => ({ text, color, until: performance.now() + ms });
+
+/** "3 / 6" style progress with a small bar. */
+function progress(c, text, frac, x, y) {
+  label(c, text, x, y, 20, '#cfe');
+  c.fillStyle = '#16293c'; rr(c, x - 90, y + 10, 180, 12, 6); c.fill();
+  c.fillStyle = '#43e060'; rr(c, x - 90, y + 10, Math.max(12, 180 * frac), 12, 6); c.fill();
+}
+
+// ------------------------------------------------------------------ 4.4 Closed-Loop Water Sort
 function waterSort() {
-  const tray = [{ id: 'Filter', col: '#9bb', x: 200 }, { id: 'Boiler', col: '#ff8a2a', x: 500 }, { id: 'Purifier', col: '#b36bff', x: 800 }].sort(() => Math.random() - 0.5);
+  const tray = [{ id: 'Filter', col: '#9bb', x: 200, why: 'catches the dirt' }, { id: 'Boiler', col: '#ff8a2a', x: 500, why: 'kills the germs' }, { id: 'Purifier', col: '#b36bff', x: 800, why: 'makes it sparkle' }].sort(() => Math.random() - 0.5);
   const order = ['Filter', 'Boiler', 'Purifier'];
   const slots = [null, null, null];
-  let drag = null, flowing = null, wobble = null;
+  let drag = null, flowing = null, wobble = null, said = null, moved = false;
   const pos = tray.map((m) => ({ ...m, y: 500 }));
+  const home = (m) => { m.x = tray.find((q) => q.id === m.id).x; m.y = 500; };
   const slotRect = (i) => ({ x: 250 + i * 250, y: 250, w: 200, h: 110 });
+  const full = () => slots.every(Boolean);
   return {
     down(p) {
       if (inR(p, 30, 150, 150, 70)) { // the tap (left of the pipe; it used to cover the droplet)
         director.minigame('water_sort', 'tap');
+        if (!full()) { said = saying('First put all 3 machines into the boxes.'); return; }
         const ok = slots.every((s, i) => s === order[i]);
-        if (ok) flowing = performance.now(); else { const bad = slots.findIndex((s, i) => s !== order[i]); wobble = { i: bad, at: performance.now() }; slots.fill(null); pos.forEach((m, i) => { m.x = [200, 500, 800][i]; m.y = 500; }); }
+        if (ok) { flowing = performance.now(); said = saying('Clean water!', '#9affb0'); return; }
+        // 4.4 step 3: a wrong order bounces the droplet back and the wrong slot wiggles
+        const bad = slots.findIndex((s, i) => s !== order[i]);
+        wobble = { i: bad, at: performance.now() };
+        said = saying(`Box ${bad + 1} needs the ${order[bad]}: it ${tray.find((q) => q.id === order[bad]).why}.`, '#ffd600', 2600);
+        slots.fill(null); pos.forEach(home);
         return;
       }
       const m = [...pos].reverse().find((q) => !slots.includes(q.id) && Math.abs(p.x - q.x) < 90 && Math.abs(p.y - q.y) < 50);
-      if (m) drag = m;
+      if (m) { drag = m; moved = true; }
     },
     move(p) { if (drag) { drag.x = p.x; drag.y = p.y; } },
     up(p) {
       if (!drag) return;
       const i = [0, 1, 2].find((k) => inR(p, slotRect(k).x, slotRect(k).y, slotRect(k).w, slotRect(k).h) && slots[k] === null);
-      if (i !== undefined) { slots[i] = drag.id; drag.x = slotRect(i).x + 100; drag.y = slotRect(i).y + 55; director.minigame('water_sort', 'place'); } else { const k = pos.indexOf(drag); drag.x = [200, 500, 800][k]; drag.y = 500; }
+      if (i !== undefined) { slots[i] = drag.id; drag.x = slotRect(i).x + 100; drag.y = slotRect(i).y + 55; director.minigame('water_sort', 'place'); }
+      else { home(drag); said = saying('Drop it inside an empty dashed box.'); }
       drag = null;
     },
     draw(c, now) {
-      label(c, 'Filter → Boiler → Purifier, then tap the tap!', W / 2, 60, 28, '#ffb000');
+      const next = slots.findIndex((s) => s === null);
+      label(c, flowing ? 'Watch the droplet get clean!' : full() ? 'Now tap the yellow TAP!' : `Drag a machine into box ${next + 1}. Order: Filter, Boiler, Purifier`, W / 2, 60, 26, '#ffb000');
       // the pipe the water runs through: tap -> three machines -> clean water
       c.fillStyle = '#22384d'; c.fillRect(100, 296, 960, 18);
-      c.fillStyle = '#ffb000'; rr(c, 30, 150, 150, 70); c.fill(); label(c, 'TAP', 105, 196, 30, '#000');
+      const ready = full() && !flowing;
+      if (ready) { c.shadowColor = '#ffd600'; c.shadowBlur = 10 + 16 * (0.5 + 0.5 * Math.sin(now / 200)); }
+      c.fillStyle = '#ffb000'; rr(c, 30, 150, 150, 70); c.fill(); c.shadowBlur = 0; label(c, 'TAP', 105, 196, 30, '#000');
       // the droplet: murky at the start, it runs along the pipe and turns clear blue after the last machine
       const k = flowing ? Math.min(1, (now - flowing) / 900) : 0;
-      const dx = 105 + k * 920;
+      const back = wobble && now - wobble.at < 600 ? Math.sin(((now - wobble.at) / 600) * Math.PI) * 60 : 0; // bounced back
+      const dx = 105 + k * 920 + back;
       const clean = Math.min(1, Math.max(0, (dx - 250) / 700));
       c.fillStyle = `rgb(${Math.round(107 + (77 - 107) * clean)},${Math.round(74 + (184 - 74) * clean)},${Math.round(42 + (255 - 42) * clean)})`;
       c.beginPath(); c.arc(dx, 305, 28, 0, Math.PI * 2); c.fill();
       c.fillStyle = '#fff'; c.beginPath(); c.arc(dx - 8, 299, 5, 0, Math.PI * 2); c.arc(dx + 8, 299, 5, 0, Math.PI * 2); c.fill(); // eyes
-      for (let i = 0; i < 3; i++) { const r = slotRect(i); c.strokeStyle = wobble?.i === i && now - wobble.at < 600 ? '#ff5252' : '#4db8ff'; c.setLineDash([10, 8]); c.lineWidth = 4; c.strokeRect(r.x + (wobble?.i === i && now - wobble.at < 600 ? Math.sin(now / 30) * 6 : 0), r.y, r.w, r.h); c.setLineDash([]); }
+      for (let i = 0; i < 3; i++) {
+        const r = slotRect(i); const bad = wobble?.i === i && now - wobble.at < 600;
+        c.strokeStyle = bad ? '#ff5252' : i === next && !drag ? `rgba(0,229,255,${0.6 + 0.4 * Math.sin(now / 200)})` : '#4db8ff';
+        c.setLineDash([10, 8]); c.lineWidth = 4; c.strokeRect(r.x + (bad ? Math.sin(now / 30) * 6 : 0), r.y, r.w, r.h); c.setLineDash([]);
+        if (!slots[i]) label(c, String(i + 1), r.x + r.w / 2, r.y + 72, 44, 'rgba(77,184,255,.45)');
+      }
       pos.forEach((m) => { c.fillStyle = m.col; rr(c, m.x - 85, m.y - 45, 170, 90, 12); c.fill(); label(c, m.id, m.x, m.y + 8, 26, '#000'); });
+      progress(c, `Machines in: ${slots.filter(Boolean).length} / 3`, slots.filter(Boolean).length / 3, 950, 170);
+      if (!moved && !drag) { const f = pos.find((m) => m.id === 'Filter'); dragHand(c, f.x, f.y, slotRect(0).x + 100, slotRect(0).y + 55, now); }
+      else if (ready && !said?.text.startsWith('Box')) tapHand(c, 105, 185, now);
+      sayBox(c, said, now);
       this._done = flowing && now - flowing > 1000;
     },
     done() { return Boolean(this._done); },
@@ -239,31 +293,48 @@ function waterSort() {
 // ------------------------------------------------------------------ 4.6 Hydroponic LED & Nutrient Match
 function nutrientMatch() {
   const cols = ['#43e060', '#ffd600', '#b36bff'];
+  const names = { '#43e060': 'green', '#ffd600': 'yellow', '#b36bff': 'purple' };
   const trays = [0, 1, 2].map((i) => ({ x: 220 + i * 330, tag: cols[[1, 2, 0][i]], filled: false, bad: 0 }));
   const bottles = cols.map((c, i) => ({ c, x: 200 + i * 330, y: 140, hx: 200 + i * 330, hy: 140 }));
-  let drag = null, led = false;
+  let drag = null, led = false, said = null, moved = false;
+  const fed = () => trays.filter((t) => t.filled).length;
   return {
     down(p) {
-      if (inR(p, 500, 520, 100, 90)) { led = trays.every((t) => t.filled); director.minigame('nutrient_match', 'led'); return; }
-      drag = bottles.find((b) => Math.hypot(p.x - b.x, p.y - b.y) < 50 && !b.used) ?? null;
+      if (inR(p, 500, 520, 100, 90)) {
+        director.minigame('nutrient_match', 'led');
+        if (fed() < 3) { said = saying('Feed all 3 plants first, then switch on the light.'); return; }
+        led = true; said = saying('The plants love the pink light!', '#9affb0'); return;
+      }
+      drag = bottles.find((b) => Math.hypot(p.x - b.x, p.y - b.y) < 60 && !b.used) ?? null;
+      if (drag) moved = true;
     },
     move(p) { if (drag) { drag.x = p.x; drag.y = p.y; } },
     up(p) {
       if (!drag) return;
       const t = trays.find((q) => Math.abs(p.x - q.x) < 130 && p.y > 230);
-      if (t && !t.filled && t.tag === drag.c) { t.filled = true; drag.used = true; director.minigame('nutrient_match', 'drop'); } else if (t) t.bad = performance.now();
+      if (t && !t.filled && t.tag === drag.c) { t.filled = true; drag.used = true; director.minigame('nutrient_match', 'drop'); }
+      else if (t && !t.filled) { t.bad = performance.now(); said = saying(`This plant has a ${names[t.tag]} tag: it needs the ${names[t.tag]} bottle.`); }
+      else if (!t) said = saying('Drop the bottle on a plant.');
       drag.x = drag.hx; drag.y = drag.hy; drag = null;
     },
     draw(c, now) {
-      label(c, 'Match each bottle to the colour tag, then switch on the LEDs', W / 2, 60, 26, '#ffb000');
+      label(c, fed() < 3 ? 'Drag each bottle to the plant with the SAME colour tag' : led ? 'All plants are happy!' : 'Now tap the LED switch!', W / 2, 60, 26, '#ffb000');
       trays.forEach((t) => {
         c.fillStyle = t.filled ? '#2e6b3a' : '#2a3a4a'; rr(c, t.x - 120, 300, 240, 200); c.fill();
         c.fillStyle = t.tag; rr(c, t.x - 30, 470, 60, 24, 8); c.fill();
-        const wilt = !t.filled || !led; const yellow = now - t.bad < 700;
+        if (drag && !t.filled && t.tag === drag.c) { c.strokeStyle = `rgba(255,255,255,${0.5 + 0.4 * Math.sin(now / 150)})`; c.lineWidth = 4; rr(c, t.x - 120, 300, 240, 200); c.stroke(); }
+        const wilt = !t.filled || !led; const yellow = now - t.bad < 900;
         c.fillStyle = yellow ? '#e5d34a' : wilt ? '#7a8a3a' : '#43e060'; c.fillRect(t.x - 8, wilt ? 380 : 340, 16, wilt ? 90 : 130); c.beginPath(); c.arc(t.x, wilt ? 380 : 340, wilt ? 30 : 46, 0, Math.PI * 2); c.fill();
+        if (t.filled) label(c, '✔', t.x + 95, 330, 26, '#9affb0');
       });
       bottles.forEach((b) => { if (b.used) return; c.fillStyle = b.c; rr(c, b.x - 28, b.y - 50, 56, 100, 10); c.fill(); c.fillStyle = '#fff'; c.fillRect(b.x - 12, b.y - 62, 24, 14); });
-      c.fillStyle = led ? '#ff4de1' : '#555'; rr(c, 500, 520, 100, 90, 14); c.fill(); label(c, 'LED', 550, 575, 26, '#000'); // below the trays, not on top of one
+      const ready = fed() === 3 && !led;
+      if (ready) { c.shadowColor = '#ff4de1'; c.shadowBlur = 10 + 16 * (0.5 + 0.5 * Math.sin(now / 200)); }
+      c.fillStyle = led ? '#ff4de1' : ready ? '#9a5a8a' : '#555'; rr(c, 500, 520, 100, 90, 14); c.fill(); c.shadowBlur = 0; label(c, 'LED', 550, 575, 26, '#000'); // below the trays, not on top of one
+      progress(c, `Plants fed: ${fed()} / 3`, fed() / 3, 950, 225);
+      if (!moved && !drag) { const b = bottles[0]; const tr = trays.find((q) => q.tag === b.c); dragHand(c, b.x, b.y, tr.x, 400, now); }
+      else if (ready) tapHand(c, 550, 560, now);
+      sayBox(c, said, now);
       this._ok = led && trays.every((t) => t.filled);
     },
     done() { return Boolean(this._ok); },
@@ -274,13 +345,21 @@ function nutrientMatch() {
 function airFilter() {
   const cells = Array.from({ length: 16 }, () => ({ dust: 3, last: -1 }));
   let step = 0; // 0 pull the filter out, 1 scrub, 2 lock
-  let rub = null;
+  let rub = null, said = null, scrubbedThisPress = false;
   const X = 340, Y = 130, C = 100;
+  const clean = () => cells.filter((q) => q.dust === 0).length;
   return {
     down(p) {
-      if (step === 0 && inR(p, X - 100, Y, 80, 200)) { step = 1; director.minigame('air_filter', 'pull'); return; }
-      if (step === 1) rub = { last: p, dir: 0 };
-      if (step === 2 && inR(p, 820, 300, 120, 100)) { this._ok = true; director.minigame('air_filter', 'lock'); }
+      if (step === 0) {
+        if (inR(p, X - 100, Y, 80, 200)) { step = 1; director.minigame('air_filter', 'pull'); said = saying('Out it comes! Now rub off the red dust.', '#9affb0'); }
+        else said = saying('Grab the yellow PULL handle first.');
+        return;
+      }
+      if (step === 1) { rub = { last: p, dir: 0 }; scrubbedThisPress = false; }
+      if (step === 2) {
+        if (inR(p, 820, 300, 120, 100)) { this._ok = true; director.minigame('air_filter', 'lock'); }
+        else said = saying('Tap the green LOCK to put the filter back.');
+      }
     },
     move(p) {
       if (step !== 1 || !rub) return;
@@ -288,17 +367,22 @@ function airFilter() {
       if (col < 0 || col > 3 || row < 0 || row > 3) return;
       const cell = cells[row * 4 + col];
       const dir = Math.sign(p.x - rub.last.x) || rub.dir;
-      if (dir !== 0 && dir !== cell.last && Math.abs(p.x - rub.last.x) > 6) { cell.dust = Math.max(0, cell.dust - 1); cell.last = dir; }
+      if (dir !== 0 && dir !== cell.last && Math.abs(p.x - rub.last.x) > 6) { if (cell.dust > 0) scrubbedThisPress = true; cell.dust = Math.max(0, cell.dust - 1); cell.last = dir; }
       rub.last = p; rub.dir = dir;
-      if (cells.every((q) => q.dust === 0)) step = 2;
+      if (cells.every((q) => q.dust === 0)) { step = 2; said = saying('Sparkling clean! Lock it back in.', '#9affb0'); }
     },
-    up() { rub = null; },
-    draw(c) {
-      label(c, step === 0 ? 'Pull the filter out of the wall' : step === 1 ? 'Rub each cell 3 times' : 'Push it back and tap the lock lever', W / 2, 60, 28, '#ffb000');
+    up() { if (step === 1 && rub && !scrubbedThisPress) said = saying('Keep your finger down and rub left and right.'); rub = null; },
+    draw(c, now) {
+      label(c, step === 0 ? 'Tap the yellow handle to pull the filter out' : step === 1 ? 'Rub each brown square left and right until it is clean' : 'Tap the green LOCK lever', W / 2, 60, 26, '#ffb000');
       c.fillStyle = '#394b5d'; rr(c, X - 110, Y - 20, 640, 440, 16); c.fill();
-      if (step === 0) { c.fillStyle = '#ffb000'; rr(c, X - 100, Y, 80, 200); c.fill(); label(c, 'PULL', X - 60, Y + 110, 22, '#000'); }
-      cells.forEach((q, i) => { const x = X + (i % 4) * C, y = Y + Math.floor(i / 4) * C; c.fillStyle = '#9fb5c8'; c.fillRect(x + 4, y + 4, C - 8, C - 8); c.fillStyle = `rgba(180,70,30,${q.dust / 3 * 0.85})`; c.fillRect(x + 4, y + 4, C - 8, C - 8); });
-      if (step === 2) { c.fillStyle = '#43e060'; rr(c, 820, 300, 120, 100); c.fill(); label(c, 'LOCK', 880, 360, 26, '#000'); }
+      if (step === 0) { c.shadowColor = '#ffd600'; c.shadowBlur = 10 + 16 * (0.5 + 0.5 * Math.sin(now / 200)); c.fillStyle = '#ffb000'; rr(c, X - 100, Y, 80, 200); c.fill(); c.shadowBlur = 0; label(c, 'PULL', X - 60, Y + 110, 22, '#000'); }
+      cells.forEach((q, i) => { const x = X + (i % 4) * C, y = Y + Math.floor(i / 4) * C; c.fillStyle = '#9fb5c8'; c.fillRect(x + 4, y + 4, C - 8, C - 8); c.fillStyle = `rgba(180,70,30,${q.dust / 3 * 0.85})`; c.fillRect(x + 4, y + 4, C - 8, C - 8); if (q.dust === 0 && step === 1) label(c, '✔', x + C / 2, y + C / 2 + 10, 28, '#1d6e2e'); });
+      if (step === 2) { c.shadowColor = '#43e060'; c.shadowBlur = 10 + 16 * (0.5 + 0.5 * Math.sin(now / 200)); c.fillStyle = '#43e060'; rr(c, 820, 300, 120, 100); c.fill(); c.shadowBlur = 0; label(c, 'LOCK', 880, 360, 26, '#000'); }
+      if (step === 1) progress(c, `Clean squares: ${clean()} / 16`, clean() / 16, 950, 170);
+      if (step === 0) tapHand(c, X - 60, Y + 100, now);
+      else if (step === 1 && clean() === 0 && !rub) { const i = cells.findIndex((q) => q.dust > 0); const x = X + (i % 4) * C, y = Y + Math.floor(i / 4) * C + C / 2; dragHand(c, x + 15, y, x + C - 15, y, now); }
+      else if (step === 2) tapHand(c, 880, 350, now);
+      sayBox(c, said, now);
     },
     done() { return Boolean(this._ok); },
   };
@@ -310,25 +394,44 @@ function airFilter() {
 const ANTENNA_OUTRO_MS = 2600;
 function antenna({ delaySeconds = 840 } = {}) {
   const sl = { lr: 0.15, ud: 0.85 };
-  let drag = null, good = null;
+  let drag = null, good = null, touched = false, said = null, hadLock = false;
   const earth = (now) => ({ x: 0.5 + 0.28 * Math.sin(now / 5200), y: 0.35 + 0.18 * Math.cos(now / 6800) });
   return {
-    down(p) { if (inR(p, 120, 520, 400, 50)) drag = 'lr'; else if (inR(p, 600, 520, 400, 50)) drag = 'ud'; },
+    down(p) {
+      if (inR(p, 100, 505, 440, 80)) drag = 'lr'; else if (inR(p, 580, 505, 440, 80)) drag = 'ud';
+      else said = saying('Use the two orange sliders at the bottom.');
+      if (drag) touched = true;
+    },
     move(p) { if (drag === 'lr') sl.lr = Math.max(0, Math.min(1, (p.x - 120) / 400)); if (drag === 'ud') sl.ud = Math.max(0, Math.min(1, (p.x - 600) / 400)); },
     up() { drag = null; },
     draw(c, now) {
       c.fillStyle = '#020611'; c.fillRect(0, 100, W, 380);
       for (let i = 0; i < 60; i++) { c.fillStyle = '#9ab'; c.fillRect((i * 137) % W, 110 + ((i * 59) % 360), 2, 2); }
       const e = earth(now), ex = 60 + e.x * 980, ey = 120 + e.y * 340;
-      c.fillStyle = '#3d8bff'; c.beginPath(); c.arc(ex, ey, 14, 0, Math.PI * 2); c.fill();
       const bx = 60 + sl.lr * 980, by = 120 + (1 - sl.ud) * 340;
+      // the dish in the corner and its beam (a cone of light) to the ring it points at (4.9)
+      c.fillStyle = 'rgba(255,214,0,.10)'; c.beginPath(); c.moveTo(1050, 470); c.lineTo(bx - 50, by); c.lineTo(bx + 50, by); c.closePath(); c.fill();
+      c.fillStyle = '#b9b3a6'; c.beginPath(); c.ellipse(1050, 462, 34, 14, -0.6, 0, Math.PI * 2); c.fill(); c.fillRect(1046, 462, 8, 18);
+      c.fillStyle = '#3d8bff'; c.beginPath(); c.arc(ex, ey, 14, 0, Math.PI * 2); c.fill();
+      label(c, 'EARTH', ex, ey - 24, 18, '#9fd8ff');
       c.strokeStyle = 'rgba(255,214,0,.8)'; c.lineWidth = 3; c.beginPath(); c.arc(bx, by, 60, 0, Math.PI * 2); c.stroke();
+      label(c, 'dish beam', bx, by + 82, 16, 'rgba(255,214,0,.8)');
       const d = Math.hypot(ex - bx, ey - by);
       const bars = d < 40 ? 5 : d < 80 ? 4 : d < 150 ? 3 : d < 260 ? 2 : d < 400 ? 1 : 0;
       for (let i = 0; i < 5; i++) { c.fillStyle = i < bars ? (bars >= 4 ? '#43e060' : '#ffd600') : '#333'; c.fillRect(40 + i * 40, 60 - i * 8, 28, 20 + i * 8); }
-      label(c, 'Keep 4+ bars for 3 seconds', W / 2, 60, 26, '#ffb000');
+      label(c, bars >= 4 ? 'Hold it there! Earth is moving, follow it' : 'Move the yellow ring onto Earth with the sliders', W / 2, 60, 26, '#ffb000');
       [['Left / Right', 120, sl.lr], ['Up / Down', 600, sl.ud]].forEach(([n, x, v]) => { c.fillStyle = '#394b5d'; rr(c, x, 530, 400, 30, 15); c.fill(); c.fillStyle = '#ffb000'; c.beginPath(); c.arc(x + 400 * v, 545, 26, 0, Math.PI * 2); c.fill(); label(c, n, x + 200, 600, 20); });
-      if (bars >= 4) { if (good === null) director.minigame('antenna', 'lock'); good ??= now; c.fillStyle = '#43e060'; c.fillRect(300, 490, Math.min(500, ((now - good) / 3000) * 500), 10); } else good = null;
+      if (bars >= 4) {
+        if (good === null) director.minigame('antenna', 'lock');
+        good ??= now; hadLock = true;
+        c.fillStyle = '#16293c'; rr(c, 300, 486, 500, 14, 7); c.fill();
+        c.fillStyle = '#43e060'; rr(c, 300, 486, Math.max(14, Math.min(500, ((now - good) / 3000) * 500)), 14, 7); c.fill();
+      } else {
+        if (good !== null && hadLock && this.wonAt == null) said = saying('Earth slipped away. Follow it with the sliders!');
+        good = null;
+      }
+      if (!touched) dragHand(c, 120 + 400 * sl.lr, 545, 120 + 400 * Math.min(1, sl.lr + 0.45), 545, now);
+      sayBox(c, said, now);
       this._since = good; this._now = now;
       if (this.wonAt != null) {
         const f = Math.min(1, (now - this.wonAt) / (ANTENNA_OUTRO_MS - 400));
@@ -349,21 +452,42 @@ function wheelVacuum() {
   // side view: six wheels in one row under the Rover's body, standing on the ground (they used to float in two rows)
   const wheels = Array.from({ length: 6 }, (_, i) => ({ x: 140 + i * 164, y: 330, dust: 1 }));
   const pebbles = [{ w: 1, ox: 30, oy: -20, out: false }, { w: 4, ox: -30, oy: 10, out: false }];
-  let nozzle = null;
-  let pressed = false;
+  let nozzle = null, pressed = false, touched = false, said = null, cleanedThisPress = false;
+  const cleanCount = () => wheels.filter((w) => w.dust < 0.12).length;
   return {
-    down(p) { nozzle = p; pressed = true; this._tap(p); },
-    move(p) { nozzle = p; if (!pressed) return; wheels.forEach((w) => { if (Math.hypot(p.x - w.x, p.y - w.y) < 75) w.dust = Math.max(0, w.dust - 0.03); }); }, // the vacuum works only while the finger or the mouse button is down
-    up() { nozzle = null; pressed = false; },
-    _tap(p) { pebbles.forEach((q) => { const w = wheels[q.w]; if (!q.out && Math.hypot(p.x - (w.x + q.ox), p.y - (w.y + q.oy)) < 30) { q.out = true; director.minigame('wheel_vacuum', 'pebble'); } }); },
+    down(p) { nozzle = p; pressed = true; touched = true; cleanedThisPress = false; this._tap(p); },
+    move(p) {
+      nozzle = p; if (!pressed) return; // the vacuum works only while the finger or the mouse button is down
+      wheels.forEach((w) => { if (Math.hypot(p.x - w.x, p.y - w.y) < 75 && w.dust > 0) { w.dust = Math.max(0, w.dust - 0.03); cleanedThisPress = true; } });
+    },
+    up() {
+      if (pressed && !cleanedThisPress && !this._popped && cleanCount() < 6) said = saying('Hold your finger down and slide it over the wheels.');
+      this._popped = false; nozzle = null; pressed = false;
+    },
+    _tap(p) { pebbles.forEach((q) => { const w = wheels[q.w]; if (!q.out && Math.hypot(p.x - (w.x + q.ox), p.y - (w.y + q.oy)) < 34) { q.out = true; this._popped = true; director.minigame('wheel_vacuum', 'pebble'); said = saying('Pop! A sharp pebble is out.', '#9affb0', 1200); } }); },
     draw(c, now) {
-      label(c, 'Vacuum every wheel, then pop the 2 sparkling pebbles', W / 2, 60, 26, '#ffb000');
+      const wheelsDone = cleanCount() === 6;
+      const left = pebbles.filter((q) => !q.out).length;
+      label(c, !wheelsDone ? 'Slide the blue vacuum over every wheel until it shines' : left ? `Tap the ${left} sparkling pebble${left > 1 ? 's' : ''}!` : 'Wheels ready!', W / 2, 60, 26, '#ffb000');
       c.fillStyle = '#c9b9a0'; rr(c, 60, 150, 980, 150, 20); c.fill();
       c.fillStyle = '#7a5a40'; c.fillRect(30, 400, 1040, 8); // the ground the wheels stand on
-      wheels.forEach((w) => { c.fillStyle = '#222'; c.beginPath(); c.arc(w.x, w.y, 70, 0, Math.PI * 2); c.fill(); c.fillStyle = `rgb(${90 + w.dust * 110},${80 + w.dust * 20},${70})`; c.beginPath(); c.arc(w.x, w.y, 56, 0, Math.PI * 2); c.fill(); c.fillStyle = '#ddd'; c.beginPath(); c.arc(w.x, w.y, 16, 0, Math.PI * 2); c.fill(); });
+      wheels.forEach((w) => {
+        c.fillStyle = '#222'; c.beginPath(); c.arc(w.x, w.y, 70, 0, Math.PI * 2); c.fill();
+        c.fillStyle = `rgb(${90 + w.dust * 110},${80 + w.dust * 20},${70})`; c.beginPath(); c.arc(w.x, w.y, 56, 0, Math.PI * 2); c.fill();
+        c.fillStyle = '#ddd'; c.beginPath(); c.arc(w.x, w.y, 16, 0, Math.PI * 2); c.fill();
+        if (w.dust < 0.12) { c.strokeStyle = '#43e060'; c.lineWidth = 5; c.beginPath(); c.arc(w.x, w.y, 74, 0, Math.PI * 2); c.stroke(); label(c, '✔', w.x, w.y + 108, 26, '#9affb0'); }
+      });
       pebbles.forEach((q) => { if (q.out) return; const w = wheels[q.w]; c.fillStyle = Math.floor(now / 200) % 2 ? '#fff' : '#ffd600'; c.beginPath(); c.arc(w.x + q.ox, w.y + q.oy, 12, 0, Math.PI * 2); c.fill(); });
-      if (nozzle) { c.fillStyle = '#4db8ff'; c.beginPath(); c.arc(nozzle.x, nozzle.y, 26, 0, Math.PI * 2); c.fill(); }
-      this._ok = wheels.every((w) => w.dust < 0.12) && pebbles.every((q) => q.out);
+      // the vacuum nozzle: parked at the right until the finger is down, then it follows the finger
+      const nz = nozzle ?? { x: 1000, y: 500 };
+      c.fillStyle = '#4db8ff'; c.beginPath(); c.arc(nz.x, nz.y, 26, 0, Math.PI * 2); c.fill();
+      if (!nozzle) label(c, 'vacuum', 1000, 552, 18, '#9fd8ff');
+      progress(c, `Clean wheels: ${cleanCount()} / 6`, cleanCount() / 6, 200, 480);
+      progress(c, `Pebbles out: ${2 - left} / 2`, (2 - left) / 2, 460, 480);
+      if (!touched) dragHand(c, wheels[0].x, wheels[0].y, wheels[2].x, wheels[2].y, now);
+      else if (wheelsDone && left) { const q = pebbles.find((x) => !x.out); tapHand(c, wheels[q.w].x + q.ox, wheels[q.w].y + q.oy, now); }
+      sayBox(c, said, now);
+      this._ok = wheelsDone && left === 0;
     },
     done() { return Boolean(this._ok); },
   };
