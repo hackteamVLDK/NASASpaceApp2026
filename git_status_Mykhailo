@@ -25,8 +25,6 @@ Updated: 2026-11-14 (UTC+1), after the backend was aligned with SCENARIO.md
   "in the same style"). The team generates images and drops them in assets/incoming/.
 
 ## DOING NOW
-- User requested publishing all surface Garage changes to origin/main. Two incoming team commits
-  will be merged without rewriting history; the combined tree will be tested before pushing.
 - Surface Garage integrated: assets/incoming/surface.garage.png (generated reference),
   assets/art/surface/garage.png (processed 120x108 RGBA sheet, unfinished + finished, 24 colours).
   Manifest + assets/prompts/surface.garage.md are updated; asset tests 8/8 and full npm test 268/268 pass.
@@ -52,6 +50,8 @@ Updated: 2026-11-14 (UTC+1), after the backend was aligned with SCENARIO.md
   SCENARIO.md.
 
 ## DONE
+- All surface Garage changes committed on main; merged origin/main through 6f392e8 without conflicts.
+  Combined game checked in Edge; npm test 273/273 pass. Ready for the user-requested push to origin/main.
 - Surface Garage art: generated raw reference + processed two-state sheet + prompt/manifest, visual preview checked;
   runtime connected with Mykhailo's explicit approval for the two reserved renderer files. Status: integrated, not final.
 - 2026-11-14: Completed and pushed merge recovery; incorporated remote updates through A30. Full suite: 268/268 pass.
