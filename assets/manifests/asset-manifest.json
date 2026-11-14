@@ -170,8 +170,8 @@
       "references": ["assets/reference/surface-reference.png"],
       "incoming": "assets/incoming/surface.mound.png",
       "file": "assets/art/surface/mound.png",
-      "status": "awaiting-generation",
-      "notes": "SCENARIO section 4: 'regolith mound, 2 buried dormant drones'. Attach drone.builder as a second reference so the drones look the same."
+      "status": "received",
+      "notes": "SCENARIO section 4: 'regolith mound, 2 buried dormant drones'. Attach drone.builder as a second reference so the drones look the same. ACCEPTED with one drone per frame (the image tool ignored 'two'): the game places two instances of the sprite for Drone #02 and #03 (mirror one). Dormant look: dark eye, red LED."
     },
     {
       "id": "lander.craft",
@@ -266,7 +266,7 @@
       "dependsOn": ["style.anchor", "crew.indoor"],
       "incoming": "assets/incoming/crew.eva.png",
       "file": "assets/art/crew/eva.png",
-      "status": "awaiting-generation",
+      "status": "received",
       "notes": "Attach crew.indoor as a second reference so the proportions match."
     },
     {
@@ -396,7 +396,7 @@
       "dependsOn": ["style.anchor", "module.unfinished", "vehicle.rover"],
       "incoming": "assets/incoming/module.finished.png",
       "file": "assets/art/modules/finished.png",
-      "status": "awaiting-generation",
+      "status": "received",
       "notes": "Attach module.unfinished as a second reference so the frames line up. Switching on what each module is for: docs/GAME_DESIGN.md."
     },
     {
@@ -510,8 +510,8 @@
       "dependsOn": ["style.anchor"],
       "incoming": "assets/incoming/ui.icons.png",
       "file": "assets/art/ui/icons.png",
-      "status": "awaiting-generation",
-      "notes": "Includes icons for the jobs in src/sim/constants.js."
+      "status": "received",
+      "notes": "Includes icons for the jobs in src/sim/constants.js. ACCEPTED: 32 icons on an irregular 6x6 layout; slice by connected components in reading order, then name them (the image tool replaced a few: heart instead of life-support job, compass for explore, an extra drone icon) - check names when slicing."
     },
     {
       "id": "fx.weather",

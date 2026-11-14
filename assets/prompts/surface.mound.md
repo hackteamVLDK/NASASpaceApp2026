@@ -2,13 +2,13 @@
 
 > Generated from assets/manifests/asset-manifest.json. Do not edit by hand.
 
-- **Status:** awaiting-generation
+- **Status:** received
 - **Tier:** 1
 - **Attach as reference images:** `style.anchor`, `drone.builder`, `assets/reference/surface-reference.png`
 - **Save the result as:** `assets/incoming/surface.mound.png`
 - **Final location (after processing):** `assets/art/surface/mound.png`
 - **Used for:** The mound and the two dormant drones buried on the surface (Drones #02 and #03).
-- **Notes:** SCENARIO section 4: 'regolith mound, 2 buried dormant drones'. Attach drone.builder as a second reference so the drones look the same.
+- **Notes:** SCENARIO section 4: 'regolith mound, 2 buried dormant drones'. Attach drone.builder as a second reference so the drones look the same. ACCEPTED with one drone per frame (the image tool ignored 'two'): the game places two instances of the sprite for Drone #02 and #03 (mirror one). Dormant look: dark eye, red LED.
 
 ## Prompt
 

@@ -2,7 +2,7 @@
 
 > Generated from assets/manifests/asset-manifest.json. Do not edit by hand.
 
-- **Status:** awaiting-generation
+- **Status:** received
 - **Tier:** 1
 - **Attach as reference images:** `style.anchor`, `module.unfinished`, `vehicle.rover`
 - **Save the result as:** `assets/incoming/module.finished.png`

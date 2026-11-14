@@ -2,13 +2,13 @@
 
 > Generated from assets/manifests/asset-manifest.json. Do not edit by hand.
 
-- **Status:** awaiting-generation
+- **Status:** received
 - **Tier:** 2
 - **Attach as reference images:** `style.anchor`
 - **Save the result as:** `assets/incoming/ui.icons.png`
 - **Final location (after processing):** `assets/art/ui/icons.png`
 - **Used for:** Gauges, jobs and statuses in the HUD.
-- **Notes:** Includes icons for the jobs in src/sim/constants.js.
+- **Notes:** Includes icons for the jobs in src/sim/constants.js. ACCEPTED: 32 icons on an irregular 6x6 layout; slice by connected components in reading order, then name them (the image tool replaced a few: heart instead of life-support job, compass for explore, an extra drone icon) - check names when slicing.
 
 ## Prompt
 
