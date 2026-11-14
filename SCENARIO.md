@@ -5,7 +5,7 @@ Status: Binding game scenario and design specification (v2, 2026-11-14). Source 
 ## How to use this file
 
 - Precedence. For story, gameplay rules, balance numbers and player-facing text, this file wins. For process (Git, agents, assets, sync), the master project instructions win.
-- Localization keys. Every player-facing line has an ID (astra.*, radio.*, crawl.*, ui.*). Code must reference IDs, never hard-code English strings.
+- Localization keys. Every player-facing line has an ID (astra.*, radio.*, crawl.*, ui.*, card.*, report.*, badge.*). Code must reference IDs, never hard-code English strings.
 - Numbers. All rates and costs are starting values for playtesting. Change them in data modules (src/data/*.js), then update this file in the same commit. The JSON in Section 7 is the shape spec: the JS modules export objects with the same shape.
 - Data labels. Tag every number in data files with source: nasa_measurement, approximation or gameplay.
 
@@ -22,11 +22,10 @@ Status: Binding game scenario and design specification (v2, 2026-11-14). Source 
 
 Open items not yet specified here (decide before building them; do not invent silently):
 
-- Daily schedules for astronauts (work / eat / sleep / exercise blocks).
-- Exercise as a health mechanic (suggested: an HP or Morale source in the Recreation room).
-- Mission scoring and achievements.
 - Save/load format and autosave cadence.
 - Which real NASA datasets feed the game (suggested first candidates: Curiosity RAD surface radiation, InSight/Perseverance weather data).
+
+Specified since v2: daily schedules (Section 3.10), exercise and fitness (Section 3.11), Science Logbook, Mission Report and badges (Section 8). The Mission Report has a kid-friendly Mission Rating (Section 8.2), as the master instructions require scoring.
 
 Vertical-slice mapping (master instructions, section 6): build Act I first (Sols 1–6). It covers the station, floors, crew assignment, time, Oxygen/Water/Food/Power, shielding, a dust storm and the Heat/Power emergencies. Add Random Event 1 (Solar Flare) early to cover the solar-particle-event, evacuation and consequence items.
 
@@ -146,7 +145,7 @@ State `INTRO_TEXT`, `0.0s – 19.0s`.
 | astra.intro.landing | Lander touches down | Touchdown confirmed! Welcome to Ares-1, our station in Jezero Crater. I'm ASTRA 6.7, your station AI. Gravity here is only 38% of Earth's, so try not to bounce into the ceiling! |
 | astra.intro.why_underground | Camera pans into base | Our base is built underground, under a thick blanket of Martian soil. Mars has very thin air and no magnetic shield around the whole planet, so space radiation reaches the ground. The soil above us blocks most of it. |
 | astra.intro.status | Tutorial hand-off, camera shows both wings | Good news: the Bedroom, Kitchen and Life Support work. Bad news: everything on the right is just steel frames, and our solar panels are buried in dust. |
-| astra.tut.hp_intro | HP bar highlights | This green bar is your HP, your health and energy. Radiation and hard work lower it. Sleep and fresh food bring it back. |
+| astra.tut.hp_intro | HP bar highlights | This green bar is your HP, your health and energy. Hard work and radiation lower it. Sleep and fresh food restore your energy. Real radiation adds up over time, so astronauts limit their time outside. |
 | astra.tut.drone01_click | Drone #01 clicked | That's Drone #01, fast asleep. Its battery is empty, and our solar panels are buried in dust. Let's clean them first! |
 | astra.tut.solar_prompt | Solar Wipe opens | First job: clean the solar panels. Tap the sparkly clumps to zap the static, then wipe! |
 | astra.tut.solar_done | Solar Wipe won | Sunlight is flowing! Mars gets less than half the sunlight Earth does, so every clean panel matters. |
@@ -169,7 +168,7 @@ State `INTRO_TEXT`, `0.0s – 19.0s`.
 | astra.act1.first_sunset | Sol 1, dusk, before first_dusk (optional). The sunset sky turns bluish | Look, a blue sunset! On Mars, fine dust scatters the light so sunsets glow blue, the opposite of Earth. |
 | astra.act1.first_dusk | Sol 1, dusk | The Sun is setting. Tonight it can drop to about minus 80 degrees Celsius outside. Keep an eye on the Heat bar! |
 | astra.act1.heat_warning | Heat below 40 at dusk | Brrr! The base is losing heat. Let's reroute the warm pipes before it gets colder. |
-| astra.act1.first_sleep | Sol 1 night ends | Good morning! Sleeping in the Bedroom gave you back 10 HP. Rest is a real part of every space mission. |
+| astra.act1.first_sleep | Sol 1 night ends | Good morning! Sleeping in the Bedroom gave you back 12 HP. Rest is a real part of every space mission. |
 | astra.act1.battery_built | Battery & Heating built (Sol 3) | Heating core online! Out on the surface tonight it will drop to about minus 80 degrees Celsius. Our trick: every machine makes a bit of leftover heat, so now we catch it and send it to your rooms. NASA's Perseverance rover stays warm the same way, using spare heat from its power generator. |
 | astra.act1.workshop_start | Workshop build starts | Next up: the Workshop. If something breaks on Mars, we can't call a repair shop. We make the parts ourselves. |
 | astra.act1.storm_alert | Sol 3, end of day | See Dilemma 1 (Section 6). |
@@ -192,7 +191,7 @@ State `INTRO_TEXT`, `0.0s – 19.0s`.
 | astra.act2.garage_built | Garage & Rover built (Sol 9) | The Rover is ready to roll! Drive carefully: Mars rocks are sharp. NASA's Curiosity rover got holes and cracks in its metal wheels from them. Clean wheels, careful driving! |
 | astra.act2.first_harvest | First Greenhouse harvest (Sol 10) | First harvest: fresh lettuce! In 2015, astronauts on the space station ate lettuce they grew in space. Fresh food now gives you extra HP every Sol. |
 | astra.act2.map_intro | Holographic map first opened | This is the holographic crater map. Tap a glowing spot to send the Rover. It drives off-screen, and I'll keep you posted by radio. |
-| astra.act2.surface_warning | First expedition launch | Heads up! Outside, there's no soil above you, so radiation reaches you. Your HP will drop while you're out there. Don't worry, rest and fresh food bring it back. |
+| astra.act2.surface_warning | First expedition launch | Heads up! Outside, there's no soil above you, so radiation reaches you. Your HP will drop while you're out there. Rest brings your energy back, but real radiation adds up over time, so keep trips short. |
 | astra.act2.exp1_arrive | Expedition 1 arrives | See Section 5, Expedition 1. |
 | astra.act2.reboot_kit | Reboot Kit crafted (Sol 12) | Reboot Kit ready! We built it with the power core from that old weather probe. On Mars, nothing goes to waste. |
 | astra.act2.pathfinder_found | Expedition 2 arrives (Sol 12) | Commander, look! That's Pathfinder-X! It's been waiting here since 2038. Grab its black box, it recorded everything before the storm. And its big antenna could fix our Comms Lab! (fiction) |
@@ -211,15 +210,15 @@ State `INTRO_TEXT`, `0.0s – 19.0s`.
 | astra.act3.rec_built | Recreation & Storage built (Sol 15) | Recreation room open! In NASA's CHAPEA test, four volunteers lived for 378 days inside a 3D-printed pretend Mars home in Texas. Games, music and spare supplies helped them stay strong. Now we have them too! |
 | astra.act3.blackbox_decode_start | Sol 16 morning | Decoding the black box... Old code, new tricks. Got it! Playing Pathfinder-X's last log. |
 | log.pathfinder.01 | Black box playback | PATHFINDER-X LOG. SOL 1,247. (fiction) |
-| log.pathfinder.02 | Black box playback | Seismic pulse detected. Interval: 37 minutes. Repeating. |
-| log.pathfinder.03 | Black box playback | Methane spike: 40 parts per billion. Source: canyon floor, 18 kilometers west. |
-| log.pathfinder.04 | Black box playback | Warning: dust storm approaching. Switching to sleep mo— |
+| log.pathfinder.02 | Black box playback | Seismic pulse detected. Interval: 37 minutes. Repeating. (fiction) |
+| log.pathfinder.03 | Black box playback | Methane spike: 40 parts per billion. Source: canyon floor, 18 kilometers west. (fiction) |
+| log.pathfinder.04 | Black box playback | Warning: dust storm approaching. Switching to sleep mo— (fiction) |
 | astra.act3.blackbox_react1 | After playback | A thump every 37 minutes, like a clock. NASA's InSight lander felt more than 1,300 marsquakes, but quakes don't usually keep a schedule. Something down there is repeating. |
-| astra.act3.blackbox_react2 | After playback | And methane! On Earth, most methane comes from living things, like microbes. But it can also come from water reacting with certain rocks. NASA's Curiosity rover has sniffed methane on Mars too, and scientists are still working out where it comes from. |
+| astra.act3.blackbox_react2 | After playback | And methane! On Earth, a lot of methane comes from living things, like microbes. But it can also come from water reacting with certain rocks. NASA's Curiosity rover has sniffed methane on Mars too, and scientists are still working out where it comes from. |
 | astra.act3.earth_reply | First Earth contact succeeds | Message from Earth, sent 14 minutes ago: "Ares-Kids, this is Mission Control. We heard Pathfinder-X's log. Go find that signal, and stay safe!" (fiction) |
-| astra.act3.roof_built | Regolith Roof Layer built (Sol 16) | Regolith Roof Layer finished! Every room is now under thick soil, so almost all the radiation stays outside. Scientists think a few meters of soil could protect real Mars bases. |
+| astra.act3.roof_built | Regolith Roof Layer built (Sol 16) | Regolith Roof Layer finished! Every room is now under thick soil, so it blocks most of the radiation. Scientists think a few meters of soil could protect real Mars bases. |
 | astra.act3.ls_t2 | Life Support Tier 2 (Sol 16) | Life Support upgraded! Mars air is mostly carbon dioxide, and our new unit pulls oxygen out of it. NASA's MOXIE did this on Mars and made 122 grams of oxygen, about what a small dog breathes in 10 hours! And we melt ice to top up our water loop. |
-| astra.act3.deep_scan | Lab Tier 2 Deep Scan (Sol 19) | Deep Scan complete! The pulse comes from a pocket under the canyon floor. My readings say: salty liquid water. Salt keeps water from freezing, even in the Martian cold. (the canyon pocket is fiction) |
+| astra.act3.deep_scan | Lab Tier 2 Deep Scan (Sol 19) | Deep Scan complete! The pulse comes from a pocket under the canyon floor. My readings say: salty liquid water. Salt helps water stay liquid even when it's very cold. (the canyon pocket is fiction) |
 | astra.act3.final_prep | Expedition 5 unlocked | This is it, Commander. The Rover is charged, your suit is sealed, and Earth is listening. Let's go find the Jezero Signal. |
 
 ### Finale: the Canyon Anomaly (Sol 20)
@@ -257,14 +256,14 @@ Sandbox rules: random events (Section 6) keep firing, the repeatable runs stay o
 |---|---|---|
 | astra.hp.surface_70 | HP below 70 on an expedition | Your HP is dropping out here. Radiation adds up, so don't stay longer than you need. |
 | astra.hp.50 | HP below 50 | HP is at half. Time to head home soon, or take a rest in the Bedroom. |
-| astra.hp.25 | HP below 25 | HP is low! Let's get you somewhere safe. Rest and fresh food will help you recover. |
+| astra.hp.25 | HP below 25 | HP is low! Let's get you somewhere safe. Rest and fresh food will restore your energy. |
 | astra.hp.zero_base | HP hits 0 in the base | You're worn out. Into Med-Rest Mode for 1 Sol. The drones and I will keep things running. See you tomorrow! |
 | astra.hp.zero_expedition | HP hits 0 on an expedition | Your HP hit zero, so I'm sending a rescue drone. It will bring you and some of the loot home safely. |
 | astra.hp.medrest_end | Med-Rest ends | Good morning! You're rested and back at 50 HP. Eat something fresh to get stronger. |
 | astra.hp.full | HP reaches 100 (max once per Sol) | HP back to 100! You're ready for anything. |
 | astra.rad.partial_room | Astronaut enters a room without the Roof Layer | This room's roof isn't finished yet, so a little radiation gets in. Don't hang around here too long! |
 | astra.rad.suit_liner | Suit Radiation Liner crafted | New suit liner! Materials full of hydrogen, like water and some plastics, are great at blocking space radiation. |
-| astra.rad.rover_shield | Rover Radiation Shielding crafted | We packed Martian soil bricks around the Rover cabin. Mars soil makes a great shield, and there's plenty of it! |
+| astra.rad.rover_shield | Rover Radiation Shielding crafted | We packed Martian soil bricks around the Rover cabin. Mars soil cuts the radiation a lot, and there's plenty of it! |
 
 ### System lines: resources & emergencies
 
@@ -362,6 +361,84 @@ Each player picks a unique role in the lobby. All four have the same controls; o
 
 Recommended 2-player pairs: Engineer + Pilot (fastest progress) or Botanist + Comms (safest, best HP).
 
+### 2.5 Characters
+
+The crew is international and invented: no character is based on a real person. Everyone is
+kind, competent and a little funny; nobody is a villain. Names are used on character cards and
+in the lobby; ASTRA always says "Commander" in solo and the role name in co-op (Section 1). In
+solo the player may rename the Commander (`ui.char.rename`); the default name is used otherwise.
+
+**Crew colours** match the recoloured stripe on the shared crew sprite: Commander red, Chief
+Engineer yellow, Astro-Botanist green, Rover Pilot blue, Comms Officer violet. The simulation's
+crew ids (`cmdr`, `eng`, `bot`, `sci`) map to Commander, Chief Engineer, Astro-Botanist and Rover
+Pilot & Geologist; the Comms Officer is new.
+
+| Character id | Name | Role | Look (for art) |
+|---|---|---|---|
+| commander | Amara Eze | Commander (solo) | Warm brown skin, short dark twists, calm smile, small gold stud earrings; red stripe. From Nigeria. |
+| chief_engineer | Kenji Mori | Chief Engineer (co-op) | Light skin, black hair in a short ponytail, round glasses pushed up, tool belt; yellow stripe. From Japan. |
+| astro_botanist | Sofía Ramírez | Astro-Botanist (co-op) | Tan skin, curly brown hair in a bun with a leaf clip, freckles; green stripe. From Chile. |
+| rover_pilot | Leo Petrenko | Rover Pilot & Geologist (co-op) | Fair skin, short sandy hair, big friendly grin, dusty knee pads, rock hammer on the belt; blue stripe. From Ukraine. |
+| comms_officer | Noor Haddad | Comms & Science Officer (co-op) | Olive skin, dark hair under a violet headscarf, headset with a small microphone; violet stripe. From Jordan. |
+| mission_control | Rosa Varga | CAPCOM, Mission Control on Earth (voice and video only) | Grey-streaked dark bob, reading glasses on a cord, mission headset, Earth control-room screens behind. From Hungary. |
+
+| Line ID | Line |
+|---|---|
+| char.commander.name | Amara Eze |
+| char.commander.role | Commander |
+| char.commander.bio | Amara flew cargo planes over the Sahara before training for Mars. She can fix a pump, cook a stew and calm a worried crew. Her favourite tool is a checklist. |
+| char.commander.trait | "We plan, we try, we learn. Then we try again." |
+| char.chief_engineer.name | Kenji Mori |
+| char.chief_engineer.role | Chief Engineer |
+| char.chief_engineer.bio | Kenji built robots in a Tokyo workshop as a teenager. He talks to machines while he fixes them. He has never met a plant that liked him. |
+| char.chief_engineer.trait | "If it's broken, it's just a puzzle." |
+| char.astro_botanist.name | Sofía Ramírez |
+| char.astro_botanist.role | Astro-Botanist |
+| char.astro_botanist.bio | Sofía grew up on a vineyard in Chile and studied plants in deserts. She names every lettuce in the Greenhouse. Wrenches are not her friends. |
+| char.astro_botanist.trait | "Happy plants, happy crew." |
+| char.rover_pilot.name | Leo Petrenko |
+| char.rover_pilot.role | Rover Pilot & Geologist |
+| char.rover_pilot.bio | Leo drove rally cars and studied rocks in the Carpathian Mountains. He can read a cliff like a storybook. He always comes home hungry. |
+| char.rover_pilot.trait | "Every rock has a story. Let's go find it!" |
+| char.comms_officer.name | Noor Haddad |
+| char.comms_officer.role | Comms & Science Officer |
+| char.comms_officer.bio | Noor tracked satellites from a desert radio station in Jordan. She hears space weather coming before anyone else. Outside, she would rather stay in the Rover. |
+| char.comms_officer.trait | "Listen first. The Sun always gives clues." |
+| char.mission_control.name | Rosa Varga |
+| char.mission_control.role | Mission Control, Earth |
+| char.mission_control.bio | Rosa is the CAPCOM: the one voice that talks to the crew from Earth. She has guided spacecraft for thirty years. Her messages arrive minutes late, but always with a smile. |
+| char.mission_control.trait | "Ares-Kids, Earth is with you." |
+| ui.char.rename | Rename your Commander |
+
+The co-op lobby uses these bios next to the role cards; the `lobbyBlurb` texts in Section 7 stay
+as the one-line role summaries.
+
+**Mission Control's voice.** Rosa speaks only in Earth messages (`astra.act3.earth_reply`,
+`astra.finale.earth`, and future Earth-window messages). Her style: warm, calm, short; she starts
+with "Ares-Kids, this is Mission Control" and never gives orders the player cannot follow. Every
+message reminds players of the light delay ("sent 14 minutes ago" is shown by ASTRA, not by Rosa).
+
+**The three drones.** Drones cannot talk; they "speak" in beeps (sound effects) and LED blinks.
+They share one body sprite; each has a coloured bumper stripe and its own beep pattern.
+
+| Drone | Nickname | Bumper | Personality | Beep pattern (SFX) |
+|---|---|---|---|---|
+| Drone #01 | Pip | cyan | Curious and eager; first to wake, first to explore. Tilts its camera at anything new. | Short rising chirps, "bip-bip-BEEP?" |
+| Drone #02 | Bumble | amber | Careful and steady; double-checks every weld. A bit slow, never sloppy. | Two low, slow boops, "boo-boop." |
+| Drone #03 | Zip | green | Fast and excitable; zooms between jobs. Spins in a circle when a build finishes. | Quick trills, "trrrip-trrrip!" |
+
+| Line ID | Trigger | Line |
+|---|---|---|
+| astra.char.pip | Right after astra.tut.drone01_wake | Listen to those happy beeps! Let's call Drone #01 "Pip". |
+| astra.char.bumble | Right after astra.act1.drone02_wake | Drone #02 likes to take its time and check everything. Meet "Bumble"! |
+| astra.char.zip | Right after astra.act2.drone03_wake | Whoa, Drone #03 is fast! We'll call it "Zip". |
+| ui.drone.01.name | Drone #01 label | Pip |
+| ui.drone.02.name | Drone #02 label | Bumble |
+| ui.drone.03.name | Drone #03 label | Zip |
+
+Existing lines keep saying "Drone #01/#02/#03"; the nicknames appear on drone labels and in later
+lines.
+
 ## Section 3: 20-Sol progression, HP & resource math
 
 A solo Commander finishes all six modules by Sol 15, all Tier 2 upgrades by Sol 19, and reaches the Canyon Anomaly on Sol 20. Power is the planned bottleneck (break-even on Sol 9), and Water slowly drains until ice arrives on Sol 14. All numbers are starting values for playtesting.
@@ -407,10 +484,10 @@ A solo Commander finishes all six modules by Sol 15, all Tier 2 upgrades by Sol 
 | Greenhouse | Workshop built | 15 SP + 10 Water | −10 Power, +10 Food, +3 Oxygen, −3 Water, +2 Morale, fresh crops +4 HP | −12 Power, +16 Food, +5 Oxygen, −4 Water, +2 Morale, fresh crops +6 HP |
 | Garage & Airlock | Greenhouse build started | 15 SP | −6 Power, expeditions | −6 Power, expeditions −1 Sol (min. 1) |
 | Research & Comms Lab | Garage built + Dish Antenna | 20 SP + Dish Antenna | −10 Power, +5 Research, Earth window every 3 Sols | −12 Power, +8 Research, warnings +1 Sol early, Deep Scan |
-| Recreation & Storage | Lab build started | 10 SP | −4 Power, +4 Morale, emergency refill once per 5 Sols | −4 Power, +6 Morale, refill once per 3 Sols |
+| Recreation & Storage | Lab build started | 10 SP | −4 Power, +4 Morale, emergency refill once per 5 Sols, exercise station (3.11) | −4 Power, +6 Morale, refill once per 3 Sols |
 | Regolith Roof Layer (base upgrade) | Lab build started | 10 SP + 1 Titanium Plate | Right-wing rooms become fully shielded | — |
 
-Extra power rules: each drone actively building uses −5 Power per Sol. During a dust storm, Solar ×0.3 (Tier 2: ×0.5) and Battery & Heating uses ×4 power, because the heaters work overtime.
+Extra power rules: each drone actively building uses −5 Power per Sol. During a dust storm, Solar ×0.3 (Tier 2: ×0.5) and Battery & Heating uses ×4 power, because it also runs the base's dust-filter fans, which work overtime in a storm (gameplay value). Real dust storms make Mars days cooler and nights warmer.
 
 Tier 2 recipes are in Section 5.4.
 
@@ -445,13 +522,14 @@ Solo, the tank drifts from 80 to about 55 by Sol 14. Expedition 3 brings 3 Ice C
 **HP loss on an expedition (spread evenly across the trip):**
 
 ```latex
-\Delta HP_{exp} = 20 \cdot D \cdot R \cdot (1 - RR) \cdot S_{rover} \cdot S_{suit} \cdot F
+\Delta HP_{exp} = 20 \cdot D \cdot R \cdot (1 - RR) \cdot S_{rover} \cdot S_{suit} \cdot F \cdot M_{fit}
 ```
 
 - D = duration in Sols. R = route factor: crater floor 1.0, crater rim or delta 1.25, canyon 1.5.
 - RR = role Radiation Resistance (Commander 0.15, Engineer 0.10, Pilot 0.25, others 0).
 - S_rover = 0.6 with Regolith Radiation Shielding, else 1. S_suit = 0.75 with Suit Radiation Liner, else 1.
 - F = 3 for the part of the trip during a solar flare, else 1. Role debuffs multiply the result: Engineer ×1.2, Botanist ×1.25, Comms ×1.3.
+- M_fit = low-Fitness multiplier (Section 3.11), measured at launch: 1.0 at Fitness 40 or more, 1.10 at Fitness 16–39, 1.25 at Fitness 15 or less. It is **capped at ×1.25**, so low Fitness can make a trip harder but never impossible (and the rescue rule in Section 5.1 still applies). The Commander HP costs below assume M_fit = 1.0.
 
 **HP loss inside the base (per Sol, pro-rated by time spent in the room):**
 
@@ -550,6 +628,124 @@ Co-op follows the same order, usually 2–3 Sols faster because helpers speed up
 
 The balance never drops below 15, which leaves room for crack patches, re-crafting shielding (Dilemma 5) and Scrap Runs.
 
+### 3.10 Daily schedule: the Sol Plan
+
+Every astronaut follows a **Sol Plan**: 24 one-hour slots (Mars-hours) per Sol, each one of five
+blocks. With 1 Sol = 4 real minutes, one slot lasts 10 real seconds. Drones have no Sol Plan:
+they never sleep, eat or get tired.
+
+| Block | Default (Balanced) | Allowed | What happens |
+|---|---|---|---|
+| Sleep | 22:00–06:00 (8 h) | 6–10 h, one unbroken block | +1.5 HP per hour slept, in the Bedroom (8 h = the +12 HP of Section 3.6). In the storm shelter or a Rover camp: ×0.5 |
+| Meal | 06:00, 12:00, 18:00 (3 × 1 h) | always 3 meals; each can move ±1 h | Uses the Food need of Section 3.2. A missed meal (expedition delay) means emergency rations: −1 Morale |
+| Work | 07:00–12:00, 13:00–17:00 (9 h) | 5–12 h | Mini-games, repairs, crafting and drone help happen in Work hours. Each hour above 9: +11% personal work speed, −1 Morale. Each hour below 9: −11% |
+| Exercise | 17:00 (1 h) | 0–2 h | Fitness, see Section 3.11 |
+| Free | 19:00–22:00 (3 h) | whatever is left | 3 h or more: +2 Morale per Sol. 1–2 h: no change. 0 h: −3 Morale per Sol |
+
+All numbers in this table are **gameplay** values.
+
+**How the player changes it.** Tap an astronaut portrait, then **Sol Plan**. The default view
+shows only **three big preset cards** with icons; tap one to choose it. An optional **Advanced**
+button opens the 24-slot editor (a bar of 24 coloured slots; drag a block edge to move it one hour
+at a time). Most players never need Advanced.
+
+| Preset | Icon | Sleep | Work | Exercise | Free | Morale per Sol from the plan | Use it when |
+|---|---|---|---|---|---|---|---|
+| Balanced (default) | scales | 8 | 9 | 1 | 3 | +2 (free time 3 h) | most Sols |
+| Crunch | hammer | 8 | 11 | 1 | 1 | −2 (two extra Work hours at −1 each; 1 h free gives 0). That is **4 Morale per Sol less than Balanced**. Work speed +22% | a build or repair must finish fast |
+| Recover | bed | 9 | 6 | 2 | 4 | +2 (free time 4 h). Work speed −33%; sleep +13.5 HP | after Med-Rest, a flare or an expedition |
+
+In co-op these Morale numbers count ×1/N (see below).
+
+Rules:
+- Changes start at the next midnight, so the plan cannot be changed mid-emergency to dodge a cost.
+- Emergency Mode and solar-flare shelter orders override the plan while they last.
+- **The player always wins over the plan.** If the player sends an astronaut to a task during
+  another block (for example a mini-game during Sleep), the task happens now and that hour's block
+  effect is lost: a Sleep hour gives no +1.5 HP, an Exercise hour gives no Fitness, a Free hour
+  does not count toward free time. A Meal moves to the next hour; if there is no time before the
+  next meal, it becomes an emergency ration (−1 Morale). ASTRA says `astra.plan.override` once per
+  run, the first time this happens.
+- The Sol Plan unlocks at dawn on Sol 2 (`astra.plan.unlock`).
+
+**Solo.** The Commander has one Sol Plan. While the Commander is on an expedition, the base plan
+pauses (Base Autopilot, Section 2.1) and the trip uses a fixed field day: 8 h sleep in the Rover
+(+6 HP, Section 3.6), meals from the Rover pantry, no exercise.
+
+**Co-op.** Each player edits only their own Sol Plan. When every astronaut's Meal slots share the
+same hour, the crew eats together: +1 Morale per shared meal ("Crew dinner"). Morale is shared, so
+each astronaut's Free-time and Work effects count ×1/N (N = crew size).
+
+**Implementation note (src/sim).** The simulation already has these five activities and one
+DEFAULT_SCHEDULE that equals Balanced. New here: one plan per astronaut, the presets, the
+allowed ranges, and the per-hour effects above. The simulation's per-astronaut energy stat is
+shown to the player as part of HP.
+
+| Line ID | Trigger | Line |
+|---|---|---|
+| astra.plan.unlock | Sol 2, dawn | Good morning! Real astronauts follow a daily plan: work, meals, sleep and exercise. Tap your portrait to see your Sol Plan. |
+| astra.plan.short_sleep | Sleep set below 7 h | Less sleep means more work time, but you'll get tired and grumpy. Astronauts protect their sleep. |
+| astra.plan.no_free | Free time set to 0 h | No free time at all? Everybody needs a break, even on Mars. |
+| astra.plan.crunch | Crunch preset chosen | Crunch mode! We'll build faster, but the crew will feel it. Let's not do this every Sol. |
+| astra.plan.override | First time the player overrides a block | No problem, let's do it now! You'll miss that hour of {block}, so its bonus is skipped today. |
+| ui.plan.title | Sol Plan panel header | SOL PLAN |
+| ui.plan.sleep | Block label | Sleep |
+| ui.plan.meal | Block label | Meal |
+| ui.plan.work | Block label | Work |
+| ui.plan.exercise | Block label | Exercise |
+| ui.plan.free | Block label | Free time |
+| ui.plan.preset.balanced | Preset button | Balanced |
+| ui.plan.preset.crunch | Preset button | Crunch |
+| ui.plan.preset.recover | Preset button | Recover |
+| ui.plan.next_sol | Note under the cards | Changes start at midnight. |
+| ui.plan.preset.balanced.desc | Card subtitle | Work, rest and play. Good for most Sols. |
+| ui.plan.preset.crunch.desc | Card subtitle | Build faster. The crew gets grumpy. |
+| ui.plan.preset.recover.desc | Card subtitle | Extra sleep and exercise. Slower work. |
+| ui.plan.advanced | Button | Advanced |
+| ui.plan.advanced.hint | Advanced view note | Drag the edges to change each block by one hour. |
+
+### 3.11 Exercise & Fitness
+
+**Real reason.** In weightlessness, astronauts' weight-bearing bones become about 1% less dense
+each month without countermeasures, and muscles weaken too, so crews on the space station exercise
+about two hours a day on a treadmill, an exercise bike and a weight machine (NASA). Mars has 38%
+of Earth's gravity. How much bone and muscle people would lose there is not well known yet: in a
+Mars-gravity lab model, rats carrying 40% of their weight lost grip strength in two weeks
+(Frontiers in Physiology, 2019). The game treats Mars as "weaker than Earth, so keep exercising".
+
+**Fitness meter.** Each astronaut has Fitness, 0–100, shown as a small dumbbell icon next to HP.
+
+| Rule | Value | Label |
+|---|---|---|
+| Start | 80 | gameplay |
+| Loss per Sol (low gravity) | −10 | approximation (direction is real; the speed is greatly increased so it matters within 20 Sols) |
+| 1 h Exercise in Recreation & Storage (exercise bike + resistance rack) | +20 | gameplay |
+| 1 h Exercise in the Bedroom before Recreation & Storage is built (stretch bands) | +10 | gameplay |
+| 1 h Exercise with Recreation T2 (Habitat Lounge adds a treadmill) | +25 | gameplay |
+| Fitness 70 or more | +1 Morale per Sol | gameplay |
+| Fitness below 40 | work speed −20%; expedition HP cost ×1.10 (M_fit, Section 3.6) | gameplay |
+| Fitness 15 or less | −2 HP per Sol (never below Med-Rest; no death); expedition HP cost ×1.25, the cap | gameplay |
+
+With the Balanced plan (1 h a Sol), Fitness slowly falls before Recreation & Storage exists
+(−10 + 10 = 0 at best) and holds or rises after it is built (Sol 15). The Recover preset (2 h)
+rebuilds it.
+
+**Where.** Recreation & Storage (Section 3.3) gains an exercise station at Tier 1. On an
+expedition there is no exercise.
+
+**Implementation note (src/sim).** The simulation already has a per-astronaut fitness stat,
+a low-gravity drain of about 10 per Sol, about +21 per exercise hour, and health harm at
+fitness 15 or less. The room-dependent gains and the work-speed and expedition effects are new.
+
+| Line ID | Trigger | Line |
+|---|---|---|
+| astra.fit.intro | First Exercise hour (Sol 2) | Exercise time! In low gravity, bones and muscles get weaker because they don't have to work as hard. Astronauts on the space station exercise about two hours every day. |
+| astra.fit.mars | Second Exercise hour | Mars gravity is 38% of Earth's. Scientists don't know yet how much bone and muscle people would lose here, so we keep exercising to be safe. |
+| astra.fit.rec_open | Recreation & Storage built | The Recreation room has an exercise bike and a weight machine, like the ones on the space station. Your workouts count double now! |
+| astra.fit.low | Fitness below 40 | Your muscles are getting weak, and that makes work and trips harder. Add an exercise hour to your Sol Plan! |
+| astra.fit.critical | Fitness 15 or less | Fitness is very low and it's hurting your health. Let's switch to the Recover plan. |
+| ui.fit.label | HUD icon tooltip | Fitness |
+
 ## Section 4: Repair & prep mini-games
 
 Nine mini-games, each 10–20 seconds, each tied to a real Mars problem. They open as an overlay on top of the base, so the camera never leaves the cutaway, and failing one only slows a system down.
@@ -642,7 +838,7 @@ Nine mini-games, each 10–20 seconds, each tied to a real Mars problem. They op
 
 ### 4.6 Hydroponic LED & Nutrient Match
 
-**Trigger & real cause:** The Hydroponic Nutrient Drift event (Section 6), and Dilemma 4. Without soil, the water must carry every nutrient, and its mix drifts over time. Food output −40%, fresh-crop HP bonus off.
+**Trigger & real cause:** The Hydroponic Nutrient Drift event (Section 6), and Dilemma 4. Without soil, the water must carry all the minerals the roots need, and its mix drifts over time. Food output −40%, fresh-crop HP bonus off.
 
 **UI & interaction:** 3 plant trays (lettuce, potatoes, tomatoes), each with a droopy plant, a drip line and a small color tag. 3 nutrient bottles at the top (green, yellow, purple). An LED switch on the wall.
 1. Drag the bottle that matches each tray's tag onto its drip line.
@@ -652,7 +848,7 @@ Nine mini-games, each 10–20 seconds, each tied to a real Mars problem. They op
 
 **Role modifiers:** Botanist: tags glow, and one tray is auto-matched. Engineer (Not a Gardener): tags are hidden; tap "Ask Botanist" to show them for 3 s (if a Botanist is in the game), otherwise get 2 tries per tray. Pilot, Comms: standard.
 
-**ASTRA:** "Plants mostly use red and blue light, so our LEDs shine those colors and the Greenhouse glows purple. Without soil, the water must carry every nutrient the plants need, so we check it often."
+**ASTRA:** "Plants mostly use red and blue light, so our LEDs shine those colors and the Greenhouse glows purple. Without soil, the water must carry all the minerals their roots need, so we check it often."
 
 ### 4.7 Rover Wheel Pebble Vacuum
 
@@ -733,7 +929,7 @@ Rescue rule. If a crew member's HP hits 0 on the trip, a rescue drone flies out.
 |---|---|---|---|---|---|---|---|---|
 | 1 | Crashed Weather Probe Breeze-7, 3 km east (fiction) | 10 | 1 Sol | Crater floor (1.0) | Garage & Airlock | Low | 17 | 15 SP, Probe Power Core, Circuit Board ×3, Titanium Scrap ×2, Weather Sensor |
 | 2 | Pathfinder-X Wreck, 8 km north (fiction) | 12 | 1 Sol | Crater floor (1.0) | Titanium Wheels | Medium | 17 | 20 SP, Black Box, Dish Antenna, Solar Cell ×3, Titanium Plate ×3, Circuit Board ×2 |
-| 3 | Crater Rim Ice, 12 km northwest | 14 | 1 Sol | Crater rim (1.25) | Deep Ice Drill | Medium | 21 | 20 SP, Ice Core ×3, Water Filter Membrane, Titanium Plate ×2, Circuit Board |
+| 3 | Crater Rim Ice, 12 km northwest (fiction) | 14 | 1 Sol | Crater rim (1.25) | Deep Ice Drill | Medium | 21 | 20 SP, Ice Core ×3, Water Filter Membrane, Titanium Plate ×2, Circuit Board |
 | 4 | Ancient Delta Cliffs, 20 km west | 17–18 | 2 Sols | Delta (1.25) | Regolith Radiation Shielding (+ Suit Liner recommended) | High | 19 (27 without Liner) | 25 SP, Rare Battery Cell ×3, Lab Sensor Kit, Mineral Sample ×3, Titanium Plate, Circuit Board ×2 |
 | 5 | Canyon Anomaly, 18 km beyond the delta (fiction) | 20 | 1 Sol (2 without Long-Range) | Canyon (1.5) | All 4 Rover upgrades + Lab T2 Deep Scan | Scripted success | 12 | Canyon Samples, Brine Sample, 30 SP |
 | R | Scrap & Ice Run (repeatable) | Scrap from 10, Ice from 14 | 1 Sol | Crater floor (1.0) | Garage (Ice mode: Deep Ice Drill) | Low | 17 (8 with Shield + Liner) | Scrap mode: 15 SP + 1 random Circuit Board, Titanium Plate or Solar Cell. Ice mode: Ice Core ×2 |
@@ -776,7 +972,7 @@ ASTRA on arrival (at 50%): astra.act2.pathfinder_found (Section 1).
 | 85 | Radio decision: There's more ice deeper down. (A) Drill one more core: +1 Ice Core, +0.25 Sol, −4 HP. (B) Head home now. |
 | 100 | Bringing home enough water for weeks! |
 
-ASTRA on return: "Mars has lots of frozen water, mostly underground and near the poles. Our scan found a small buried patch hiding in this cold shadow. Every Ice Core is 25 units of fresh water!"
+ASTRA on return: "Mars has lots of frozen water, mostly underground and near the poles. Our scan found a small buried patch hiding in this cold shadow. (fiction) Real ice this close to the equator would be a lucky find! Every Ice Core is 25 units of fresh water!"
 
 #### Expedition 4: Ancient Delta Cliffs (2 Sols)
 
@@ -858,7 +1054,7 @@ Five scripted dilemmas teach cause and effect at key story moments; four repeata
 
 ### Dilemma 1: The Dust Storm (Sol 3)
 
-ASTRA 6.7 // WEATHER ALERT: A giant dust storm is rolling across Jezero Crater! For 3 Sols, dust will block about 70% of the sunlight on our solar panels, and the heaters will have to work extra hard. If we do nothing, our batteries could run dry. How should we get ready?
+ASTRA 6.7 // WEATHER ALERT: A giant dust storm is rolling across Jezero Crater! For 3 Sols, dust will block about 70% of the sunlight on our solar panels, and our dust-filter fans will have to work extra hard. Fun fact: dust storms make Mars days cooler and nights warmer. If we do nothing, our batteries could run dry. How should we get ready?
 
 | Choice | Immediate | Delayed | ASTRA follow-up |
 |---|---|---|---|
@@ -883,7 +1079,7 @@ ASTRA 6.7 // CREW IDEA: New idea from the crew: "Why not grow potatoes in Martia
 | Choice | Immediate | Delayed | ASTRA follow-up |
 |---|---|---|---|
 | A. Plant straight in Martian soil | −10 Water. A potato bed appears | Sol 13: potatoes grow, but ASTRA's scan finds perchlorates before anyone eats them. Harvest composted. Morale −3. Choice B unlocks in the Lab menu | "The plants grew, but they soaked up perchlorates, salty chemicals that are bad for people. Good experiment: now we know! Scientists test things before they eat them." |
-| B. Wash the soil first (−20 Water, 1 drone for 1 Sol) | Water dips (tight until Expedition 3) | Sol 13: Soil Beds unlock. Greenhouse +3 Food per Sol and fresh crops +1 HP, for good. +5 Research | "Perchlorates dissolve in water, so we rinsed them away. Scientists are studying ideas like this for real Mars farms!" |
+| B. Wash the soil first (−20 Water, 1 drone for 1 Sol) | Water dips (tight until Expedition 3) | Sol 13: Soil Beds unlock. Greenhouse +3 Food per Sol and fresh crops +1 HP, for good. +5 Research | "Perchlorates dissolve in water, so rinsing washes a lot of them out. But rinsing can leave some behind, so real scientists are still testing ways to make Mars soil safe for farms." |
 | C. Stick with hydroponics | No cost | No bonus. Choice B stays available from the Lab menu | "Safe choice! When you're not sure something is safe, testing first is what real scientists do." |
 
 ### Dilemma 4: Cold Plants or Call Home? (Sol 16)
@@ -892,13 +1088,13 @@ ASTRA 6.7 // POWER ALERT: A very cold night is coming, and the Greenhouse heater
 
 | Choice | Immediate | Delayed | ASTRA follow-up |
 |---|---|---|---|
-| A. Keep the plants warm | Greenhouse safe. Earth window missed. Morale −5 | Next Earth window on Sol 19 | "Our plants are safe and cozy. Earth will still be there in 3 Sols. Mars and Earth keep moving, so we wait for the next good window." |
+| A. Keep the plants warm | Greenhouse safe. Earth window missed. Morale −5 | Next Earth window on Sol 19 | "Our plants are safe and cozy. Earth will still be there. Our next radio slot is in 3 Sols." |
 | B. Call Earth | Antenna Alignment mini-game. On success: Morale +10, Research +10, astra.act3.earth_reply plays | Greenhouse gets cold: Food output −50% and no fresh-crop HP for 2 Sols; Nutrient Match triggers | "Hearing from home made everyone smile! The plants got chilly, though. Most vegetables stop growing when it gets close to freezing." |
 | C. Move the trays into the warm Kitchen (1 drone for half a Sol) | Food output −20% for 1 Sol. Lab has enough power for a text-only message: Morale +5 | No further cost | "Clever! We used heat that was already there. When two things need the same power, sometimes there's a third way." |
 
 ### Dilemma 5: Space Weather Warning (Sol 18, radio decision on Expedition 4)
 
-ASTRA 6.7 // SPACE WEATHER ALERT: The Sun just shot out a burst of super-fast particles, a solar storm! It will reach Mars in about 2 hours. The base is safe under the soil, but the Rover crew is out at the Delta Cliffs. What should they do?
+ASTRA 6.7 // SPACE WEATHER ALERT: The Sun just shot out a burst of super-fast particles, a solar storm! The fastest particles can reach Mars in less than an hour, so we must decide fast! The base is safe under the soil, but the Rover crew is out at the Delta Cliffs. What should they do?
 
 | Choice | Immediate | Delayed | ASTRA follow-up |
 |---|---|---|---|
@@ -908,7 +1104,7 @@ ASTRA 6.7 // SPACE WEATHER ALERT: The Sun just shot out a burst of super-fast pa
 
 ### Random Martian events (repeatable)
 
-| Event | First possible | Chance per Sol | Cooldown | Early warning |
+| Event | First possible | Chance per Sol | Cooldown | Early warning (forecast) |
 |---|---|---|---|---|
 | Solar Flare Radiation Spike | Sol 8 | 10% | 6 Sols | 1 Sol with Lab T2 or Comms Officer (2 with both) |
 | Electrostatic Dust Devil | Sol 5 | 15% (daytime) | 4 Sols | None |
@@ -919,13 +1115,19 @@ At most 1 random event per Sol, never on a story-dilemma Sol, and never while th
 
 #### Event 1: Solar Flare Radiation Spike
 
-ASTRA 6.7 // SPACE WEATHER ALERT: Solar flare detected! A burst of fast particles from the Sun will hit Mars in about 2 hours. Our underground rooms are safe, but anyone outside or in an unfinished room will get a big dose. What's the plan?
+Early warning (only with Lab T2 or the Comms Officer's Storm Watch), shown 1 Sol before the flare:
+
+ASTRA 6.7 // SPACE WEATHER WATCH: The Sun has a stormy spot facing Mars. A flare could come soon.
+
+The warning is a **forecast, not a detection**: real forecasters watch active regions on the Sun, but cannot predict the exact time of a flare.
+
+ASTRA 6.7 // SPACE WEATHER ALERT: Solar flare! Its fastest particles can reach Mars in less than an hour. Our underground rooms are safe, but anyone outside or in an unfinished room will get a big dose. What's the plan?
 
 | Choice | Immediate | Delayed | ASTRA follow-up |
 |---|---|---|---|
 | A. Everyone to the Storm Shelter (Bedroom for half a Sol) | Almost no HP loss (−1 in the shelter). Workshop and Greenhouse tasks pause: −3 SP, −5 Food | None | "Safe and sound! In May 2024, a solar storm hit Mars so hard that NASA said an astronaut next to the Curiosity rover would have got a dose like 30 chest X-rays at once." |
-| B. Keep working | Anyone in an unfinished right-wing room: HP −9 (half a Sol at −18). Anyone in a finished room: HP −2. Anyone on the surface: flare ×3 formula | None. HP recovers with sleep | "We kept working, but some of us took a hit. Next time, let's hide first and work later. HP comes back, but it's better not to lose it." |
-| C. Planned shelter (only with an early warning) | Crew shelters at the right moment; drones keep working. Only the tiny shelter dose (−1 HP) | None | "That's what early warnings are for! Robots don't mind radiation as much as people, so the drones kept building while we stayed safe." |
+| B. Keep working | Anyone in an unfinished right-wing room: HP −9 (half a Sol at −18). Anyone in a finished room: HP −2. Anyone on the surface: flare ×3 formula | None. HP recovers with sleep | "We kept working, but some of us took a hit. Next time, let's hide first and work later. Rest brings your energy back, but real radiation adds up over time, so it's better to avoid it." |
+| C. Planned shelter (only with an early warning) | Crew shelters at the right moment; drones keep working. Only the tiny shelter dose (−1 HP) | None | "That's what early warnings are for! Our drones are built to handle radiation better than people, but even robots can glitch in a big storm. In 2024, one hit knocked a Mars orbiter's star camera offline for an hour!" |
 
 #### Event 2: Electrostatic Dust Devil
 
@@ -934,8 +1136,8 @@ ASTRA 6.7 // WEATHER ALERT: A dust devil, a spinning tornado of dust, is heading
 | Choice | Immediate | Delayed | ASTRA follow-up |
 |---|---|---|---|
 | A. Let it pass | Coin flip: 50% panels blown clean (Power +20% for 3 Sols); 50% panels dusted (Power −30% until Static Wipe) | Effect lasts as stated | Clean: "Lucky! Dust devils sometimes cleaned the panels of NASA's Spirit and Opportunity rovers for free." Dusty: "Not so lucky this time. Time to wipe!" |
-| B. Tilt the panels flat to stow | Power −50% for the rest of the Sol. No risk | None | "Playing it safe. Stowed panels make less power, but they don't get buried." |
-| C. Watch from outside, then wipe | Commander (or 1 astronaut) HP −5. Panels guaranteed clean; Power +10% for 3 Sols | None | "Hands-on cleaning works every time! A little time outside means a little radiation, so keep it short." |
+| B. Tilt the panels flat to stow | Power −50% for the rest of the Sol. No risk | None | "Playing it safe. Stowed panels make less power, but they're safer from the dust." |
+| C. Watch from outside, then wipe | Commander (or 1 astronaut) HP −5. Panels guaranteed clean; Power +10% for 3 Sols | None | "Hands-on cleaning did the trick! A little time outside means a little radiation, so keep it short." |
 
 #### Event 3: Airlock Micro-Leak
 
@@ -943,7 +1145,7 @@ ASTRA 6.7 // MAINTENANCE ALERT: I hear a tiny hiss. There's a small air leak som
 
 | Choice | Immediate | Delayed | ASTRA follow-up |
 |---|---|---|---|
-| A. Hunt the leak now | Seal Check variant: find the puff on the airlock wall and clamp it. Leak fixed | None | "Found it! In 2020, astronauts on the space station found a tiny leak by watching a floating tea leaf drift toward the hole!" |
+| A. Hunt the leak now | Seal Check variant: find the puff on the airlock wall and clamp it. Leak fixed | None | "Found it! In 2020, the space station crew found a tiny leak by watching a floating tea leaf drift toward the hole!" |
 | B. Quick tape patch | Leak stops now. −1 SP | Leak returns after 3 Sols at half strength (Oxygen −2, Water −1 per Sol) | "Tape is a great quick fix, but it doesn't last forever. We'll need a proper repair soon." |
 | C. Seal the airlock | No expeditions for 1 Sol. A drone fixes the leak (1 Sol of drone time) | Airlock reopens next Sol | "Closing the door stops the leak while the drone works. Sometimes waiting is the safest move." |
 
@@ -955,9 +1157,9 @@ ASTRA 6.7 // GREENHOUSE ALERT: The plants look droopy! The nutrient mix in their
 
 | Choice | Immediate | Delayed | ASTRA follow-up |
 |---|---|---|---|
-| A. Fix it now | LED & Nutrient Match mini-game. On win, Greenhouse back to normal | None | "Happy plants! In 2016, astronaut Scott Kelly rescued sick zinnia flowers on the space station by changing how he watered them, and they bloomed!" |
+| A. Fix it now | LED & Nutrient Match mini-game. On win, Greenhouse back to normal | None | "Happy plants! In 2016, astronaut Scott Kelly rescued moldy zinnia flowers on the space station by cleaning them and nursing them back to health, and they bloomed!" |
 | B. Flush and refill the tank | Water −10. Auto-fixed at the start of next Sol | Food −40% until then | "Fresh water, fresh start. It cost some water, but the plants will bounce back by tomorrow." |
-| C. Wait and see | Food output −40%, no fresh-crop HP | After 2 Sols: plants wilt, Food −10, and the mini-game opens automatically | "Waiting made it worse. Plants without soil depend on us for every nutrient, so it's best to fix problems early." |
+| C. Wait and see | Food output −40%, no fresh-crop HP | After 2 Sols: plants wilt, Food −10, and the mini-game opens automatically | "Waiting made it worse. Plants without soil depend on us for all the minerals their roots need, so it's best to fix problems early." |
 
 ## Section 7: Developer-ready JSON schemas
 
@@ -1090,7 +1292,7 @@ The Engineer's Heavy Toolkit HP penalty is stored as surfaceRadiationMultiplier:
       "crewSize": { "min": 1, "max": 2 },
       "hp": {
         "baseRatePerSol": 20,
-        "formula": "baseRatePerSol * durationSols * routeFactor * (1 - RR) * S_rover * S_suit * F * roleSurfaceMultiplier",
+        "formula": "baseRatePerSol * durationSols * routeFactor * (1 - RR) * S_rover * S_suit * F * roleSurfaceMultiplier * M_fit (max 1.25)",
         "commanderEstimate": 17
       },
       "prepMiniGames": ["wheel_pebble_vacuum", "suit_seal_check"],
@@ -1150,7 +1352,7 @@ The Engineer's Heavy Toolkit HP penalty is stored as surfaceRadiationMultiplier:
       "severity": "urgent",
       "text": {
         "header": "SPACE WEATHER ALERT",
-        "astraAlert": { "id": "astra.d5.alert", "en": "The Sun just shot out a burst of super-fast particles, a solar storm! It will reach Mars in about 2 hours. The base is safe under the soil, but the Rover crew is out at the Delta Cliffs. What should they do?" }
+        "astraAlert": { "id": "astra.d5.alert", "en": "The Sun just shot out a burst of super-fast particles, a solar storm! The fastest particles can reach Mars in less than an hour, so we must decide fast! The base is safe under the soil, but the Rover crew is out at the Delta Cliffs. What should they do?" }
       },
       "choices": [
         {
@@ -1205,3 +1407,224 @@ The Engineer's Heavy Toolkit HP penalty is stored as surfaceRadiationMultiplier:
   ]
 }
 ```
+
+## Section 8: Science Logbook, Mission Report & badges
+
+Every real science fact ASTRA tells the player becomes a collectible card; at the end of the run a
+Mission Report shows what the crew achieved and learned; badges reward real-world good practice.
+There is a kid-friendly Mission Rating (stars, never zero) but no "lose" state.
+
+### 8.1 Science Logbook
+
+**Rules**
+- A card unlocks the first time its trigger line plays (or its mini-game or follow-up is shown).
+  A small "New card!" chip appears on the ASTRA panel; the card is added to the Logbook.
+- The Logbook opens from the HUD book icon. Cards sit in a grid, grouped by topic; locked cards
+  show a silhouette and "???".
+- Each card has: a title, two sentences (under 20 words each), the real mission or organisation,
+  an image, and a "How do we know?" link that shows the source name.
+- **Core cards (20)** unlock on the main 20-Sol path and each has its own image
+  (`logbook.<card>`). **Bonus cards (38)** come from events, rare choices, mini-games and sandbox
+  play and share one of six category images (`logbook.cat.sun`, `.surface`, `.iss`, `.rover`,
+  `.plants`, `.earth`). Image prompts: `content/handoff/LOGBOOK_IMAGE_PROMPTS.md`.
+- Line IDs: `card.<card>.title` and `card.<card>.text`. The table below holds the English text.
+- Every card restates a claim from `content/science/FACT_CHECK.md`; the Source column is the
+  page that claim was checked against. Story inventions (fiction) never become cards.
+- In co-op the Logbook is shared by the crew.
+
+| Card | Tier | Unlocked by | Title | Text | Real mission / source org | Image | Source |
+|---|---|---|---|---|---|---|---|
+| gravity | core | astra.intro.landing | Mars Gravity | Mars pulls on you with 38% of Earth's gravity. You could jump about two and a half times higher there! | NASA Mars Fact Sheet | logbook.gravity | https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html |
+| no_shield | core | astra.intro.why_underground | No Global Shield | Mars lost its planet-wide magnetic field billions of years ago. Only small magnetic patches remain in its crust. | MAVEN | logbook.no_shield | https://science.nasa.gov/missions/maven/nasas-maven-illuminates-new-understanding-of-auroras-at-mars/ |
+| soil_blanket | core | astra.intro.why_underground | Soil Blanket | Soil overhead blocks a lot of space radiation. Scientists calculate that about 1 to 2.5 meters would protect a Mars base. | Curiosity RAD (model checked against it) | logbook.soil_blanket | https://doi.org/10.1029/2019JE006246 |
+| sunlight | core | astra.tut.solar_done | Weaker Sunshine | Mars is farther from the Sun, so it gets about 43% of Earth's sunlight. Solar panels must be big and clean. | NASA Mars Fact Sheet | logbook.sunlight | https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html |
+| sol | core | astra.tut.done | One Sol | A day on Mars is called a sol. It lasts 24 hours, 39 minutes and 35 seconds. | NASA GISS Mars24 | logbook.sol | https://www.giss.nasa.gov/tools/mars24/help/notes.html |
+| blue_sunset | bonus | astra.act1.first_sunset | Blue Sunsets | Near the setting Sun, Mars's sky glows blue, while Earth's sunsets are orange. Scientists think fine dust scattering light causes it. | NASA rover images | logbook.cat.surface | https://science.nasa.gov/image-article/apod-2025-june-15-two-worlds-one-sun/ |
+| cold_nights | core | astra.act1.first_dusk | Freezing Nights | Perseverance measured minus 83 °C one night in Jezero Crater. Rovers and bases must keep warm to survive. | Perseverance (MEDA) | logbook.cold_nights | https://www.jpl.nasa.gov/news/nasas-first-weather-report-from-jezero-crater-on-mars/ |
+| waste_heat | core | astra.act1.battery_built | Waste Heat | Perseverance's power generator makes extra heat. Warm fluid carries it around the rover to protect its electronics at night. | Perseverance | logbook.waste_heat | https://www.jpl.nasa.gov/news/press_kits/mars_2020/landing/mission/spacecraft/power/ |
+| global_storms | core | astra.act1.storm_begin | Planet-Wide Storms | Some Martian dust storms grow until they circle the whole planet. NASA called the 2018 storm "planet-encircling". | Mars Reconnaissance Orbiter, Opportunity | logbook.global_storms | https://science.nasa.gov/solar-system/planets/mars/10-things-massive-dust-storm-on-mars/ |
+| storm_temps | bonus | Dilemma 1 alert | Warm Stormy Nights | In a dust storm, Mars days get cooler because less sunlight reaches the ground. Nights get warmer because the dusty air heats the ground. | Curiosity | logbook.cat.surface | https://www.nasa.gov/missions/how-a-tiny-curiosity-motor-identified-a-massive-martian-dust-storm/ |
+| printed_wrench | core | astra.act1.workshop_built | Printed in Space | In 2014, a 3D printer on the space station made a wrench from a file sent up from Earth. Printing took about four hours. | International Space Station | logbook.printed_wrench | https://www.nasa.gov/mission_pages/station/research/news/3Dratchet_wrench |
+| sticky_dust | core | astra.act1.storm_end | Sticky Dust | Martian dust picks up electric charge when grains rub together. The charge makes it cling to solar panels and windows. | NASA dust research | logbook.sticky_dust | https://ntrs.nasa.gov/api/citations/20120003263/downloads/20120003263.pdf |
+| sleep_missions | bonus | astra.act1.first_sleep | Sleep in Space | Astronauts follow strict sleep schedules, even before launch. Too little sleep leads to tired mistakes. | International Space Station | logbook.cat.iss | https://www.nasa.gov/missions/station/seven-ways-astronauts-improve-sleep-may-help-you-snooze-better-on-earth/ |
+| green_air | bonus | astra.act2.greenhouse_start | Green Air | Plants use light to turn carbon dioxide and water into food and oxygen. Scientists have tested plants for space life support since the 1950s and 60s. | NASA plant research | logbook.cat.plants | https://ntrs.nasa.gov/citations/20170011105 |
+| perchlorates | core | astra.act2.greenhouse_built | Perchlorates | In 2008, NASA's Phoenix lander found perchlorate salts in Martian soil. In people, perchlorate can upset the thyroid gland. | Phoenix; US EPA | logbook.perchlorates | https://www.jpl.nasa.gov/news/missing-piece-inspires-new-look-at-mars-puzzle/ · https://www.epa.gov/sdwa/perchlorate-drinking-water-frequent-questions |
+| purple_garden | core | astra.act2.greenhouse_built | Purple Gardens | Plants use mostly red and blue light and reflect green. That's why space gardens under LEDs glow pink and purple. | Veggie (space station) | logbook.purple_garden | https://www.nasa.gov/exploration-research-and-technology/growing-plants-in-space/ |
+| sharp_rocks | core | astra.act2.garage_built | Sharp Rocks | Sharp Martian rocks punched holes in the thin aluminum skin of Curiosity's wheels. Drivers now choose smoother routes. | Curiosity | logbook.sharp_rocks | https://jpl.nasa.gov/news/news.php?release=2014-028 |
+| space_salad | core | astra.act2.first_harvest | Space Salad | On August 10, 2015, astronauts on the space station ate red romaine lettuce grown on board. It was the first station-grown crop on the menu. | Veggie (space station) | logbook.space_salad | https://www.nasa.gov/blogs/spacestation/2015/08/10/cosmonauts-complete-russian-spacewalk/ |
+| surface_dose | core | astra.act3.radiation_lesson | A Day of Radiation | Curiosity measured about 0.67 millisieverts of radiation per day on the Martian surface. People in the US get about that much from nature in three months. | Curiosity RAD; US NRC | logbook.surface_dose | https://www.nasa.gov/news-release/nasa-rover-results-include-first-age-measurement-on-mars-and-help-for-human-exploration/ · https://www.nrc.gov/about-nrc/radiation/around-us/doses-daily-lives.html |
+| slow_messages | core | astra.act3.lab_built | Slow Messages | Radio waves travel at the speed of light, yet a message takes about 3 to 22 minutes between Mars and Earth. It depends on where the planets are. | NASA Mars Fact Sheet | logbook.slow_messages | https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html |
+| chapea | bonus | astra.act3.rec_built | Pretend Mars Home | In NASA's CHAPEA test, four volunteers lived 378 days in a 3D-printed habitat in Houston. They practised life on Mars. | CHAPEA | logbook.cat.earth | https://www.nasa.gov/missions/analog-field-testing/chapea/first-mars-crew-completes-yearlong-simulated-red-planet-nasa-mission/ |
+| marsquakes | core | astra.act3.blackbox_react1 | Marsquakes | NASA's InSight lander detected 1,319 marsquakes. Some were caused by space rocks hitting Mars. | InSight | logbook.marsquakes | https://www.jpl.nasa.gov/news/nasa-retires-insight-mars-lander-mission-after-years-of-science/ |
+| methane | bonus | astra.act3.blackbox_react2 | Mystery Gas | Curiosity has detected methane in Mars's air, and the amount changes. It could come from rocks and water, or from life, and nobody knows yet. | Curiosity | logbook.cat.rover | https://www.nasa.gov/solar-system/curiositys-mars-methane-mystery-continues/ |
+| wet_soil | bonus | astra.act3.roof_built | Building With Soil | Future Mars bases could pile soil on top to block radiation. Soil with water in it works even better, because hydrogen helps. | Curiosity RAD (model checked against it) | logbook.cat.surface | https://doi.org/10.1029/2019JE006246 |
+| moxie | core | astra.act3.ls_t2 | Air From Mars | NASA's MOXIE made 122 grams of oxygen from Mars's carbon dioxide air. That's about what a small dog breathes in 10 hours. | Perseverance (MOXIE) | logbook.moxie | https://www.jpl.nasa.gov/news/nasas-oxygen-generating-experiment-moxie-completes-mars-mission/ |
+| brine | bonus | astra.act3.deep_scan | Salty Water | Salts like perchlorate lower the temperature at which water freezes. Tiny amounts of salty water may form in Martian soil on some nights. | Curiosity | logbook.cat.surface | https://www.jpl.nasa.gov/news/nasa-mars-rovers-weather-data-bolster-case-for-brine/ |
+| rock_pages | bonus | radio.exp5.02 | Rock Pages | Rock layers stack up over time, with the oldest at the bottom. Curiosity reads them to learn about ancient lakes and rivers. | Curiosity | logbook.cat.rover | https://www.jpl.nasa.gov/news/curiosity-peels-back-layers-on-ancient-martian-lake/ |
+| leopard_spots | core | astra.finale.leopard | Leopard Spots | In 2024, Perseverance found a rock with light spots ringed in dark material. NASA calls them a potential biosignature: a clue, not proof. | Perseverance | logbook.leopard_spots | https://www.nasa.gov/news-release/nasa-says-mars-rover-discovered-potential-biosignature-last-year/ |
+| sealed_samples | bonus | radio.exp5.06 | Sealed Samples | Perseverance seals rock cores in airtight titanium tubes. They wait on Mars so they could be collected in the future. | Perseverance | logbook.cat.rover | https://www.jpl.nasa.gov/news/nasas-perseverance-rover-collects-first-mars-rock-sample/ |
+| long_stay | bonus | astra.sandbox.milestone_50 | A Long Stay | NASA's human mission studies plan about 500 days on the surface of Mars. That's longer than a year on Earth. | NASA Mars Design Reference Architecture 5.0 | logbook.cat.earth | https://www.nasa.gov/wp-content/uploads/2015/09/373665main_nasa-sp-2009-566.pdf |
+| hydrogen_shield | bonus | astra.rad.suit_liner | Hydrogen Shield | Materials rich in hydrogen, like water and polyethylene plastic, are good at blocking space radiation. Liquid hydrogen is best, but hard to use. | NASA space radiation research | logbook.cat.sun | https://three.jsc.nasa.gov/articles/CucinottaKimChappell0512.pdf |
+| dose_adds_up | bonus | astra.tut.hp_intro | Dose Adds Up | Radiation dose adds up over an astronaut's whole career. NASA's limit is 600 millisieverts for a lifetime of spaceflight. | NASA crew health standards | logbook.cat.sun | https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-020-radiation-protection.pdf |
+| water_98 | bonus | astra.res.water_low | 98% Recycled | The space station recovers about 98% of its water, including from sweat, breath and urine. Every drop counts in space. | International Space Station | logbook.cat.iss | https://www.nasa.gov/missions/station/iss-research/nasa-achieves-water-recovery-milestone-on-international-space-station/ |
+| dust_devils | bonus | astra.t2.solar | Dust Devil Cleaners | In March 2005, passing dust devils cleaned Spirit's solar panels. Its power jumped from about 60% to 93%. | Spirit | logbook.cat.rover | https://science.nasa.gov/mission/mer-spirit/ |
+| stacked_farm | bonus | astra.t2.greenhouse | Stacked Farms | Vertical farms grow plants on shelves stacked high. One two-acre indoor farm grows about as much as a 720-acre outdoor farm. | NASA plant research spinoff | logbook.cat.plants | https://spinoff.nasa.gov/indoor-farming |
+| rover_marathon | bonus | astra.t2.garage | Rover Marathon | In 2015, Opportunity passed a full marathon distance of 42.195 kilometers. By the end it had driven more than 45 kilometers. | Opportunity | logbook.cat.rover | https://www.jpl.nasa.gov/news/nasas-opportunity-mars-rover-passes-marathon-distance/ |
+| insight_dust | bonus | 4.1 ASTRA | Dusty Panels | Dust slowly covered InSight's solar panels until its batteries ran out. NASA ended the mission in December 2022. | InSight | logbook.cat.surface | https://www.jpl.nasa.gov/news/nasa-retires-insight-mars-lander-mission-after-years-of-science/ |
+| dust_hitchhikers | bonus | 4.2 ASTRA | Dust Hitchhikers | Fine dust sticks to spacesuits and can ride inside the base. The tiniest grains can reach deep into the lungs. | Perseverance dust studies | logbook.cat.surface | https://www.nasa.gov/missions/mars-2020-perseverance/nasas-perseverance-offers-clues-to-protect-crews-from-mars-dust/ |
+| too_much_co2 | bonus | 4.3 ASTRA | Too Much CO₂ | Every breath out adds carbon dioxide to a closed room. Too much causes headaches and tiredness, so scrubbers remove it. | International Space Station | logbook.cat.iss | https://www.nasa.gov/missions/station/iss-research/science-in-space-august-4-2023-spacecraft-air-quality/ |
+| thin_air | bonus | 4.8 ASTRA | Thin Air | Mars's atmosphere is about 100 times thinner than Earth's. Without a pressure suit, you couldn't breathe outside. | Curiosity | logbook.cat.surface | https://www.jpl.nasa.gov/news/nasa-rover-finds-clues-to-changes-in-mars-atmosphere/ |
+| radiation_badge | bonus | 4.8 ASTRA | Radiation Badge | Astronauts wear personal dosimeters that add up the radiation they receive. It is a NASA rule for every crew member. | NASA crew health standards | logbook.cat.iss | https://www.nasa.gov/wp-content/uploads/2025/09/ochmo-tb-050-spacesuits.pdf |
+| last_storm | bonus | Dilemma 1, choice A follow-up | Opportunity's Last Storm | In June 2018, a Mars-wide dust storm blocked the sunlight Opportunity needed for power. The rover fell silent and was never heard from again. | Opportunity | logbook.cat.rover | https://www.nasa.gov/news-release/nasas-record-setting-opportunity-rover-mission-on-mars-comes-to-end/ |
+| no_showers | bonus | Dilemma 2, choice C follow-up | No Showers in Space | Space station crews can't shower, because water is limited and floats around. They wash with towels and rinseless shampoo. | International Space Station | logbook.cat.iss | https://www.nasa.gov/image-article/astronaut-koichi-wakata-demonstrates-washing-his-hair-space/ |
+| plants_soak | bonus | Dilemma 3, choice A follow-up | Plants Soak It Up | Lettuce grown in water with perchlorate stores some of it in its leaves. That's why soil and water are tested before growing food. | Plant science (Environ. Sci. Technol. 2007) | logbook.cat.plants | https://doi.org/10.1021/es062337s |
+| soil_wash | bonus | Dilemma 3, choice B follow-up | Washing Soil | Perchlorate dissolves easily in water, but rinsing soil can leave some behind. Scientists are still testing ways to make Mars soil safe for farms. | Soil science (Soil Systems 2021) | logbook.cat.plants | https://doi.org/10.3390/soilsystems5030037 |
+| fast_particles | bonus | Dilemma 5 alert; Event 1 alert | Fast Particles | In May 2024, particles from a solar storm reached Mars in just tens of minutes. That leaves little time to take shelter. | MAVEN, Curiosity | logbook.cat.sun | https://www.nasa.gov/solar-system/planets/mars/nasa-watches-mars-light-up-during-epic-solar-storm/ |
+| cliff_shelter | bonus | Dilemma 5, choice B follow-up | Cliff Shelter | Cliffs and lava tubes could give astronauts extra shielding in a solar storm. Rock works like the soil over a base. | Curiosity RAD | logbook.cat.sun | https://www.jpl.nasa.gov/news/nasa-watches-mars-light-up-during-epic-solar-storm/ |
+| flare_forecast | bonus | Event 1 early warning | Space Weather Forecast | Flares start in active regions, magnetic hot spots on the Sun. Forecasters give the chance of a flare, not its exact time. | NOAA Space Weather Prediction Center | logbook.cat.sun | https://swpc-drupal.woc.noaa.gov/phenomena/solar-flares-radio-blackouts |
+| thirty_xrays | bonus | Event 1, choice A follow-up | 30 Chest X-rays | On May 20, 2024, Curiosity measured a radiation spike of 8,100 micrograys. An astronaut there would have got a dose like 30 chest X-rays. | Curiosity RAD | logbook.cat.sun | https://www.jpl.nasa.gov/news/nasa-watches-mars-light-up-during-epic-solar-storm/ |
+| tea_leaves | bonus | Event 3, choice A follow-up | Tea Leaf Detective | In 2020, a cosmonaut on the space station let tea leaves float in a sealed room. The leaves drifted toward a tiny air leak. | International Space Station (Roscosmos report) | logbook.cat.iss | https://www.universetoday.com/148443/the-crew-of-the-iss-has-found-the-source-of-the-stations-air-leak |
+| space_flowers | bonus | Event 4, choice A follow-up | Space Flowers | In 2016, zinnias on the space station grew mold after too much water and too little airflow. Scott Kelly cleaned them and they bloomed. | Veggie (space station) | logbook.cat.plants | https://www.nasa.gov/exploration-research-and-technology/growing-plants-in-space/ |
+| weather_station | bonus | Expedition 1, ASTRA on return | Mars Weather Station | Perseverance's MEDA measures temperature, wind, pressure, humidity and dust. It even measures the size and shape of dust grains. | Perseverance (MEDA) | logbook.cat.rover | https://www.jpl.nasa.gov/news/mars-is-getting-a-new-robotic-meteorologist/ |
+| wind_ripples | bonus | Expedition 1 radio, 30% | Wind Ripples | Gentle Martian winds shape sand into ripples, and faster winds build dunes. Their shapes help scientists study Mars's winds. | NASA orbiters and rovers | logbook.cat.surface | https://science.nasa.gov/photojournal/ripples-or-dunes/ |
+| hidden_ice | bonus | Expedition 3, ASTRA on return | Hidden Ice | Mars has lots of frozen water near the poles and under the ground in the mid-latitudes. NASA maps it to choose landing sites for astronauts. | Mars Odyssey, MRO (SWIM project) | logbook.cat.surface | https://www.jpl.nasa.gov/news/nasa-is-locating-ice-on-mars-with-this-new-map/ |
+| ingenuity | core | Expedition 4, ASTRA at 20% | First Mars Helicopter | Ingenuity first flew on April 19, 2021, the first aircraft on another world. It made 72 flights before its mission ended in 2024. | Ingenuity | logbook.ingenuity | https://www.nasa.gov/news-release/after-three-years-on-mars-nasas-ingenuity-helicopter-mission-ends/ |
+| ancient_lake | bonus | Expedition 4, ASTRA at 35% | Ancient Lake | Billions of years ago, a river flowed into a lake in Jezero Crater and built a delta. Its old mud is a top place to look for signs of past life. | Perseverance | logbook.cat.surface | https://www.nasa.gov/solar-system/nasas-perseverance-rover-arrives-at-delta-for-new-science-campaign/ |
+| strong_in_space | bonus | astra.fit.intro | Strong in Space | In space, weight-bearing bones lose about 1% of their density each month without countermeasures. So station crews exercise about two hours a day. | International Space Station | logbook.cat.iss | https://www.nasa.gov/missions/station/iss-research/counteracting-bone-and-muscle-loss-in-microgravity/ |
+| mars_gravity_body | bonus | astra.fit.mars | Unknown at 38% | Nobody knows yet how much bone and muscle people would lose in Mars gravity. In a lab model, rats carrying 40% of their weight lost grip strength in two weeks. | Physiology research (Frontiers in Physiology 2019) | logbook.cat.earth | https://doi.org/10.3389/fphys.2019.00899 |
+
+58 cards (20 core, 38 bonus). New cards are added here, with a FACT_CHECK.md row, whenever a new ASTRA science line
+is written.
+
+| Line ID | Trigger | Line |
+|---|---|---|
+| ui.logbook.title | Logbook header | SCIENCE LOGBOOK |
+| ui.logbook.new_card | Chip on the ASTRA panel | New card! |
+| ui.logbook.locked | Locked card | ??? |
+| ui.logbook.how_we_know | Card button | How do we know? |
+| ui.logbook.count | Logbook footer | {unlocked} of {total} cards |
+| astra.logbook.first | First card unlocked (Sol 1) | That fact went into your Science Logbook! Every real fact you learn on Mars becomes a card. |
+
+### 8.2 Mission Report
+
+**When.** At the end of Sol 20 (after `ui.finale.card`), and at any time in Free-Play from the
+pause menu. Solo and co-op use the same report; co-op shows one column per astronaut.
+
+**What it shows**
+
+| Panel | Contents |
+|---|---|
+| Crew | Per astronaut: HP now, lowest HP, Fitness now, Med-Rest count, hours spent outside |
+| Base | Oxygen, Water, Food, Power, Heat and Morale at the end; number of Emergency Modes |
+| Space weather | Solar flares faced; for each, how the crew sheltered and HP lost |
+| Modules | Modules built, Tier 2 upgrades, drones awake (of 3) |
+| Expeditions | Trips completed, story items found, Ice Cores melted |
+| Choices | Each dilemma and random event: the choice made and ASTRA's one-line result |
+| Science | Logbook cards unlocked (of 58), with the newest three shown |
+| Badges | Badges earned this run (Section 8.3) |
+
+**Mission Rating.** The master instructions require missions, achievements and scoring, so the
+report ends with a Mission Rating: three categories, each **1 to 3 stars, never zero**. Wording is
+always positive; a lower rating comes with a "Next time, try..." tip, never a failure message.
+(The simulation's internal level score stays separate, for balancing only.)
+
+| Category | Measures | ★ | ★★ | ★★★ |
+|---|---|---|---|---|
+| Crew Care | Average over the run of each astronaut's HP, Fitness and Morale (0–100) | always | 60 or more | 80 or more |
+| Base Builder | 1 point per module built (6), Tier 2 upgrade (8) and the Regolith Roof Layer (1); max 15 | always | 8 or more | 13 or more |
+| Science Explorer | 1 point per Logbook card + 2 per badge; max 88 | always | 40 or more | 60 or more |
+
+The recommended solo path ends Sol 20 with 15 Base Builder points and about 40 cards plus 5–8
+badges (50–56 Science points), so a careful first run earns about 7 of 9 stars; 3 Science stars
+need extra events, choices and sandbox play. All thresholds are
+gameplay values, tuned in playtests. In co-op the rating is shared; Crew Care averages everyone.
+
+| Line ID | Trigger | Line |
+|---|---|---|
+| report.title | Report header | MISSION REPORT — ARES-1 |
+| report.crew | Panel title | Crew health |
+| report.base | Panel title | Base status |
+| report.space_weather | Panel title | Space weather |
+| report.modules | Panel title | Station built |
+| report.expeditions | Panel title | Expeditions |
+| report.choices | Panel title | Your choices |
+| report.science | Panel title | Science learned |
+| report.badges | Panel title | Badges |
+| report.outside_hours | Crew row label | Hours outside |
+| report.cards | Science line | You unlocked {unlocked} of {total} science cards. |
+| report.rating.title | Rating header | MISSION RATING |
+| report.rating.total | Under the stars | {stars} of 9 stars! |
+| report.rating.crew | Category name | Crew Care |
+| report.rating.base | Category name | Base Builder |
+| report.rating.science | Category name | Science Explorer |
+| report.rating.crew.3 | Crew Care, 3 stars | Great job! Your crew stayed healthy, fit and happy. |
+| report.rating.crew.2 | Crew Care, 2 stars | Good care! Next time, try the Recover plan after hard days. |
+| report.rating.crew.1 | Crew Care, 1 star | You kept everyone going! Next time, try more sleep and an exercise hour each Sol. |
+| report.rating.base.3 | Base Builder, 3 stars | Great job! You finished the whole station and upgraded it. |
+| report.rating.base.2 | Base Builder, 2 stars | Good building! Next time, try keeping all three drones busy. |
+| report.rating.base.1 | Base Builder, 1 star | You got the base working! Next time, try waking the drones early to build faster. |
+| report.rating.science.3 | Science Explorer, 3 stars | Great job! You're a real Mars scientist. |
+| report.rating.science.2 | Science Explorer, 2 stars | Good exploring! Next time, try new choices to find more science cards. |
+| report.rating.science.1 | Science Explorer, 1 star | You learned real Mars science! Next time, try visiting more places with the Rover. |
+| report.no_flare_loss | Space weather line, no flare HP beyond the shelter dose | Nobody took more than the tiny shelter dose from a solar flare. Great planning! |
+| astra.report.intro | Report opens | Here's how our mission went, Commander. Every choice taught us something. |
+| astra.report.outro | Report closed | Real scientists write reports like this after every mission. Then they plan the next one even better. |
+
+### 8.3 Badges
+
+Badges reward real-world good practice. Each one is earned by an action in the game and links to
+the Logbook card that explains the real science. They are shown in the Mission Report and in a
+badge shelf in the Logbook. A badge is earned once per run.
+
+| Badge | Name (`badge.<id>.name`) | Earned when (`badge.<id>.text` describes it) | Linked card |
+|---|---|---|---|
+| perchlorate_wash | Washed the Perchlorates | Dilemma 3: choose B, wash the soil first | soil_wash |
+| flare_safe | No HP Lost in a Solar Flare | Every solar flare in the run costs each astronaut at most the shelter dose (1 HP or less) | fast_particles |
+| forecaster | Space Weather Forecaster | Use an early warning to choose Event 1, C (planned shelter) | flare_forecast |
+| storm_ready | Storm Ready | Dilemma 1: choose A or B, preparing before the dust storm | global_storms |
+| closed_loop | Closed Loop | Keep the water recycler at 98% for 10 Sols in a row | water_98 |
+| air_from_mars | Air From Mars | Build Life Support Tier 2 (MOXIE-X) | moxie |
+| under_the_blanket | Under the Blanket | Build the Regolith Roof Layer | soil_blanket |
+| panel_sweeper | Panel Sweeper | Win Solar Panel Static Wipe 5 times | sticky_dust |
+| ice_miner | Ice Miner | Melt 5 Ice Cores | hidden_ice |
+| strong_bones | Strong Bones | Keep Fitness at 70 or more for 10 Sols in a row | strong_in_space |
+| well_rested | Well Rested | Sleep 8 hours or more every Sol from Sol 1 to Sol 6 | sleep_missions |
+| first_contact | Message in Minutes | Complete the first Earth contact (Antenna Alignment) | slow_messages |
+| space_gardener | Space Gardener | Harvest 50 Food from the Greenhouse | green_air |
+| look_dont_touch | Look, Don't Touch | Pass Ingenuity on Expedition 4 | ingenuity |
+| biosignature_hunter | Biosignature Hunter | Bring the Canyon Samples home (Expedition 5) | leopard_spots |
+
+| Line ID | Line |
+|---|---|
+| badge.perchlorate_wash.name | Washed the Perchlorates |
+| badge.perchlorate_wash.text | You rinsed a lot of the salty perchlorates out of Mars soil before growing food. |
+| badge.flare_safe.name | No HP Lost in a Solar Flare |
+| badge.flare_safe.text | Your crew sheltered every time, so no flare cost more than the tiny shelter dose. |
+| badge.forecaster.name | Space Weather Forecaster |
+| badge.forecaster.text | You used a flare forecast to shelter at just the right time. |
+| badge.storm_ready.name | Storm Ready |
+| badge.storm_ready.text | You got ready before the dust storm arrived. |
+| badge.closed_loop.name | Closed Loop |
+| badge.closed_loop.text | Your recycler saved 98% of the water for 10 Sols in a row. |
+| badge.air_from_mars.name | Air From Mars |
+| badge.air_from_mars.text | You made oxygen from Mars air, like NASA's MOXIE. |
+| badge.under_the_blanket.name | Under the Blanket |
+| badge.under_the_blanket.text | You covered every room with thick soil to block radiation. |
+| badge.panel_sweeper.name | Panel Sweeper |
+| badge.panel_sweeper.text | You cleaned the solar panels 5 times. |
+| badge.ice_miner.name | Ice Miner |
+| badge.ice_miner.text | You melted 5 Ice Cores into fresh water. |
+| badge.strong_bones.name | Strong Bones |
+| badge.strong_bones.text | You kept your crew fit for 10 Sols in a row. |
+| badge.well_rested.name | Well Rested |
+| badge.well_rested.text | You slept a full 8 hours every Sol of your first week. |
+| badge.first_contact.name | Message in Minutes |
+| badge.first_contact.text | You sent your first message across millions of kilometers to Earth. |
+| badge.space_gardener.name | Space Gardener |
+| badge.space_gardener.text | You grew 50 Food in the Greenhouse. |
+| badge.look_dont_touch.name | Look, Don't Touch |
+| badge.look_dont_touch.text | You visited Ingenuity and left it just as you found it. |
+| badge.biosignature_hunter.name | Biosignature Hunter |
+| badge.biosignature_hunter.text | You brought home samples that might hold clues to ancient life. |
+| ui.badge.earned | Badge earned! |
+| astra.badge.first | Your first badge! Badges show the real things astronauts do to stay safe and do good science. |
