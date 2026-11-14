@@ -169,3 +169,24 @@ html.large-text .card p, html.large-text .card li, html.large-text .card .choice
 html.large-text .mod, html.large-text .why, html.large-text #tabBody, html.large-text .ms, html.large-text #radioBox { font-size: 1.15em; }
 html.large-text #toast { font-size: 1.2em; }
 html.large-text .mgHint { font-size: 27px; }
+
+/* ---- C16 phones and tablets ---- */
+html, body { width: 100%; height: 100%; position: fixed; inset: 0; overscroll-behavior: none; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { touch-action: none; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; }
+#tabBody, .modal .card, #astraText, #side, #radioLog, .ms-list { touch-action: pan-y; }
+#hud { --z: calc(var(--ui) * 0.9); } #side, #tracker, #threats, #toast { --z: var(--ui); } #astra { --z: calc(var(--ui) * 0.95); }
+.modal .card { --z: calc(var(--ui) * 0.85); } #mgWrap { --z: min(calc(var(--ui) * 0.85), 1.3); }
+@media (pointer: coarse) {
+  #stage button, #stage .chip, #stage input[type=range], #stage input[type=checkbox] {
+    min-height: calc(44px / (var(--k, 1) * var(--z, 1)));
+    min-width: calc(44px / (var(--k, 1) * var(--z, 1)));
+  }
+}
+/* on a small touch screen the HUD keeps the important buttons; the interface size buttons and 3x step aside */
+html.touch-small #uisize, html.touch-small #speed [data-speed="3"] { display: none; }
+html.touch-small .gauge .bar { display: none; }
+#rotate { display: none; position: fixed; inset: 0; z-index: 1000; background: #05070A; color: #e8f4ff; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; padding: 24px; font-family: inherit; }
+#rotate p { font-size: 28px; font-weight: 800; color: #FFB000; margin: 0; } #rotate small { font-size: 18px; color: #9bb; }
+#rotate .phone { width: 70px; height: 120px; border: 6px solid #00E5FF; border-radius: 14px; animation: turnphone 2.4s ease-in-out infinite; }
+@keyframes turnphone { 0%, 25% { transform: rotate(0); } 55%, 100% { transform: rotate(-90deg); } }
+html.portrait-touch #rotate { display: flex; }

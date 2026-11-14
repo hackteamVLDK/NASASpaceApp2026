@@ -39,8 +39,18 @@ function fit() {
   // A20: the game is pinned to the top of the window (only centred left-right). Centred top-bottom, a window that is
   // taller than 16:9 pushed the whole game, top bar included, down behind a black band, so the bar seemed to move.
   stage.style.transform = `translate(${(window.innerWidth - SCREEN.w * k) / 2}px, 0px) scale(${k})`;
+  // C16: touch screens. --k lets CSS keep every tap target at least 44 CSS px however small the stage is drawn;
+  // a phone held upright gets the "Turn your device sideways" card and the game pauses until it is turned.
+  const root = document.documentElement;
+  root.style.setProperty('--k', String(k));
+  const coarse = window.matchMedia?.('(pointer: coarse)').matches ?? false;
+  root.classList.toggle('touch-small', coarse && k < 0.6);
+  const portrait = coarse && window.innerHeight > window.innerWidth;
+  root.classList.toggle('portrait-touch', portrait);
+  fit.portrait = portrait;
 }
 window.addEventListener('resize', fit);
+window.addEventListener('orientationchange', () => setTimeout(fit, 120));
 fit();
 
 let atlas, soil, s, guide, astra, ui, extras;
@@ -578,7 +588,7 @@ function loop(now) {
       } else if (speedBeforeDecision && speed === 0 && !ui.modalOpen && !mini) {
         document.querySelector(`#speed [data-speed="${speedBeforeDecision}"]`)?.click(); // the decision is made: time runs on
         speedBeforeDecision = 0;
-      } else if (!mini && !ui.modalOpen && speed > 0) {
+      } else if (!mini && !ui.modalOpen && speed > 0 && !fit.portrait) { // C16: no time passes while the phone is upright
         simAccum += dt * speed * SIM_MINUTES_PER_SECOND;
         const whole = Math.min(60, Math.floor(simAccum));
         if (whole > 0) {
@@ -597,7 +607,7 @@ function loop(now) {
     if (ui && (mode === 'tutorial' || mode === 'play')) { ui.update(); $('hud').hidden = false; if (mode === 'play') $('side').hidden = false; }
     astra.update(now);
     // the world clock: it stops with the time (paused, a card open, a mini-game), so people and drones stop too
-    const blocked = Boolean(mini || ui?.modalOpen || s?.pending);
+    const blocked = Boolean(mini || ui?.modalOpen || s?.pending || fit.portrait);
     const running = mode === 'intro' || (mode === 'tutorial' && !blocked) || (mode === 'play' && speed > 0 && !blocked);
     worldDtMs = running ? dt * 1000 : 0;
     worldMs += worldDtMs;
