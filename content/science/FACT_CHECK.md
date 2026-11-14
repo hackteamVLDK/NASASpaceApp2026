@@ -25,7 +25,7 @@ Data label: the label the claim should carry in `src/data/*.js` and in docs:
 
 | # | Line ID (line) | Problem | Suggested fix |
 |---|---|---|---|
-| F1 | Dilemma 3, choice B follow-up (886) | "Perchlorates dissolve in water, so we rinsed them away" overstates it. A 2021 peer-reviewed study found that washing could **not completely remove** perchlorate from Mars regolith simulant, despite its high solubility, and the washed soil may still be toxic to plants. | "Perchlorates dissolve in water, so rinsing washes a lot of them out. Real scientists found some always stays behind, so they're still testing ways to make Mars soil safe for farms." |
+| F1 | Dilemma 3, choice B follow-up (886) | "Perchlorates dissolve in water, so we rinsed them away" overstates it. A 2021 peer-reviewed study found that washing could **not completely remove** perchlorate from Mars regolith simulant, despite its high solubility, and the washed soil may still be toxic to plants. | "Perchlorates dissolve in water, so rinsing washes a lot of them out. But rinsing can leave some behind, so real scientists are still testing ways to make Mars soil safe for farms." |
 | F2 | astra.d5.alert / Dilemma 5 alert (901, JSON 1153) | "It will reach Mars in about 2 hours." In the May 2024 storm, NASA says the particles reached Mars "in just tens of minutes". | "...a solar storm! The fastest particles can reach Mars in under an hour." (Keep the game's warning time as a gameplay value.) |
 | F3 | Event 1 alert (922) | Same "about 2 hours" claim. | "...will hit Mars very soon, maybe in less than an hour." |
 | F4 | Expedition 3, ASTRA on return (779) and 5.2 row 3 (736) | A buried ice patch at Jezero's rim is shown as real. Jezero is at ~18°N; NASA's ice map puts shallow ice in the mid-latitudes, and the best ice landing zones are the *southern edge* of that belt, far north of Jezero. | Tag the Crater Rim Ice site *(fiction)*. Optionally add: "Real ice this close to the equator would be a lucky find!" |
@@ -87,9 +87,9 @@ Data label: the label the claim should carry in `src/data/*.js` and in docs:
 | Dilemma 3, A follow-up | Plants soak up perchlorates | correct (lettuce accumulates perchlorate in its leaves) | https://doi.org/10.1021/es062337s (Seyfferth & Parker 2007) | approximation | — |
 | Dilemma 3, B follow-up | Perchlorates dissolve in water, so rinsing removes them | **needs fix** (washing cannot remove all of it) | https://doi.org/10.3390/soilsystems5030037 (Oze et al. 2021, Soil Systems) | approximation | F1 |
 | Dilemma 4, B follow-up | Most vegetables stop growing close to freezing | correct (growth slows sharply near the minimum; cool-season crops survive light frost) | https://ag.purdue.edu/department/hla/extension/extension-publications-library/ext-pubs/ho-203-w.html | approximation | optional: "grow very slowly" |
-| Dilemma 5 alert, astra.d5.alert | Solar storm particles reach Mars in about 2 hours | **needs fix** (NASA: "tens of minutes" in May 2024) | https://www.nasa.gov/solar-system/planets/mars/nasa-watches-mars-light-up-during-epic-solar-storm/ | approximation | F2 |
+| Dilemma 5 alert, astra.d5.alert | Solar storm particles reach Mars in about 2 hours | **needs fix** (unsupported event-specific prediction: arrival time varies, and in May 2024 NASA says particles reached Mars in "tens of minutes") | https://www.nasa.gov/solar-system/planets/mars/nasa-watches-mars-light-up-during-epic-solar-storm/ | approximation | F2 |
 | Dilemma 5, B follow-up | Thick rock blocks radiation like soil | correct (cliffsides or lava tubes give extra shielding) | https://www.jpl.nasa.gov/news/nasa-watches-mars-light-up-during-epic-solar-storm/ | approximation | — |
-| Event 1 alert | Particles hit Mars in about 2 hours | **needs fix** (same as F2) | https://www.nasa.gov/solar-system/planets/mars/nasa-watches-mars-light-up-during-epic-solar-storm/ | approximation | F3 |
+| Event 1 alert | Particles hit Mars in about 2 hours | **needs fix** (unsupported event-specific prediction, same as F2) | https://www.nasa.gov/solar-system/planets/mars/nasa-watches-mars-light-up-during-epic-solar-storm/ | approximation | F3 |
 | Event 1 early warning (Lab T2 / Storm Watch) | A flare warning 1 Sol ahead, framed as a forecast: "The Sun has a stormy spot facing Mars. A flare could come soon." | correct as a forecast (flares come from active regions; forecasters give probabilities, not exact times) | https://swpc-drupal.woc.noaa.gov/phenomena/solar-flares-radio-blackouts | approximation | — (added with the F3 decision) |
 | Event 1, A follow-up | May 2024: astronaut next to Curiosity would get a dose like 30 chest X-rays | correct (8,100 micrograys) | https://www.jpl.nasa.gov/news/nasa-watches-mars-light-up-during-epic-solar-storm/ | nasa_measurement | — |
 | Event 1, C follow-up | Robots don't mind radiation as much as people | **needs fix** (Odyssey's camera was knocked offline by the same storm) | https://www.jpl.nasa.gov/news/nasa-watches-mars-light-up-during-epic-solar-storm/ | approximation | F8 |
@@ -130,7 +130,7 @@ All nine fixes were accepted and applied to `SCENARIO.md` on branch `content/sci
 
 | # | Decision | Final wording in SCENARIO.md |
 |---|---|---|
-| F1 | accepted, team wording; Soil Beds bonus kept (partial cleaning still helps) | "Perchlorates dissolve in water, so rinsing washes a lot of them out. Real scientists found some always stays behind, so they're still testing ways to make Mars soil safe for farms." |
+| F1 | accepted, team wording, softened after Codex finding C2; Soil Beds bonus kept (partial cleaning still helps) | "Perchlorates dissolve in water, so rinsing washes a lot of them out. But rinsing can leave some behind, so real scientists are still testing ways to make Mars soil safe for farms." |
 | F2 | accepted, team wording; also in the Section 7 JSON | "...a solar storm! The fastest particles can reach Mars in less than an hour, so we must decide fast!" |
 | F3 | accepted, team wording; early warning reframed as a forecast (row added above) | "Solar flare! Its fastest particles can reach Mars in less than an hour." · watch line: "The Sun has a stormy spot facing Mars. A flare could come soon." |
 | F4 | accepted | Site tagged (fiction) in the 5.2 table and the Expedition 3 line; added "Real ice this close to the equator would be a lucky find!" |
@@ -156,5 +156,8 @@ describe Veggie as "plant pillows with clay and fertilizer", never as hydroponic
 | F15 | C10 | accepted: same ×4 storm power draw, now blamed on the dust-filter fans; fact added | Dilemma 1: "...our dust-filter fans will have to work extra hard. Fun fact: dust storms make Mars days cooler and nights warmer." · 3.3: Battery & Heating ×4 "because it also runs the base's dust-filter fans, which work overtime in a storm (gameplay value)." |
 | F16 | C11 | accepted | "all the minerals their roots need" (4.6 twice, Event 4 C) |
 | — | C12 | accepted | six rows added above |
-| — | C2, C3, C4, C5, C13 | not applied (see the Codex record for reasons) | — |
+| — | C2 | accepted: F1 now says "rinsing can leave some behind" | see F1 |
+| — | C3 | accepted as verdict wording only (F2/F3 rows); no text change | — |
+| — | C4 | not applied: team keeps "a lot of methane" (F5) | — |
+| — | C5, C13 | not applied (see the Codex record for reasons) | — |
 

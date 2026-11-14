@@ -883,7 +883,7 @@ ASTRA 6.7 // CREW IDEA: New idea from the crew: "Why not grow potatoes in Martia
 | Choice | Immediate | Delayed | ASTRA follow-up |
 |---|---|---|---|
 | A. Plant straight in Martian soil | −10 Water. A potato bed appears | Sol 13: potatoes grow, but ASTRA's scan finds perchlorates before anyone eats them. Harvest composted. Morale −3. Choice B unlocks in the Lab menu | "The plants grew, but they soaked up perchlorates, salty chemicals that are bad for people. Good experiment: now we know! Scientists test things before they eat them." |
-| B. Wash the soil first (−20 Water, 1 drone for 1 Sol) | Water dips (tight until Expedition 3) | Sol 13: Soil Beds unlock. Greenhouse +3 Food per Sol and fresh crops +1 HP, for good. +5 Research | "Perchlorates dissolve in water, so rinsing washes a lot of them out. Real scientists found some always stays behind, so they're still testing ways to make Mars soil safe for farms." |
+| B. Wash the soil first (−20 Water, 1 drone for 1 Sol) | Water dips (tight until Expedition 3) | Sol 13: Soil Beds unlock. Greenhouse +3 Food per Sol and fresh crops +1 HP, for good. +5 Research | "Perchlorates dissolve in water, so rinsing washes a lot of them out. But rinsing can leave some behind, so real scientists are still testing ways to make Mars soil safe for farms." |
 | C. Stick with hydroponics | No cost | No bonus. Choice B stays available from the Lab menu | "Safe choice! When you're not sure something is safe, testing first is what real scientists do." |
 
 ### Dilemma 4: Cold Plants or Call Home? (Sol 16)

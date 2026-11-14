@@ -123,3 +123,7 @@ C10 (same ×4 storm power draw, now attributed to dust-filter fans; added that d
 days cooler and nights warmer), C11, C12 (six rows added to FACT_CHECK.md, each with an opened source).
 Not applied: C2, C3, C4, C5, C13 (reasons in the table above).
 Tests: none run; this change touches documentation only (SCENARIO.md, content/).
+
+Follow-up decisions (2026-11-14): C2 accepted (F1 now: "But rinsing can leave some behind, so real
+scientists are still testing ways to make Mars soil safe for farms."). C3 accepted as verdict wording
+in FACT_CHECK.md only. C4: team keeps "a lot of methane".
