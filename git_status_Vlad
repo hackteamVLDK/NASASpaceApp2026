@@ -1,9 +1,18 @@
 # git_status_Vlad
 
 ## DOING NOW
-- PR ready: branch content/science-fact-check. Science fact-check of SCENARIO.md
-  (content/science/FACT_CHECK.md) + agreed wording fixes in SCENARIO.md (text only, no numbers).
-  Heads-up for sim/flow code: no state names, IDs or numbers changed; ASTRA line texts changed.
+- Two PRs ready, merge in this order:
+  1. content/science-fact-check: science fact-check + wording fixes in SCENARIO.md.
+  2. content/scenario-open-items (based on 1): SCENARIO.md 3.10 Sol Plan, 3.11 Exercise & Fitness,
+     Section 8 Science Logbook (58 cards), Mission Report with Mission Rating (3 x 1-3 stars), 15 badges.
+- content/space-apps-submission: WIP submission drafts, parked until the end of the hackathon.
+
+## FOR MYKHAILO (sim / flow / assets)
+- New in SCENARIO.md after PR 2: per-astronaut Sol Plans with presets (sim has one DEFAULT_SCHEDULE),
+  Fitness gains by room (Bedroom +10, Recreation +20, Rec T2 +25 per hour), expedition multiplier
+  M_fit (1.10 below Fitness 40, 1.25 at 15 or less, capped), new line-ID prefixes card.*, report.*, badge.*.
+- Logbook images: 26 prompts (20 core cards + 6 category images) in
+  content/handoff/LOGBOOK_IMAGE_PROMPTS.md, for assets/manifests when you are ready. I did not touch assets/.
 
 ## NOTE FOR MYKHAILO
 - tests/flow.test.mjs (3 failures) checks the old pre-PR#1 scenario. Please update it to the new
@@ -27,7 +36,7 @@
 - Show the team the 'needs fix' science rows; apply agreed fixes to SCENARIO.md in a separate PR.
 
 ## FILES / FOLDERS I AM EDITING (please do not edit these right now)
-- content/science/, content/ai-collaboration/, SCENARIO.md (until the fact-check PR is merged)
+- content/, SCENARIO.md (until both PRs are merged)
 
 ## FREE FOR OTHERS
 - Everything else. I am not touching docs/ (Mykhailo owns it).
