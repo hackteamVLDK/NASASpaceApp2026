@@ -152,3 +152,16 @@ test('one-shot sounds reported twice at once play once', () => {
   d.campaignEvents([{ type: 'built' }]);
   assert.deepEqual(sfx.calls, ['astraSlideIn', 'moduleComplete', 'moduleComplete']);
 });
+
+test('continue after the finale restores victory music until Free-Play', () => {
+  const sfx = fakeSfx();
+  const d = createAudioDirector({ sfx, now: clock() });
+  const s = createCampaign({ seed: 1 });
+  s.flags.finaleDone = true;
+  s.minute = at(20, 14);
+  d.reset(s);
+  assert.equal(d.tick({ s, mode: 'play' }).victory, true);
+  s.minute = at(22, 10);
+  d.reset(s);
+  assert.equal(d.tick({ s, mode: 'play' }).victory, false);
+});

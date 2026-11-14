@@ -50,7 +50,8 @@ export class SoundManager {
     this.musicGain = null;
     this.sfxGain = null;
     this.compressor = null;
-    this.reverbNode = null;
+    this.musicReverb = null; // each category has its own reverb send, so its volume also scales the reverb
+    this.sfxReverb = null;
 
     this.muted = false;
     this.musicVolume = 0.75;
@@ -61,6 +62,8 @@ export class SoundManager {
     this.musicTimer = null;
     this.ambientNodes = [];
     this.unlocked = false;
+    this.hidden = false; // tab in the background: nothing is scheduled, the context is suspended
+    this._trackGen = 0;  // bumped on every stop, so old storm-echo timeouts never play into a new track
     this._lastBlip = -Infinity;
     this._lastTick = -Infinity;
 
@@ -90,8 +93,9 @@ export class SoundManager {
     if (!this._visibilityHooked && globalThis.document && typeof globalThis.document.addEventListener === 'function') {
       this._visibilityHooked = true;
       globalThis.document.addEventListener('visibilitychange', () => {
+        this.hidden = Boolean(globalThis.document.hidden);
         if (!this.ctx) return;
-        if (globalThis.document.hidden) { try { this.ctx.suspend(); } catch { /* ignore */ } }
+        if (this.hidden) { try { this.ctx.suspend(); } catch { /* ignore */ } }
         else { try { this.ctx.resume(); } catch { /* ignore */ } }
       });
     }
@@ -125,12 +129,15 @@ export class SoundManager {
       this.sfxGain = this.ctx.createGain();
       this.sfxGain.gain.value = this.sfxVolume * 0.9;
 
-      this.reverbNode = this._createStereoReverb(2.4, 2.6);
-      const wetGain = this.ctx.createGain();
-      wetGain.gain.value = 0.42;
-
-      this.reverbNode.connect(wetGain);
-      wetGain.connect(this.compressor);
+      this.musicReverb = this._createStereoReverb(2.4, 2.6);
+      this.sfxReverb = this.ctx.createConvolver();
+      this.sfxReverb.buffer = this.musicReverb.buffer;
+      for (const [rev, bus] of [[this.musicReverb, this.musicGain], [this.sfxReverb, this.sfxGain]]) {
+        const wetGain = this.ctx.createGain();
+        wetGain.gain.value = 0.42;
+        rev.connect(wetGain);
+        wetGain.connect(bus);
+      }
 
       this.musicGain.connect(this.compressor);
       this.sfxGain.connect(this.compressor);
@@ -138,7 +145,7 @@ export class SoundManager {
       this.compressor.connect(this.masterGain);
       this.masterGain.connect(this.ctx.destination);
     }
-    if (this.ctx.state === 'suspended') {
+    if (this.ctx.state === 'suspended' && !this.hidden) {
       try { this.ctx.resume(); } catch { /* ignore */ }
     }
   }
@@ -190,7 +197,7 @@ export class SoundManager {
 
   // --- CORE WARM SYNTH HELPERS (1C STYLE) ---
   _playMusicNote(freq, wave = 'sine', duration = 0.5, vol = 0.28, cutoff = 850, sendReverb = true) {
-    if (this.muted || !this.ready) return;
+    if (this.muted || !this.ready || this.hidden) return;
     const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const filter = this.ctx.createBiquadFilter();
@@ -210,14 +217,14 @@ export class SoundManager {
     osc.connect(filter);
     filter.connect(gain);
     gain.connect(this.musicGain);
-    if (sendReverb) gain.connect(this.reverbNode);
+    if (sendReverb) gain.connect(this.musicReverb);
 
     osc.start(now);
     osc.stop(now + duration + 0.05);
   }
 
   _playSfxNote(freq, wave = 'sine', duration = 0.14, vol = 0.25, slideTo = null, delay = 0, cutoff = 1200, sendReverb = true) {
-    if (this.muted || !this.unlocked) return;
+    if (this.muted || !this.unlocked || this.hidden) return;
     this.init();
     if (!this.ctx) return;
     const now = this.ctx.currentTime + delay;
@@ -242,14 +249,14 @@ export class SoundManager {
     osc.connect(filter);
     filter.connect(gain);
     gain.connect(this.sfxGain);
-    if (sendReverb) gain.connect(this.reverbNode);
+    if (sendReverb) gain.connect(this.sfxReverb);
 
     osc.start(now);
     osc.stop(now + duration + 0.05);
   }
 
   _playSoftNoise(duration = 0.15, vol = 0.15, filterType = 'bandpass', freq = 900, q = 1.5, delay = 0) {
-    if (this.muted || !this.unlocked) return;
+    if (this.muted || !this.unlocked || this.hidden) return;
     this.init();
     if (!this.ctx) return;
     const now = this.ctx.currentTime + delay;
@@ -295,6 +302,7 @@ export class SoundManager {
   }
 
   _stopTrack() {
+    this._trackGen++;
     if (this.musicTimer) {
       clearInterval(this.musicTimer);
       this.musicTimer = null;
@@ -387,7 +395,7 @@ export class SoundManager {
 
   // Helper for lush SpaceAmbient / Ken Lusk - Chronicles style evolving pads
   _playSpaceAmbientSwell(freqs, stepSec = 5.5, fadeSec = 2.2, cutoff = 620) {
-    if (this.muted || !this.ready || this.currentMusic !== 'storm_alert') return;
+    if (this.muted || !this.ready || this.hidden || this.currentMusic !== 'storm_alert') return;
     const now = this.ctx.currentTime;
     const total = stepSec + fadeSec;
 
@@ -396,7 +404,7 @@ export class SoundManager {
     filter.frequency.setValueAtTime(cutoff * 0.7, now);
     filter.frequency.linearRampToValueAtTime(cutoff * 1.15, now + stepSec * 0.6);
     filter.frequency.linearRampToValueAtTime(cutoff * 0.75, now + total);
-    filter.connect(this.reverbNode);
+    filter.connect(this.musicReverb);
     filter.connect(this.musicGain);
 
     freqs.forEach((f, idx) => {
@@ -451,7 +459,7 @@ export class SoundManager {
 
     noise.connect(windFilter);
     windFilter.connect(windGain);
-    windGain.connect(this.reverbNode);
+    windGain.connect(this.musicReverb);
     windGain.connect(this.musicGain);
     noise.start();
     lfo.start();
@@ -466,13 +474,14 @@ export class SoundManager {
     const echoNotes = [659.25, 587.33, 523.25, 440.00];
 
     let step = 0;
+    const gen = this._trackGen;
     const run = () => {
       if (this.currentMusic !== 'storm_alert') return;
       const chordIdx = step % chroniclesChords.length;
       this._playSpaceAmbientSwell(chroniclesChords[chordIdx], 5.2, 2.2, 640);
 
       setTimeout(() => {
-        if (this.currentMusic === 'storm_alert') {
+        if (this.currentMusic === 'storm_alert' && this._trackGen === gen) {
           this._playMusicNote(echoNotes[chordIdx], 'sine', 2.4, 0.14, 780, true);
         }
       }, 2400);
