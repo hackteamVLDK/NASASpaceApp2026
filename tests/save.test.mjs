@@ -7,7 +7,7 @@ import {
 
 test('a saved game continues exactly as if it had never been saved', () => {
   const original = createGame('L2-storm-season', { seed: 42 });
-  applyCommand(original, { type: 'startProject', project: 'berm' });
+  applyCommand(original, { type: 'startProject', project: 'antenna' });
   applyCommand(original, { type: 'assign', crew: 'eng', job: 'build' });
   step(original, 2345);
 
@@ -24,7 +24,7 @@ test('a saved game continues exactly as if it had never been saved', () => {
 });
 
 test('a finished level can be saved and loaded', () => {
-  const g = createGame('L1-first-sols');
+  const g = createGame('L1-wake-the-station');
   while (g.status === 'running') step(g, 1000);
   const { state } = deserialize(serialize(g));
   assert.equal(state.status, 'complete');
@@ -32,7 +32,7 @@ test('a finished level can be saved and loaded', () => {
 });
 
 test('unusable saves are rejected with a message for the player', () => {
-  const good = serialize(createGame('L1-first-sols'));
+  const good = serialize(createGame('L1-wake-the-station'));
   const tamper = (edit) => {
     const data = JSON.parse(good);
     edit(data);
@@ -62,18 +62,18 @@ test('the campaign profile tracks best results and unlocks the next level', () =
   const profile = newProfile();
   assert.deepEqual(profile.unlocked, [FIRST_LEVEL_ID]);
 
-  const idle = createGame('L1-first-sols');
+  const idle = createGame('L1-wake-the-station');
   while (idle.status === 'running') step(idle, 1000);
   const first = recordResult(profile, idle);
   assert.equal(first.unlocked, 'L2-storm-season');
   assert.ok(profile.unlocked.includes('L2-storm-season'));
-  assert.equal(profile.levels['L1-first-sols'].stars, 1);
-  assert.equal(profile.levels['L1-first-sols'].attempts, 1);
+  assert.equal(profile.levels['L1-wake-the-station'].stars, 1);
+  assert.equal(profile.levels['L1-wake-the-station'].attempts, 1);
 
   const again = recordResult(profile, idle);
   assert.equal(again.unlocked, null, 'unlocking happens once');
   assert.equal(again.newBestScore, false);
-  assert.equal(profile.levels['L1-first-sols'].attempts, 2);
+  assert.equal(profile.levels['L1-wake-the-station'].attempts, 2);
 
   const failed = createGame('L2-storm-season');
   failed.resources.o2Kg = 0;
@@ -82,14 +82,14 @@ test('the campaign profile tracks best results and unlocks the next level', () =
   recordResult(profile, failed);
   assert.equal(profile.levels['L2-storm-season'].completed, false);
   assert.ok(!profile.unlocked.includes('L3-dust-and-darkness'), 'a failed level unlocks nothing');
-  assert.throws(() => recordResult(profile, createGame('L1-first-sols')), /finished level/);
+  assert.throws(() => recordResult(profile, createGame('L1-wake-the-station')), /finished level/);
 
   assert.deepEqual(deserializeProfile(serializeProfile(profile)), profile);
 });
 
 test('a damaged profile falls back to a fresh one instead of crashing', () => {
   for (const text of ['', 'garbage', '{"format":"other"}', 'null', '[]']) assert.deepEqual(deserializeProfile(text), newProfile());
-  const cleaned = deserializeProfile(JSON.stringify({ format: 'mars-colony-profile', version: 1, unlocked: ['L99-nowhere'], levels: { 'L1-first-sols': { stars: 99, bestScore: 'lots' }, bogus: {} } }));
+  const cleaned = deserializeProfile(JSON.stringify({ format: 'mars-colony-profile', version: 1, unlocked: ['L99-nowhere'], levels: { 'L1-wake-the-station': { stars: 99, bestScore: 'lots' }, bogus: {} } }));
   assert.deepEqual(cleaned.unlocked, [FIRST_LEVEL_ID]);
-  assert.deepEqual(cleaned.levels, { 'L1-first-sols': { completed: false, stars: 3, bestScore: 0, attempts: 0 } });
+  assert.deepEqual(cleaned.levels, { 'L1-wake-the-station': { completed: false, stars: 3, bestScore: 0, attempts: 0 } });
 });

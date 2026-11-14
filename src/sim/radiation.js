@@ -17,7 +17,7 @@
  *   - the dose is never exactly zero, however deep you go.
  */
 import { TUNING, MATERIALS, EARTH_HOURS_PER_SIM_MINUTE } from './constants.js';
-import { ROOMS, ZONE_SHIELDING } from '../data/base-layout.js';
+import { ROOMS, HULL, depthMetres } from '../data/base-layout.js';
 import { has } from './util.js';
 
 function material(layer) {
@@ -94,11 +94,22 @@ export function doseForOneMinute(env, layers) {
   return doseRateMsvPerHour(env, layers) * EARTH_HOURS_PER_SIM_MINUTE;
 }
 
-/** Shielding layers over a room: what the zone has built in, plus finished projects. */
+/**
+ * Shielding layers over a room, outermost first.
+ *   outdoors     nothing (a suit is not a shield)
+ *   surface      the dome hull, plus any finished shielding upgrades
+ *   underground  all the soil between the ground line and the ceiling, then the hull.
+ *                The soil thickness comes straight from where the room sits in the world.
+ * Scientific approximation: only what is overhead counts, as a flat slab. The Martian
+ * atmosphere is not listed because the surface measurements were already taken beneath it.
+ */
 export function roomShielding(roomId, extraByZone = {}) {
   if (!has(ROOMS, roomId)) throw new Error(`unknown room: ${roomId}`);
   const zone = ROOMS[roomId].zone;
-  return [...(has(extraByZone, zone) ? extraByZone[zone] : []), ...ZONE_SHIELDING[zone]];
+  if (zone === 'outdoor') return [];
+  const extra = has(extraByZone, zone) ? extraByZone[zone] : [];
+  if (zone === 'surface') return [...extra, HULL.surface];
+  return [...extra, { material: 'regolith', thicknessM: depthMetres(roomId) }, HULL.underground];
 }
 
 /** Surface cosmic-ray dose rate in quiet conditions, mSv per Earth hour. */

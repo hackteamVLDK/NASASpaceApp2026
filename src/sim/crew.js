@@ -7,16 +7,16 @@
  *   2. the daily schedule   -> sleep / meal / exercise / free time / work
  *   3. during work hours    -> the assigned job (or recovery if medically grounded)
  * A shelter order then overrides any destination that is not underground: the astronaut
- * waits in the storm shelter instead.
+ * waits in the Dining Room instead.
  */
-import { TUNING, DEFAULT_SCHEDULE, JOBS, PROJECTS, EARTH_DAYS_PER_SIM_MINUTE } from './constants.js';
+import { TUNING, DEFAULT_SCHEDULE, JOBS, EARTH_DAYS_PER_SIM_MINUTE } from './constants.js';
+import { constructionSite, addConstructionWork } from './construction.js';
 import { ROOMS } from '../data/base-layout.js';
 import { CREW } from '../data/crew.js';
 import { shortestPath, edgeMinutes, travelMinutes } from './pathfinding.js';
 import { doseForOneMinute, roomShielding } from './radiation.js';
 import { clamp, has } from './util.js';
 
-const UNDERGROUND = new Set(['upper', 'deep']);
 
 export function createCrewMember(id, job) {
   if (!has(CREW, id)) throw new Error(`unknown crew member: ${id}`);
@@ -27,7 +27,7 @@ export function createCrewMember(id, job) {
     role: def.role,
     job,
     activity: 'sleep',
-    location: 'quarters',
+    location: 'bedroom',
     move: null, // { from, to, total, left, rest: [...], dest }
     stats: { health: 100, morale: 75, energy: 90, nutrition: 85, fitness: 80 },
     doseMsv: 0,
@@ -45,14 +45,16 @@ function isMidShiftMeal(hour) {
   return DEFAULT_SCHEDULE[hour] === 'meal' && DEFAULT_SCHEDULE[hour - 1] === 'work' && DEFAULT_SCHEDULE[hour + 1] === 'work';
 }
 
-function activeProject(state) {
-  const id = Object.keys(state.projects).find((p) => state.projects[p].status === 'active');
-  return id ? { id, ...PROJECTS[id] } : null;
+/** Is the module a job depends on built and running? */
+export function jobAvailable(state, jobId) {
+  const needs = JOBS[jobId].needs;
+  return !needs || state.modules[needs]?.status === 'online';
 }
 
 /** Where the job takes place right now, or null if there is nothing to do. */
 function jobNode(state, c) {
-  if (c.job === 'build') return activeProject(state)?.site ?? null;
+  if (!jobAvailable(state, c.job)) return null;
+  if (c.job === 'build') return constructionSite(state);
   return JOBS[c.job].node;
 }
 
@@ -63,29 +65,31 @@ export function desiredActivity(state, c, clock) {
   // An exhausted astronaut sleeps whatever the schedule says — except at meal times:
   // they still eat first, otherwise tiredness would turn into hunger.
   if (slot === 'sleep' || (c.forcedSleep && slot !== 'meal')) {
-    want = { activity: 'sleep', node: 'quarters' };
+    want = { activity: 'sleep', node: 'bedroom' };
   } else if (slot === 'meal') {
     const hourIndex = clock.sol * 24 + clock.hour;
     const alreadyAte = c.mealHour === hourIndex && c.mealMinutes >= TUNING.mealMinutes;
     // A field team at the exploration site eats its packed lunch there instead of walking home.
     const inTheField = isMidShiftMeal(clock.hour) && (c.location === 'away' || c.move?.to === 'away');
     if (inTheField) want = { activity: alreadyAte ? 'free' : 'meal', node: 'away' };
-    else want = { activity: alreadyAte ? 'free' : 'meal', node: 'galley' };
+    else want = { activity: alreadyAte ? 'free' : 'meal', node: 'dining' };
   } else if (slot === 'exercise') {
-    want = { activity: 'exercise', node: 'galley' };
+    want = { activity: 'exercise', node: 'dining' };
   } else if (slot === 'free') {
-    want = { activity: 'free', node: 'galley' };
+    want = { activity: 'free', node: 'dining' };
   } else if (c.grounded) {
-    want = { activity: 'recover', node: 'quarters' };
+    want = { activity: 'recover', node: 'bedroom' };
   } else {
     const node = jobNode(state, c);
     // Outdoor work only happens in daylight and stops early enough to be home before dark.
     const outdoor = node && ROOMS[node].zone === 'outdoor';
     const tooLate = outdoor && (!clock.isDay || clock.hour >= TUNING.evaEndHour);
-    want = node && c.job !== 'rest' && !tooLate ? { activity: 'work', node } : { activity: 'free', node: 'galley' };
+    want = node && c.job !== 'rest' && !tooLate ? { activity: 'work', node } : { activity: 'free', node: 'dining' };
   }
-  if (state.shelterOrder && !UNDERGROUND.has(ROOMS[want.node].zone)) {
-    want = { activity: 'shelter', node: 'shelter' };
+  // Shelter order: nobody stays above ground. The whole underground base is the shelter;
+  // anyone whose task is on the surface waits in the Dining Room instead.
+  if (state.shelterOrder && ROOMS[want.node].zone !== 'underground') {
+    want = { activity: 'shelter', node: 'dining' };
   }
   return want;
 }
@@ -180,18 +184,9 @@ function doWork(state, c, events) {
     case 'research':
       if (state.power.powered.lab) state.science += T.scienceLabPerHour * perMinute;
       break;
-    case 'build': {
-      const id = Object.keys(state.projects).find((p) => state.projects[p].status === 'active');
-      if (!id) break;
-      const project = state.projects[id];
-      project.hoursDone += perMinute;
-      if (project.hoursDone >= PROJECTS[id].hours) {
-        project.hoursDone = PROJECTS[id].hours;
-        project.status = 'done';
-        events.push({ type: 'project-done', project: id, title: PROJECTS[id].title });
-      }
+    case 'build':
+      addConstructionWork(state, perMinute, events);
       break;
-    }
     default:
       break;
   }

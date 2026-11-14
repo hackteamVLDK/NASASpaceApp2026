@@ -48,10 +48,14 @@ export function describeEvent(e) {
       return { level: 'warn', text: `${e.name} has used most of the radiation budget (${e.doseMsv.toFixed(1)} of ${e.budgetMsv} mSv).` };
     case 'crew-grounded':
       return { level: 'danger', text: `${e.name} is over the radiation budget and is taken off duty by the flight doctor.` };
-    case 'project-started':
-      return { level: 'info', text: `Project started: ${e.title}.` };
+    case 'construction-started':
+      return { level: 'info', text: `Construction started: ${e.title}.` };
+    case 'module-built':
+      return { level: 'good', text: `${e.name} is finished and online.` };
+    case 'drone-awake':
+      return { level: 'good', text: `${e.name} is awake and ready to help build.` };
     case 'project-done':
-      return { level: 'good', text: `Project finished: ${e.title}.` };
+      return { level: 'good', text: `Upgrade finished: ${e.title}.` };
     case 'assigned':
       return { level: 'info', text: `${e.name}: ${e.jobLabel}.` };
     case 'achievement':

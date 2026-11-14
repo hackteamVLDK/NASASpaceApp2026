@@ -36,6 +36,7 @@ export const TUNING = {
   waterTankL: 400,
   foodStoreKg: 150,
   batteryKwh: 260,
+  emergencyBatteryKwh: 90,
 
   // Life-support hardware
   o2GenKgPerSol: 4.6,
@@ -65,6 +66,8 @@ export const TUNING = {
   waterCriticalL: 20,
   emergencyGraceMinutes: 120,
   foodEmergencyKg: 0.5,
+  noCommsLeadFactor: 0.25,
+  droneBuildHoursPerHour: 1,
   sunriseHour: 6,
   sunsetHour: 18,
 
@@ -129,7 +132,8 @@ export const TUNING_PROVENANCE = {
   o2TankKg: p(G, 'Reserve of roughly a week for four people.'),
   waterTankL: p(G, 'Tank size chosen so that ice mining matters.'),
   foodStoreKg: p(G, 'Pantry size.'),
-  batteryKwh: p(G, 'Enough to carry the base through one night with a small margin.'),
+  batteryKwh: p(G, 'Enough to carry the base through one night with a small margin. Needs the Battery & Heating module.'),
+  emergencyBatteryKwh: p(G, 'Small emergency cell the base runs on until Battery & Heating is built: enough for basic life support overnight, not for much else.'),
 
   o2GenKgPerSol: p(G, 'Sized to cover four people with about 30% margin when fully maintained.'),
   o2GenKw: p(G, 'Electrolysis power draw, right order of magnitude for an ISS-class oxygen generator.'),
@@ -147,7 +151,7 @@ export const TUNING_PROVENANCE = {
   baseLoadKw: p(G, 'Air circulation, pumps, computers, lights, radio.'),
   heatingDayKw: p(G, 'Heating by day.'),
   heatingNightKw: p(G, 'Heating by night: Mars nights are far below freezing, so heating costs more.'),
-  greenhouseKw: p(G, 'Grow lights and climate control.'),
+  greenhouseKw: p(G, 'Grow lights and climate control of the hydroponics bay.'),
   labKw: p(G, 'Lab instruments, only while someone is using them.'),
   reserveO2gen: p(G, 'Below 25% battery the oxygen generator waits, so the last quarter of the battery is kept for air circulation and heating through the night. The oxygen tank covers the gap.'),
   reserveRecycler: p(G, 'Battery level below which the water recycler waits.'),
@@ -157,10 +161,12 @@ export const TUNING_PROVENANCE = {
   o2CriticalKg: p(G, 'With less than about a sol of air left, the oxygen generator ignores its battery reserve: breathing comes before saving power.'),
   waterCriticalL: p(G, 'With this little water left, the recycler ignores its battery reserve.'),
   emergencyGraceMinutes: p(G, 'A shortage that comes back within two hours counts as the same emergency, not a new one.'),
+  noCommsLeadFactor: p(G, 'Without the Research & Comms Lab (the surface antenna is bent) storm warnings arrive with only a quarter of the usual notice.'),
+  droneBuildHoursPerHour: p(G, 'An awake builder drone adds one work-hour to the current construction for every daylight hour. Drones are solar powered, so they rest at night.'),
   sunriseHour: p(A, 'Equinox at the equator: 12 hours of daylight. Real day length changes with latitude and season.'),
   sunsetHour: p(A, 'See sunriseHour.'),
 
-  cropBaseKgPerSol: p(G, 'What the greenhouse grows on its own, when lit and watered.'),
+  cropBaseKgPerSol: p(G, 'What the hydroponics bay grows on its own, when lit and watered.'),
   cropKgPerWorkHour: p(G, 'Extra harvest from tending the plants. A greenhouse this small supplements packaged food; it cannot replace it.'),
   cropO2PerKgFood: p(A, 'Photosynthesis releases about 1 kg of oxygen per kg of DRY plant matter. Fresh food is mostly water, so per kg of fresh food (counting the inedible parts too) it is roughly 0.3 kg.'),
   cropWaterLPerSol: p(G, 'Net irrigation loss; most transpired water is condensed and reused.'),
@@ -254,15 +260,20 @@ export const DEFAULT_SCHEDULE = Object.freeze([
   'sleep', 'sleep', // 22-24
 ]);
 
-/** Work assignments. `node` is where the work happens; `skill` is the role that gets the bonus. */
+/**
+ * Work assignments.
+ *   node    where the work happens (null: wherever the current construction site is)
+ *   needs   the module that must be online before the job exists
+ *   skill   the role that gets the bonus
+ */
 export const JOBS = Object.freeze({
-  farm: { label: 'Tend the greenhouse', node: 'greenhouse', skill: 'botanist', eva: false },
-  lifesupport: { label: 'Maintain life support', node: 'lifesupport', skill: 'engineer', eva: false },
-  solar: { label: 'Clean solar panels (outside)', node: 'outside', skill: 'engineer', eva: true },
-  explore: { label: 'Explore and mine ice (outside)', node: 'away', skill: 'scientist', eva: true },
-  research: { label: 'Research in the lab', node: 'lab', skill: 'scientist', eva: false },
-  build: { label: 'Build the current project', node: null, skill: 'engineer', eva: false },
-  rest: { label: 'Off duty', node: 'galley', skill: null, eva: false },
+  build: { label: 'Build', node: null, needs: null, skill: 'engineer', eva: false },
+  lifesupport: { label: 'Maintain life support', node: 'lifesupport', needs: 'lifesupport', skill: 'engineer', eva: false },
+  solar: { label: 'Clean solar panels (outside)', node: 'outside', needs: null, skill: 'engineer', eva: true },
+  research: { label: 'Research in the lab', node: 'lab', needs: 'lab', skill: 'scientist', eva: false },
+  explore: { label: 'Explore and mine ice (outside)', node: 'away', needs: 'garage', skill: 'scientist', eva: true },
+  farm: { label: 'Tend the hydroponics bay', node: 'hydroponics', needs: 'hydroponics', skill: 'botanist', eva: false },
+  rest: { label: 'Off duty', node: 'dining', needs: null, skill: null, eva: false },
 });
 
 export const ROLES = Object.freeze({
@@ -273,26 +284,19 @@ export const ROLES = Object.freeze({
 });
 
 /**
- * Build projects (base upgrades). `hours` are crew work-hours at `site`.
- * `shielding` layers are added to every room in the listed zones when the project is done.
+ * Upgrades. Like unfinished modules they are built by the crew ("Build" job), helped by
+ * any drones that are awake. All of them need the Workshop.
+ *   hours      work-hours at `site`
+ *   shielding  layers added to every room in the listed zones when finished
  */
 export const PROJECTS = Object.freeze({
-  berm: {
-    title: 'Regolith berm over the surface modules',
+  antenna: {
+    title: 'Repair the bent antenna',
     site: 'outside',
-    hours: 14,
+    hours: 6,
     costs: {},
-    shielding: { zones: ['surface'], layer: { material: 'regolith', thicknessM: 0.5 } },
-    teaches: 'Soil is a free shield, but piling it up means hours outside in the radiation you are trying to avoid.',
-    tag: G,
-  },
-  waterRoof: {
-    title: 'Water-bag roof on the surface modules',
-    site: 'greenhouse',
-    hours: 4,
-    costs: { waterL: 100 },
-    shielding: { zones: ['surface'], layer: { material: 'water', thicknessM: 0.25 } },
-    teaches: 'Water shields well and is quick to install indoors, but it is the same water you drink and turn into oxygen.',
+    needs: 'workshop',
+    teaches: 'Earlier warning gives the crew time to get underground. NASA watches the Sun around the clock for this reason.',
     tag: G,
   },
   solarExpansion: {
@@ -300,15 +304,28 @@ export const PROJECTS = Object.freeze({
     site: 'outside',
     hours: 10,
     costs: {},
+    needs: 'workshop',
     teaches: 'More panels mean more power, and more panels to keep clean.',
     tag: G,
   },
-  stormWatch: {
-    title: 'Storm-watch antenna',
-    site: 'command',
-    hours: 6,
+  berm: {
+    title: 'Regolith berm over the airlock dome',
+    site: 'outside',
+    hours: 14,
     costs: {},
-    teaches: 'Earlier warning gives the crew time to get underground. NASA watches the Sun around the clock for this reason.',
+    needs: 'workshop',
+    shielding: { zones: ['surface'], layer: { material: 'regolith', thicknessM: 0.5 } },
+    teaches: 'Soil is a free shield, but piling it up means hours outside in the radiation you are trying to avoid.',
+    tag: G,
+  },
+  waterRoof: {
+    title: 'Water-bag lining inside the airlock dome',
+    site: 'airlock',
+    hours: 4,
+    costs: { waterL: 100 },
+    needs: 'workshop',
+    shielding: { zones: ['surface'], layer: { material: 'water', thicknessM: 0.25 } },
+    teaches: 'Water shields well and is quick to install indoors, but it is the same water you drink and turn into oxygen.',
     tag: G,
   },
 });

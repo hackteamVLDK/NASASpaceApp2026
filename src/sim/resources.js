@@ -4,6 +4,13 @@
  */
 import { TUNING, EARTH_HOURS_PER_SIM_MINUTE, EARTH_DAYS_PER_SIM_MINUTE, SOL_MINUTES } from './constants.js';
 
+/** How much the battery can hold: the full bank needs the Battery & Heating module. */
+export function batteryCapacity(state) {
+  return state.modules.power?.status === 'online' ? TUNING.batteryKwh : TUNING.emergencyBatteryKwh;
+}
+
+const online = (state, id) => state.modules[id]?.status === 'online';
+
 /** Sunlight on the panels, 0 at night to 1 at local noon. */
 export function sunFactor(hourFloat) {
   const { sunriseHour: rise, sunsetHour: set } = TUNING;
@@ -40,7 +47,9 @@ export function stepPower(state, clock) {
   const genKw = T.solarPeakKw * (state.projects.solarExpansion?.status === 'done' ? T.solarExpansionFactor : 1) * sunFactor(clock.hourFloat) * sys.solarClean * (dust ? dust.solarFactor : 1);
 
   const labInUse = state.crew.some((c) => c.activity === 'work' && c.job === 'research' && c.location === 'lab');
-  const o2Wanted = res.o2Kg < T.o2TankKg && res.waterL > 0;
+  const capacity = batteryCapacity(state);
+  const lifeSupport = online(state, 'lifesupport');
+  const o2Wanted = lifeSupport && res.o2Kg < T.o2TankKg && res.waterL > 0;
   // When air or water is nearly gone, that system stops respecting its battery reserve:
   // there is no point saving power for the night if nobody can breathe until then.
   const o2Critical = res.o2Kg < T.o2CriticalKg;
@@ -49,8 +58,8 @@ export function stepPower(state, clock) {
   const loads = [
     ['base', T.baseLoadKw + (clock.isDay ? T.heatingDayKw : T.heatingNightKw), 0],
     ['o2gen', o2Wanted ? T.o2GenKw : 0, o2Critical ? 0 : T.reserveO2gen],
-    ['recycler', T.recyclerKw, waterCritical ? 0 : T.reserveRecycler],
-    ['greenhouse', T.greenhouseKw, T.reserveGreenhouse],
+    ['recycler', lifeSupport ? T.recyclerKw : 0, waterCritical ? 0 : T.reserveRecycler],
+    ['greenhouse', online(state, 'hydroponics') ? T.greenhouseKw : 0, T.reserveGreenhouse],
     ['lab', labInUse ? T.labKw : 0, T.reserveLab],
   ];
 
@@ -62,7 +71,7 @@ export function stepPower(state, clock) {
   for (const [name, kw, reserve] of loads) {
     demandKw += kw;
     const need = kw * hours;
-    if (energy - need >= reserve * T.batteryKwh) {
+    if (energy - need >= reserve * capacity) {
       energy -= need;
       loadKw += kw;
       powered[name] = kw > 0 || name === 'base';
@@ -71,7 +80,7 @@ export function stepPower(state, clock) {
       if (kw > 0) shed.push(name);
     }
   }
-  res.batteryKwh = Math.min(T.batteryKwh, Math.max(0, energy));
+  res.batteryKwh = Math.min(capacity, Math.max(0, energy));
   state.power = { genKw, loadKw, demandKw, powered, shed };
 }
 
@@ -104,7 +113,7 @@ export function stepLifeSupport(state) {
   res.waterL -= used * (1 - recovered);
   state.shortfall = { o2: 1 - o2Got / breathed, water: 1 - waterGot / used };
 
-  // Greenhouse: grows a little by itself when lit and watered.
+  // Hydroponics: grows a little by itself when lit and watered (needs the module, and power).
   if (powered.greenhouse && res.waterL > 0) {
     const grown = T.cropBaseKgPerSol * perSol;
     res.foodKg += grown;

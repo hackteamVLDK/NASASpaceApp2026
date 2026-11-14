@@ -6,7 +6,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  createGame, step, applyCommand, serialize, deserialize, SaveError, describeEvent, roomReport,
+  createGame, step, applyCommand, serialize, deserialize, SaveError, describeEvent, roomReport, batteryCapacity,
   shieldingReport, stormsFromDonki, evaluateObjectives,
   TUNING, MATERIALS, NASA, PROVENANCE, SOL_MINUTES,
 } from '../src/sim/index.js';
@@ -19,6 +19,7 @@ const quiet = (game) => {
   game.storms = [];
   return game;
 };
+const L2 = 'L2-storm-season';
 
 // ---------------------------------------------------------------- finding 1: save validation
 
@@ -47,10 +48,15 @@ test('damaged saves are refused instead of crashing or corrupting the game later
     'missing counter': (s) => delete s.stats.foodGrownKg,
     'unknown project': (s) => (s.projects.deathStar = { status: 'active', hoursDone: 0, paid: true }),
     'project without paid flag': (s) => delete s.projects.berm.paid,
-    'two active projects': (s) => {
-      s.projects.berm.status = 'active';
-      s.projects.waterRoof.status = 'active';
-    },
+    'unknown project status': (s) => (s.projects.berm.status = 'active'),
+    'construction of a finished module': (s) => (s.construction = { kind: 'module', id: 'bedroom' }),
+    'construction of an unknown thing': (s) => (s.construction = { kind: 'spaceship', id: 'x' }),
+    'unknown module': (s) => (s.modules.casino = { status: 'online', hoursDone: 0 }),
+    'a room that is not a module': (s) => (s.modules.shaft1 = { status: 'online', hoursDone: 0 }),
+    'bedroom switched off': (s) => (s.modules.bedroom.status = 'unfinished'),
+    'unknown drone': (s) => s.drones.push({ id: 'drone-99', status: 'awake' }),
+    'unknown drone status': (s) => (s.drones[0].status = 'dancing'),
+    'missing module table': (s) => delete s.modules,
     'inherited name as a level': (s) => (s.levelId = 'toString'),
     'inherited name as a job': (s) => (s.crew[0].job = 'constructor'),
     'stat out of range': (s) => (s.crew[0].stats.energy = 500),
@@ -78,12 +84,12 @@ test('derived shielding in a save is rebuilt, not trusted', () => {
 // ---------------------------------------------------------------- finding 2: oxygen before battery reserve
 
 test('an empty oxygen tank overrides the battery reserve: the crew are not left to suffocate', () => {
-  const g = quiet(createGame('L1-first-sols'));
+  const g = quiet(createGame('L1-wake-the-station'));
   runTo(g, 2, 0); // midnight
   g.resources.o2Kg = 0;
   g.resources.waterL = 80;
   g.systems.o2GenEff = 1;
-  g.resources.batteryKwh = TUNING.batteryKwh * (TUNING.reserveO2gen - 0.005); // just under the normal reserve
+  g.resources.batteryKwh = batteryCapacity(g) * (TUNING.reserveO2gen - 0.005); // just under the normal reserve
   step(g, 5);
   assert.equal(g.power.powered.o2gen, true, 'the generator runs despite the low battery');
   step(g, 200);
@@ -94,7 +100,7 @@ test('an empty oxygen tank overrides the battery reserve: the crew are not left 
 
 test('thin air harms in proportion to how much is missing, not all at once', () => {
   const lossOver = (minutes, prepare) => {
-    const g = quiet(createGame('L1-first-sols'));
+    const g = quiet(createGame('L1-wake-the-station'));
     runTo(g, 1, 12);
     g.resources.o2Kg = 0;
     g.resources.batteryKwh = 200;
@@ -112,10 +118,10 @@ test('thin air harms in proportion to how much is missing, not all at once', () 
 });
 
 test('with a healthy oxygen tank the generator still respects the battery reserve', () => {
-  const g = quiet(createGame('L1-first-sols'));
+  const g = quiet(createGame('L1-wake-the-station'));
   runTo(g, 2, 0);
-  g.resources.o2Kg = 15;
-  g.resources.batteryKwh = TUNING.batteryKwh * (TUNING.reserveO2gen - 0.005);
+  g.resources.o2Kg = 8;
+  g.resources.batteryKwh = batteryCapacity(g) * (TUNING.reserveO2gen - 0.005);
   step(g, 1);
   assert.ok(g.power.shed.includes('o2gen'));
 });
@@ -123,7 +129,7 @@ test('with a healthy oxygen tank the generator still respects the battery reserv
 // ---------------------------------------------------------------- findings 3 and 4: storm boundaries
 
 test('a storm that was over before the level began never happens and earns nothing', () => {
-  const g = quiet(createGame('L1-first-sols')); // starts at minute 360
+  const g = quiet(createGame('L1-wake-the-station')); // starts at minute 360
   g.storms.push(makeStorm({ id: 'old', startMinute: 0, class: 'minor' }));
   g.storms[0].endMinute = 300;
   const events = step(g, 60);
@@ -134,7 +140,7 @@ test('a storm that was over before the level began never happens and earns nothi
 });
 
 test('a storm already under way when the level begins is active from the first minute', () => {
-  const g = quiet(createGame('L1-first-sols'));
+  const g = quiet(createGame('L1-wake-the-station'));
   g.storms.push(makeStorm({ id: 'early', startMinute: 200, class: 'minor' }));
   const events = step(g, 1);
   assert.ok(events.some((e) => e.type === 'storm-start'));
@@ -143,7 +149,7 @@ test('a storm already under way when the level begins is active from the first m
 });
 
 test('overlapping storms are one episode: no all-clear until the last one ends', () => {
-  const g = quiet(createGame('L1-first-sols'));
+  const g = quiet(createGame('L1-wake-the-station'));
   const first = makeStorm({ id: 'a', startMinute: 600, class: 'minor' });
   const second = makeStorm({ id: 'b', startMinute: first.endMinute - 60, class: 'minor' });
   g.storms.push(first, second);
@@ -162,7 +168,7 @@ test('overlapping storms are one episode: no all-clear until the last one ends',
 });
 
 test('with automatic all-clear switched off the shelter order stays until the player lifts it', () => {
-  const g = quiet(createGame('L1-first-sols'));
+  const g = quiet(createGame('L1-wake-the-station'));
   const storm = makeStorm({ id: 'a', startMinute: 600, class: 'minor' });
   g.storms.push(storm);
   applyCommand(g, { type: 'autoAllClear', on: false });
@@ -173,7 +179,7 @@ test('with automatic all-clear switched off the shelter order stays until the pl
 });
 
 test('a storm still raging when the level ends is settled and counts if everyone was protected', () => {
-  const g = quiet(createGame('L1-first-sols'));
+  const g = quiet(createGame('L1-wake-the-station'));
   g.storms.push(makeStorm({ id: 'last', startMinute: g.endMinute - 200, class: 'minor' }));
   g.storms.push(makeStorm({ id: 'exact', startMinute: g.endMinute - 500, class: 'minor' }));
   g.storms[1].endMinute = g.endMinute; // ends exactly on the final boundary
@@ -203,7 +209,8 @@ test('commands with inherited property names are rejected, not crashed on', () =
 // ---------------------------------------------------------------- finding 6: lab power follows the work
 
 test('the lab draws power in exactly the minutes someone works in it', () => {
-  const g = quiet(createGame('L1-first-sols'));
+  const g = quiet(createGame(L2));
+  for (const id of ['cmdr', 'eng', 'bot']) applyCommand(g, { type: 'assign', crew: id, job: 'rest' });
   applyCommand(g, { type: 'assign', crew: 'sci', job: 'research' });
   const sci = crewOf(g, 'sci');
   let firstWorkMinuteChecked = false;

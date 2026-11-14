@@ -70,7 +70,7 @@ export function stormsFromDonki(dataset, { startDateUtc, sols }) {
         startMinute,
         class: stormClass,
         label: `Solar storm (scenario from ${niceDate(day)})`,
-        about: `Game scenario. On ${niceDate(day)} spacecraft near Earth really did detect a burst of solar particles (NASA DONKI). The game imagines that burst arriving at Mars at the same moment; whether it reached Mars, and how strongly, is not in the data.`,
+        about: `Game scenario. On ${niceDate(day)} spacecraft near Earth really did detect a burst of solar particles (NASA DONKI). The game replays that pattern in its own year and imagines the burst arriving at Mars; whether it reached Mars, and how strongly, is not in the data.`,
         timing: {
           provenance: PROVENANCE.NASA,
           source: dataset.source,

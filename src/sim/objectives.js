@@ -1,7 +1,8 @@
 /**
  * Level objectives, score, stars and achievements. Pure functions of the game state.
  */
-import { TUNING } from './constants.js';
+import { TUNING, PROJECTS } from './constants.js';
+import { ROOMS } from '../data/base-layout.js';
 
 const maxDose = (state) => Math.max(...state.crew.map((c) => c.doseMsv));
 const minHealth = (state) => Math.min(...state.crew.map((c) => c.stats.health));
@@ -28,8 +29,29 @@ export function evaluateObjective(state, objective, finished = state.status !== 
       return settle(state.stats.foodGrownKg >= objective.value, ratio(state.stats.foodGrownKg, objective.value), `${state.stats.foodGrownKg.toFixed(1)} of ${objective.value} kg`);
     case 'stormsSheltered':
       return settle(state.stats.stormsSheltered >= objective.value, ratio(state.stats.stormsSheltered, objective.value), `${state.stats.stormsSheltered} of ${objective.value}`);
-    case 'projectDone':
-      return settle(state.projects[objective.project]?.status === 'done', state.projects[objective.project]?.status === 'done' ? 1 : 0, state.projects[objective.project]?.status ?? 'not started');
+    case 'projectDone': {
+      const p = state.projects[objective.project];
+      const total = PROJECTS[objective.project]?.hours ?? 1;
+      return settle(p?.status === 'done', ratio(p?.hoursDone ?? 0, total), p?.status === 'done' ? 'finished' : `${(p?.hoursDone ?? 0).toFixed(0)} of ${total} work-hours`);
+    }
+    case 'droneAwake': {
+      const awake = state.drones.some((d) => d.id === objective.drone && d.status === 'awake');
+      return settle(awake, awake ? 1 : 0, awake ? 'awake' : 'still asleep');
+    }
+    case 'moduleBuilt':
+    case 'modulesBuilt': {
+      const ids = objective.type === 'moduleBuilt' ? [objective.module] : objective.modules;
+      const done = ids.filter((id) => state.modules[id]?.status === 'online').length;
+      const hours = ids.reduce((sum, id) => sum + (state.modules[id]?.hoursDone ?? 0), 0);
+      const needed = ids.reduce((sum, id) => sum + (ROOMS[id]?.buildHours ?? 0), 0);
+      return settle(done === ids.length, ratio(hours, needed), `${done} of ${ids.length} finished`);
+    }
+    case 'systemAtLeast': {
+      // Like a reserve: it has to be true when the level finishes.
+      const have = state.systems[objective.system];
+      const ok = have >= objective.value;
+      return { status: finished ? (ok ? 'done' : 'failed') : 'open', progress: ratio(have, objective.value), detail: `${Math.round(have * 100)}% of ${Math.round(objective.value * 100)}%` };
+    }
     case 'resourceAtLeast': {
       // Only meaningful at the end: the reserve has to still be there when the level finishes.
       const have = state.resources[objective.resource];
@@ -55,7 +77,8 @@ export function scoreBreakdown(state) {
     { label: 'Crew morale', points: Math.round(avg((c) => c.stats.morale) * 2) },
     { label: 'Radiation kept low', points: Math.round(300 * Math.max(0, 1 - maxDose(state) / state.doseBudgetMsv)) },
     { label: 'Storms ridden out safely', points: state.stats.stormsSheltered * 50 },
-    { label: 'Upgrades built', points: Object.values(state.projects).filter((p) => p.status === 'done').length * 60 },
+    { label: 'Modules and upgrades built', points: (state.stats.modulesBuilt + Object.values(state.projects).filter((p) => p.status === 'done').length) * 60 },
+    { label: 'Drones woken', points: state.stats.dronesWoken * 30 },
     { label: 'Emergencies', points: -100 * state.stats.emergencies },
   ];
   return { parts, total: Math.max(0, parts.reduce((sum, p) => sum + p.points, 0)) };
@@ -82,7 +105,9 @@ export const ACHIEVEMENTS = Object.freeze([
   { id: 'green-thumb', title: 'Green Thumb', text: 'Grow 10 kg of food on Mars.', test: (s) => s.stats.foodGrownKg >= 10 },
   { id: 'ice-miner', title: 'Ice Miner', text: 'Bring home 100 litres of water from icy soil.', test: (s) => s.stats.iceMinedL >= 100 },
   { id: 'storm-safe', title: 'Safe Below', text: 'Get the whole crew through a solar storm with almost no dose.', test: (s) => s.stats.stormsSheltered >= 1 },
-  { id: 'builder', title: 'Home Improvement', text: 'Finish a base upgrade.', test: (s) => Object.values(s.projects).some((p) => p.status === 'done') },
+  { id: 'wake-up', title: 'Rise and Shine', text: 'Wake up a sleeping builder drone.', test: (s) => s.stats.dronesWoken >= 1 },
+  { id: 'builder', title: 'Station Builder', text: 'Finish a module of the base.', test: (s) => s.stats.modulesBuilt >= 1 },
+  { id: 'upgrade', title: 'Home Improvement', text: 'Finish a base upgrade.', test: (s) => Object.values(s.projects).some((p) => p.status === 'done') },
   { id: 'spotless', title: 'Spotless', text: 'Get the solar panels above 98% clean.', test: (s) => s.systems.solarClean >= 0.98 },
 ]);
 

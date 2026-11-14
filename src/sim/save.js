@@ -17,7 +17,7 @@
  *                  non-finite number, the save is refused.
  */
 import { LEVEL_BY_ID, LEVELS, FIRST_LEVEL_ID } from '../data/levels.js';
-import { ROOMS } from '../data/base-layout.js';
+import { ROOMS, DRONES } from '../data/base-layout.js';
 import { JOBS, ROLES, PROJECTS, STORM_CLASSES } from './constants.js';
 import { STATE_VERSION, step, extraShieldingFrom } from './sim.js';
 import { edgeMinutes } from './pathfinding.js';
@@ -102,14 +102,28 @@ export function validateState(s) {
   need(isBool(s.env.stormActive), 'env.stormActive');
   need(s.env.dustStorm === null || (isObject(s.env.dustStorm) && isNonNegative(s.env.dustStorm.solarFactor) && isNonNegative(s.env.dustStorm.dustFactor)), 'env.dustStorm');
   for (const key of ['foodGrownKg', 'iceMinedL']) need(isNonNegative(s.stats[key]), `stats.${key}`);
-  for (const key of ['emergencies', 'stormsSheltered', 'stormsTotal']) need(isCount(s.stats[key]), `stats.${key}`);
+  for (const key of ['emergencies', 'stormsSheltered', 'stormsTotal', 'modulesBuilt', 'dronesWoken']) need(isCount(s.stats[key]), `stats.${key}`);
 
-  // --- projects
+  // --- modules, drones, upgrades, construction
+  need(isObject(s.modules) && Array.isArray(s.drones), 'modules');
+  for (const [id, m] of Object.entries(s.modules)) {
+    need(has(ROOMS, id) && ROOMS[id].module === true, `unknown module "${id}"`);
+    need(isObject(m) && ['online', 'unfinished'].includes(m.status) && isNonNegative(m.hoursDone), `module ${id}`);
+  }
+  // The simulation sends people to these rooms unconditionally, so they must exist and work.
+  for (const id of ['airlock', 'bedroom', 'dining', 'lifesupport']) need(s.modules[id]?.status === 'online', `module ${id} must be online`);
+  for (const d of s.drones) need(isObject(d) && has(DRONES, d.id) && ['awake', 'dormant'].includes(d.status), 'drone');
   for (const [id, p] of Object.entries(s.projects)) {
     need(has(PROJECTS, id), `unknown project "${id}"`);
-    need(isObject(p) && ['available', 'active', 'done'].includes(p.status) && isNonNegative(p.hoursDone) && isBool(p.paid), `project ${id}`);
+    need(isObject(p) && ['available', 'done'].includes(p.status) && isNonNegative(p.hoursDone) && isBool(p.paid), `project ${id}`);
   }
-  need(Object.values(s.projects).filter((p) => p.status === 'active').length <= 1, 'more than one active project');
+  need(s.construction === null || isObject(s.construction), 'construction');
+  if (s.construction !== null) {
+    const c = s.construction;
+    need(['module', 'project'].includes(c.kind), 'construction kind');
+    if (c.kind === 'module') need(has(s.modules, c.id) && s.modules[c.id].status === 'unfinished', 'construction of a module that is not unfinished');
+    else need(has(s.projects, c.id) && s.projects[c.id].status === 'available', 'construction of an upgrade that is not available');
+  }
 
   // --- weather
   for (const st of s.storms) {

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   arealDensity, effectiveDensity, gcrTransmission, speTransmission, shieldingReport, doseRateMsvPerHour, roomShielding,
-  stormsFromDonki, stormRateMsvPerHour, classifyDetections,
+  stormsFromDonki, stormRateMsvPerHour, classifyDetections, depthMetres,
   TUNING, TUNING_PROVENANCE, STORM_CLASSES, MATERIALS, NASA, PROVENANCE, SOL_MINUTES, EARTH_HOURS_PER_SIM_MINUTE,
 } from '../src/sim/index.js';
 import { makeStorm, minuteFromUtc } from '../src/sim/space-weather.js';
@@ -89,25 +89,51 @@ test('quiet-day dose outdoors matches the Curiosity measurement', () => {
   near(perSol, 0.66, 0.01, 'about 0.66 mSv per sol');
 });
 
-test('deeper rooms are safer, and no room is at zero', () => {
+test('the soil roof shields the base: underground beats the dome, the dome beats a suit, nothing is zero', () => {
   const rate = (room, env) => doseRateMsvPerHour(env, roomShielding(room));
   for (const env of [quiet, storm]) {
-    assert.ok(rate('shelter', env) < rate('quarters', env), 'deep level beats upper level');
-    assert.ok(rate('quarters', env) < rate('greenhouse', env), 'underground beats a surface module');
-    assert.ok(rate('shelter', env) > 0, 'never exactly zero');
+    assert.ok(rate('bedroom', env) < rate('airlock', env), 'underground beats the surface dome');
+    assert.ok(rate('garage', env) <= rate('bedroom', env), 'deeper is never worse');
+    assert.ok(rate('garage', env) > 0, 'never exactly zero');
   }
-  assert.ok(rate('greenhouse', storm) < rate('outside', storm), 'a hull is better than a suit in a storm');
-  assert.ok(rate('quarters', storm) < 0.02 * rate('outside', storm), 'the upper level stops almost all of a storm');
-  assert.ok(rate('shelter', quiet) < 0.1 * rate('outside', quiet), 'the deep level cuts cosmic rays more than tenfold');
+  assert.ok(rate('airlock', storm) < rate('outside', storm), 'a hull is better than a suit in a storm');
+  assert.ok(rate('bedroom', storm) < 0.02 * rate('outside', storm), 'five metres of soil stop a storm almost completely');
+  assert.ok(rate('bedroom', quiet) < 0.1 * rate('outside', quiet), 'and cut cosmic rays more than tenfold');
 });
 
-test('surface upgrades add shielding, and regolith beats the water roof against storms', () => {
-  const base = shieldingReport(roomShielding('greenhouse'));
-  const berm = shieldingReport(roomShielding('greenhouse', { surface: [{ material: 'regolith', thicknessM: 0.5 }] }));
-  const roof = shieldingReport(roomShielding('greenhouse', { surface: [{ material: 'water', thicknessM: 0.25 }] }));
+test('shielding follows from where a room sits in the world', () => {
+  // SCENARIO: ground line at Y 1050. Proposal: 100 units per metre, first floor at Y 1560.
+  assert.equal(depthMetres('bedroom'), 5.1);
+  assert.equal(depthMetres('dining'), 7.8);
+  assert.equal(depthMetres('airlock'), 0);
+  assert.equal(depthMetres('outside'), 0);
+  const layers = roomShielding('bedroom');
+  assert.deepEqual(layers[0], { material: 'regolith', thicknessM: 5.1 });
+  near(arealDensity(layers), 5.1 * 150 + 0.02 * 270, 1e-9);
+  assert.deepEqual(roomShielding('outside'), [], 'a suit is not a shield');
+  assert.throws(() => roomShielding('toString'), /unknown room/);
+});
+
+test('shallower soil would protect less: the model responds to depth', () => {
+  const at = (metres) => shieldingReport([{ material: 'regolith', thicknessM: metres }]);
+  let previous = at(0.5);
+  for (const m of [1, 1.5, 2, 3, 4, 5]) {
+    const now = at(m);
+    assert.ok(now.gcr < previous.gcr, `cosmic rays: ${m} m beats less soil`);
+    assert.ok(now.spe < previous.spe, `storms: ${m} m beats less soil`);
+    previous = now;
+  }
+  assert.ok(at(1).spe < 0.05 && at(1).gcr > 0.3, 'one metre stops a storm but not cosmic rays');
+});
+
+test('upgrades to the airlock dome add shielding, and regolith beats the water lining against storms', () => {
+  const base = shieldingReport(roomShielding('airlock'));
+  const berm = shieldingReport(roomShielding('airlock', { surface: [{ material: 'regolith', thicknessM: 0.5 }] }));
+  const roof = shieldingReport(roomShielding('airlock', { surface: [{ material: 'water', thicknessM: 0.25 }] }));
   assert.ok(berm.spe < roof.spe && roof.spe < base.spe);
   assert.ok(berm.gcr < base.gcr);
-  assert.deepEqual(roomShielding('shelter', { surface: [{ material: 'regolith', thicknessM: 0.5 }] }), roomShielding('shelter'), 'surface upgrades do not change underground rooms');
+  assert.deepEqual(roomShielding('dining', { surface: [{ material: 'regolith', thicknessM: 0.5 }] }), roomShielding('dining'), 'surface upgrades do not change underground rooms');
+  assert.deepEqual(roomShielding('outside', { surface: [{ material: 'regolith', thicknessM: 0.5 }] }), [], 'or the open air');
 });
 
 // ---------------------------------------------------------------- solar storms
