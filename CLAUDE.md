@@ -10,6 +10,9 @@ The shared rules above apply in full. This file only adds what is specific to th
 2. Read `git_status_Vlad` and `git_status_Pavlo` (if present) before choosing work.
 3. Update `git_status_Mykhailo`: what is in progress and which files are being edited.
 4. Run `npm test` before changing simulation code, so failures are known to be new.
+5. Read [SCENARIO.md](SCENARIO.md) and check every gameplay/UI/story change against it
+   before reporting it done. When delegating such work to Codex, include `SCENARIO.md`
+   in `--files`.
 
 ## Responsibilities
 
