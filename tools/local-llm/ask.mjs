@@ -11,6 +11,8 @@
  *   node tools/local-llm/ask.mjs check
  *
  * Options: --model NAME  --ctx TOKENS (default 16384)  --temp N (default 0.2)  --timeout SEC
+ *          --max TOKENS of answer (default 1200)  --think (let the model reason first; slow)
+ * Keep the input small (a cut-out section, about 1,500 tokens): this model is slow on long text.
  * Environment: LOCAL_LLM_URL (default http://127.0.0.1:11434), LOCAL_LLM_MODEL.
  * Exit codes: 0 ok, 3 server not reachable or model missing, 4 bad usage.
  */
@@ -65,7 +67,10 @@ async function main() {
       model,
       stream: true, // headers arrive at once; without streaming a slow answer hits Node's 5-minute header timeout
       format: argv.includes('--json') ? 'json' : undefined,
-      options: { num_ctx: ctx, temperature: Number(opt('temp', 0.2)) },
+      // Thinking is off unless asked for: with it on, a long input used the whole window on reasoning
+      // and returned an empty answer after ten minutes. `num_predict` caps the answer length.
+      think: argv.includes('--think'),
+      options: { num_ctx: ctx, temperature: Number(opt('temp', 0.2)), num_predict: Number(opt('max', 1200)) },
       messages: [
         { role: 'system', content: 'You are a careful assistant on a software project. Answer only from the text you are given. Be brief and concrete. If you are not sure, say so instead of guessing.' },
         { role: 'user', content: text },
@@ -91,6 +96,10 @@ async function main() {
       answer += part.message?.content ?? '';
       if (part.done) data = part;
     }
+  }
+  if (!answer.trim()) {
+    console.error('local-llm: the model returned no answer (it may have run out of room). Send less text or raise --max.');
+    return 3;
   }
   if (opt('out')) fs.writeFileSync(path.resolve(opt('out')), answer);
   console.log(answer.trim());
