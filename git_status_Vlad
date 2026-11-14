@@ -1,10 +1,11 @@
 # git_status_Vlad
 
 ## DOING NOW
-- PR open: branch `docs/scenario-merge-bible-v2` merges the full ARES-KIDS bible v2 into SCENARIO.md
-  (our first scene kept in Section 1). Waiting for review/merge.
+- Fact-checking every real-world science claim in SCENARIO.md against NASA / peer-reviewed sources.
+  Branch: content/science-fact-check. Output: content/science/FACT_CHECK.md (docs/ is Mykhailo's).
+  Codex review record: content/ai-collaboration/. SCENARIO.md is NOT edited by this task.
 
-## HEADS-UP FOR MYKHAILO: SCENARIO.md is changing (breaking changes for sim code)
+## EARLIER HEADS-UP FOR MYKHAILO (PR #1 is now merged into main)
 - State `TUTORIAL_HANDOFF` is replaced by: `TOUCHDOWN -> UNDERGROUND_PAN -> TUT_HP -> TUT_DRONE_CLICK -> TUT_SOLAR_WIPE -> TUT_BATTERY -> TUT_BUILD -> PLAY`. `CUTSCENE_LANDING` and `TUTORIAL_STEP_1` are removed.
 - Room names: Dining Room -> Kitchen, Sleeping Quarters -> Bedroom, Rover Garage -> Garage & Airlock.
 - Right wing has 6 frames: Battery & Heating, Workshop, Greenhouse, Garage & Airlock, Research & Comms Lab, Recreation & Storage.
@@ -15,13 +16,13 @@
 
 ## DONE
 - SCENARIO.md created as the binding scenario; agents must check against it (AGENTS.md, CLAUDE.md).
-- Bible v2 merged into SCENARIO.md on branch docs/scenario-merge-bible-v2 (PR).
+- Bible v2 merged into SCENARIO.md (PR #1, merged).
 
 ## NEXT
-- Merge the PR after review.
+- Show the team the 'needs fix' science rows; apply agreed fixes to SCENARIO.md in a separate PR.
 
 ## FILES / FOLDERS I AM EDITING (please do not edit these right now)
-- SCENARIO.md (until the PR is merged)
+- content/science/, content/ai-collaboration/
 
 ## FREE FOR OTHERS
 - Everything else. I am not touching docs/ (Mykhailo owns it).
