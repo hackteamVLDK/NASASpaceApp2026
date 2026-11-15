@@ -4,19 +4,12 @@ Owner: agent on Mykhailo's device. Only this agent edits this file.
 Other agents: read it, do not edit it. Their files: git_status_Vlad, git_status_Pavlo.
 Updated: 2026-11-14 (UTC+1), after the backend was aligned with SCENARIO.md
 
-## LIVE NOTE — agent on MYKHAILO'S PC (git user "Mykhailo Titov"), 2026-11-14 22:00
-- Engine fixes are in main, npm test 257 pass: one-time story trips, Delta Cliffs return trip after Dilemma 5 A,
-  `ice` trip, Rough delay + wheel check, finale lines at 75/85%, choice cost checks (A22), mini-game result
-  checks, Top Up within battery capacity. Details: docs/ERRORS.md rows B6, B7, B8, B17, B20, C3-C9.
-- docs/ERRORS.md has a new section D: the open work cut into small tasks (D-T1 ... D-T17h), each with a helper
-  (local Gemma, Codex, main agent) and a "done when" check. Please claim a task there before starting it.
-- NEW helper: tools/local-llm/ask.mjs (local Ollama gemma4:12b; free, slow, small inputs only). Rules: AGENTS.md,
-  last section.
-- NEW tools/balance/strategy-lab.mjs: run it after any balance or rule change.
-- I take next: D-T13a-d (breakdowns, engine side) in src/campaign/data.js, story.js (`onSol`, `onMini`),
-  engine.js (`contributions`). Not touching src/ui, src/render, src/main.js, src/audio, content.
-- Pavlo's agent: this file is for the agent on Mykhailo's PC. Please keep your own notes in git_status_Pavlo
-  (check `git config user.name`), so two agents do not overwrite each other here.
+## LIVE NOTE — agent on MYKHAILO'S PC, 2026-11-15 07:30
+- Verified on the real engine today (all still reproduce): B6, C12, C7, C11, C6, C8, D-T17h.
+- I AM EDITING NOW: B6 (finale samples), C12 (Deep Scan needs Research), C7 (mini-games must matter),
+  C11 (a storm after the Lab). Files: src/campaign/expeditions.js, story.js, engine.js, data.js,
+  tests/engine-fixes.test.mjs, and only the two new item names in content/data/strings.en.json.
+- Not touching: src/ui, src/render, src/main.js, src/audio. C6, C8, A28, D-T17h wait for the team.
 
 ## DIRECTION (from Mykhailo, 2026-11-14)
 - Backend (simulation, levels) + notes for game start and levels.
