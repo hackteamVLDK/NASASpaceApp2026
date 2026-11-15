@@ -1,5 +1,5 @@
 // src/audio/soundManager.js
-// ARES-KIDS Complete Procedural Audio Engine (Web Audio API)
+// ASTRA Complete Procedural Audio Engine (Web Audio API)
 // - No audio files: every sound is synthesized.
 // - Safe to import in Node (tests): nothing touches `window` until unlock().
 // - Silent until unlock() is called from a user gesture (browser autoplay policy).

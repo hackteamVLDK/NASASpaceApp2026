@@ -228,7 +228,7 @@ test('the old crawl story lives on, word for word, in the Mission file story car
   assert.deepEqual(STORY_CARDS.map((c) => c.id), ['mission_file']);
   assert.ok(!CARDS.some((c) => c.id === 'mission_file'), 'not counted among the science cards');
   const text = t('card.mission_file.text');
-  for (const part of ['YEAR 2038.', 'PATHFINDER-X', 'every 37 minutes', 'puff of methane gas', 'goes silent', 'YEAR 2042. MISSION ARES-KIDS.', 'buried them too', 'Find the signal.']) assert.ok(text.includes(part), part);
+  for (const part of ['YEAR 2038.', 'PATHFINDER-X', 'every 37 minutes', 'puff of methane gas', 'goes silent', 'YEAR 2042. MISSION ASTRA.', 'buried them too', 'Find the signal.']) assert.ok(text.includes(part), part);
   assert.equal(t('card.mission_file.title'), 'Mission file');
   const { cardParagraphs } = await import('../src/campaign/logbook.js');
   const paras = cardParagraphs(STORY_CARDS[0], text);

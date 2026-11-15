@@ -38,7 +38,7 @@ written before the browser game existed ("the browser game is not built yet"). E
 
 | Time | Shot (from the game, 1920x1080) | Voice-over = subtitle |
 |---|---|---|
-| 0:00-0:03 | Intro crawl typing "YEAR 2042. MISSION: ARES-KIDS." | We're Mykhailo, Vlad and Pavlo, team hackteamVLDK. This is ARES-KIDS. |
+| 0:00-0:03 | Intro crawl typing "YEAR 2042. MISSION: ASTRA." | We're Mykhailo, Vlad and Pavlo, team hackteamVLDK. This is ASTRA. |
 | 0:03-0:07 | Landing: parachute, retro-rockets, camera pans down into the base | Kids aged seven to twelve land in Jezero Crater and rebuild a half-buried Mars base. |
 | 0:07-0:12 | Base cutaway; ASTRA panel slides in; Drone #01 wakes | ASTRA, the station AI, explains real science: soil over the rooms blocks radiation. |
 | 0:12-0:17 | Dust storm darkens the sky, then the Solar Wipe mini-game | Dust storms, freezing nights and solar flares become nine quick repair games. |

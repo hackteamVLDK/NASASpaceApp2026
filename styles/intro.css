@@ -3,6 +3,7 @@
 #loading .title-panel { width:900px; display:flex; flex-direction:column; align-items:center; gap:24px; padding:36px 48px; background:var(--panel); border:2px solid var(--line); border-radius:14px; }
 #loading .logo { margin:0; font-size:100px; line-height:1.15; font-weight:900; letter-spacing:6px; color:var(--orange); }
 #loading .sub { font-size:34px; color:var(--cyan); letter-spacing:2px; }
+#loading .sub:empty { display:none; } /* holds only a start-up error message */
 #loadbar { width:520px; height:14px; background:#0c1624; border:1px solid #38546e; border-radius:7px; overflow:hidden; }
 #loadbar i { display:block; height:100%; width:0; background:var(--cyan); }
 #startBtn, #introStart { font-size:34px; padding:16px 44px; background:var(--orange); border:2px solid #ffd0bd; border-radius:10px; }

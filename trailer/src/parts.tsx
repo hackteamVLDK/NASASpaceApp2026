@@ -110,10 +110,7 @@ export const EndTitle: React.FC = () => {
       <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 380, background: "linear-gradient(to bottom, rgba(5,7,10,0) 0%, rgba(5,7,10,0.88) 40%, rgba(5,7,10,1) 62%, rgba(5,7,10,1) 100%)" }} />
       <div style={{ position: "absolute", left: 0, right: 0, bottom: 70, display: "flex", flexDirection: "column", alignItems: "center", fontFamily: FONT }}>
         <Interactive.Div name="Game title" style={{ fontSize: 112, fontWeight: 800, color: ORANGE, letterSpacing: 4, opacity: fade(0.2), textShadow: "0 4px 0 #000" }}>
-          ARES-KIDS
-        </Interactive.Div>
-        <Interactive.Div name="Subtitle" style={{ fontSize: 52, color: "#ffffff", marginTop: -6, opacity: fade(0.5) }}>
-          The Jezero Signal
+          ASTRA
         </Interactive.Div>
         <Interactive.Div name="Team" style={{ fontSize: 46, fontWeight: 700, color: CYAN, marginTop: 22, opacity: fade(1.0) }}>
           Team VLDK

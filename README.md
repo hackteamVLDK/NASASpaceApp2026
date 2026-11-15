@@ -1,4 +1,4 @@
-# ARES-KIDS: The Jezero Signal
+# ASTRA
 
 A browser game for **NASA Space Apps Challenge 2026**: a 2D pixel-art side-view cutaway of a partly
 finished underground Mars base. Builder drones fell asleep in a dust storm; you land, wake them,

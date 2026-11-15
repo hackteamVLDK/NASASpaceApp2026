@@ -1,5 +1,5 @@
 /**
- * ARES-KIDS gameplay trailer, 40 s. Every picture is a screen recording of the game (capture/capture.mjs);
+ * ASTRA gameplay trailer, 40 s. Every picture is a screen recording of the game (capture/capture.mjs);
  * cut points come from the event marks in public/clips/*.marks.json. Sound: the game's own music bed,
  * its sound effects from each clip (offset by when the clip's audio began), and three Kokoro voice lines.
  *

@@ -1,4 +1,4 @@
-# SCENARIO — ARES-KIDS: The Jezero Signal
+# SCENARIO — ASTRA
 
 Status: Binding game scenario and design specification (v2, 2026-11-14). Source of truth: exported from the Claude Docs "ARES-KIDS: Master Game Design & Story Bible". Edit there or here, but keep both in sync. Audience: Claude Code, Codex and every human contributor. Check your work against this file (see master instructions, section 8).
 
@@ -31,7 +31,7 @@ Vertical-slice mapping (master instructions, section 6): build Act I first (Sols
 
 ## Core rules at a glance
 
-ARES-KIDS is a single-screen, 20-Sol base builder: players rebuild an underground Jezero Crater station, keep their astronauts healthy, and follow a 4-year-old signal to a canyon where ancient life may once have lived. Nothing in the game can kill an astronaut or end the run.
+ASTRA is a single-screen, 20-Sol base builder: players rebuild an underground Jezero Crater station, keep their astronauts healthy, and follow a 4-year-old signal to a canyon where ancient life may once have lived. Nothing in the game can kill an astronaut or end the run.
 
 | Rule | What it means in code |
 |---|---|
@@ -59,7 +59,7 @@ Data labels for code and docs. Every number is one of three kinds: NASA measurem
 
 ## Section 1: The Jezero Signal — narrative arc & full script
 
-In 2038 a robot scout recorded a thump every 37 minutes and a methane spike in a Jezero canyon, then went silent in a dust storm; in 2042 the Ares-Kids crew rebuilds the base, recovers its black box, and finds a salty spring beside rocks that may hold signs of ancient life. Every line below is final player-facing text. The Line ID is the localization key.
+In 2038 a robot scout recorded a thump every 37 minutes and a methane spike in a Jezero canyon, then went silent in a dust storm; in 2042 the ASTRA crew rebuilds the base, recovers its black box, and finds a salty spring beside rocks that may hold signs of ancient life. Every line below is final player-facing text. The Line ID is the localization key.
 
 ### Script conventions
 
@@ -302,7 +302,7 @@ The three "Learn:" lines match what the game teaches: solar power and dust (Sola
 | log.pathfinder.04 | Black box playback | Warning: dust storm approaching. Switching to sleep mo— (fiction) |
 | astra.act3.blackbox_react1 | After playback | A thump every 37 minutes, like a clock. NASA's InSight lander felt more than 1,300 marsquakes, but quakes don't usually keep a schedule. Something down there is repeating. |
 | astra.act3.blackbox_react2 | After playback | And methane! On Earth, a lot of methane comes from living things, like microbes, tiny life too small to see. But it can also come from water reacting with certain rocks. NASA's Curiosity rover has sniffed methane on Mars too, and scientists are still working out where it comes from. |
-| astra.act3.earth_reply | First Earth contact succeeds | Message from Earth, sent {delay} ago: "Ares-Kids, this is Mission Control. We heard Pathfinder-X's log. Go find that signal, and stay safe!" (fiction) |
+| astra.act3.earth_reply | First Earth contact succeeds | Message from Earth, sent {delay} ago: "Ares-1, this is Mission Control. We heard Pathfinder-X's log. Go find that signal, and stay safe!" (fiction) |
 | astra.act3.roof_built | Regolith Roof Layer built (Sol 16) | Regolith Roof Layer finished! Every room is now under thick soil, so it blocks most of the radiation. Scientists think a few meters of soil could protect real Mars bases. |
 | astra.act3.ls_t2 | Life Support Tier 2 (Sol 16) | Life Support upgraded! Mars air is mostly carbon dioxide, the gas we breathe out, and our new unit pulls oxygen from it. NASA's MOXIE made 122 grams of oxygen on Mars, about what a small dog breathes in 10 hours! And we melt ice to top up our water loop. |
 | astra.act3.deep_scan | Lab Tier 2 Deep Scan (Sol 19) | Deep Scan complete! The pulse comes from a pocket under the canyon floor. My readings say: salty liquid water. Salt helps water stay liquid even when it's very cold. (the canyon pocket is fiction) |
@@ -323,7 +323,7 @@ The Rover leaves off-screen. The radio log fills line by line; the screen shakes
 | astra.finale.methane | 85% | So where does the methane come from? Salty water reacting with rocks can make methane with no life at all. Or, long ago, tiny microbes might have made it. Only more clues can tell us which. |
 | radio.exp5.06 | 95% | RADIO: Samples sealed in tubes, just like Perseverance does. Heading home! |
 | astra.finale.home | Rover returns | Mission accomplished, Commander! You rebuilt a whole base and woke three drones. You found a salty spring next to what may be the oldest clues of life on Mars. |
-| astra.finale.earth | +1 minute | Message from Earth, sent {delay} ago: "Ares-Kids, the whole world is cheering for you. Bring those samples home!" |
+| astra.finale.earth | +1 minute | Message from Earth, sent {delay} ago: "Ares-1, the whole world is cheering for you. Bring those samples home!" |
 | astra.finale.closing | Credits start | Real scientists are asking these same questions right now. Maybe one day, you'll be the one who answers them. |
 | ui.finale.card | Ending card | THE JEZERO SIGNAL — MISSION COMPLETE |
 
@@ -495,7 +495,7 @@ Pilot & Geologist; the Comms Officer is new.
 | char.mission_control.name | Rosa Varga |
 | char.mission_control.role | Mission Control, Earth |
 | char.mission_control.bio | Rosa is the CAPCOM: the one voice that talks to the crew from Earth. She has guided spacecraft for thirty years. Her messages arrive minutes late, but always with a smile. |
-| char.mission_control.trait | "Ares-Kids, Earth is with you." |
+| char.mission_control.trait | "Ares-1, Earth is with you." |
 | ui.char.rename | Rename your Commander |
 
 The co-op lobby uses these bios next to the role cards; the `lobbyBlurb` texts in Section 7 stay
@@ -503,7 +503,7 @@ as the one-line role summaries.
 
 **Mission Control's voice.** Rosa speaks only in Earth messages (`astra.act3.earth_reply`,
 `astra.finale.earth`, and future Earth-window messages). Her style: warm, calm, short. Her first message starts
-with "Ares-Kids, this is Mission Control"; later ones start with "Ares-Kids,". She never gives
+with "Ares-1, this is Mission Control"; later ones start with "Ares-1,". She never gives
 orders the player cannot follow. Every
 message reminds players of the light delay ("sent {delay} ago" is shown by ASTRA, not by Rosa).
 
@@ -1530,7 +1530,7 @@ There is a kid-friendly Mission Rating (stars, never zero) but no "lose" state.
 
 | Card | Tier | Unlocked by | Title | Text | Real mission / source org | Image | Source |
 |---|---|---|---|---|---|---|---|
-| mission_file | story | Start of the game | Mission file | YEAR 2038. A robot scout named PATHFINDER-X is exploring Jezero Crater on Mars. Deep inside a canyon, it feels something strange. A thump in the ground... every 37 minutes. Then its nose sniffs a sudden puff of methane gas. A giant dust storm rolls in. Pathfinder-X goes silent. YEAR 2042. MISSION ARES-KIDS. Builder drones were sent ahead to dig an underground base. But a new storm buried them too. Now it's your turn. Land. Wake the drones. Find the signal. | Ares-Kids story (fiction) | — | — |
+| mission_file | story | Start of the game | Mission file | YEAR 2038. A robot scout named PATHFINDER-X is exploring Jezero Crater on Mars. Deep inside a canyon, it feels something strange. A thump in the ground... every 37 minutes. Then its nose sniffs a sudden puff of methane gas. A giant dust storm rolls in. Pathfinder-X goes silent. YEAR 2042. MISSION ASTRA. Builder drones were sent ahead to dig an underground base. But a new storm buried them too. Now it's your turn. Land. Wake the drones. Find the signal. | ASTRA story (fiction) | — | — |
 | gravity | core | astra.intro.landing | Mars Gravity | Mars pulls on you with 38% of Earth's gravity. You could jump about two and a half times higher there! | NASA Mars Fact Sheet | logbook.gravity | https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html |
 | no_shield | core | astra.intro.why_underground | No Global Shield | Mars lost its planet-wide magnetic field billions of years ago. Only small magnetic patches remain in its crust. | MAVEN | logbook.no_shield | https://science.nasa.gov/missions/maven/nasas-maven-illuminates-new-understanding-of-auroras-at-mars/ |
 | soil_blanket | core | astra.intro.why_underground | Soil Blanket | Soil overhead blocks a lot of space radiation. Scientists calculate that about 1 to 2.5 meters would protect a Mars base. | Curiosity RAD (model checked against it) | logbook.soil_blanket | https://doi.org/10.1029/2019JE006246 |

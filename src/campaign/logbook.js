@@ -76,7 +76,7 @@ export const CARDS = [
  * `mission_file` keeps the old intro crawl word for word (fiction), now that the intro is a picture storyboard.
  */
 export const STORY_CARDS = Object.freeze([Object.freeze({
-  id: 'mission_file', tier: 'story', triggers: Object.freeze([]), org: 'Ares-Kids story (fiction)', url: null,
+  id: 'mission_file', tier: 'story', triggers: Object.freeze([]), org: 'ASTRA story (fiction)', url: null,
   paragraphs: Object.freeze(['YEAR 2042.', "Now it's your turn."]), // short paragraphs: 2038 / 2042 / Now it's your turn
 })]);
 

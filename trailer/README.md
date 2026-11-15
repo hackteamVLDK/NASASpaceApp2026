@@ -1,4 +1,4 @@
-# ARES-KIDS gameplay trailer (40 s)
+# ASTRA gameplay trailer (40 s)
 
 A 40-second trailer for NASA Space Apps Challenge 2026 (Vienna, Team VLDK), cut in Remotion.
 Every shot is a screen recording of the real game. Nothing in the game code is changed for the

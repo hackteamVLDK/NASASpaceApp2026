@@ -46,7 +46,7 @@ const IntroInner = () => {
   const { fps } = useVideoConfig();
   return (
     <>
-      <TypedLine text="YEAR 2042. MISSION ARES-KIDS." />
+      <TypedLine text="YEAR 2042. MISSION ASTRA." />
       <Interactive.Div
         name="Game title"
         style={{
@@ -57,7 +57,7 @@ const IntroInner = () => {
           opacity: interpolate(frame, [1.7 * fps, 2.3 * fps], [0, 1], clamp),
         }}
       >
-        ARES-KIDS: The Jezero Signal
+        ASTRA
       </Interactive.Div>
     </>
   );
@@ -315,10 +315,7 @@ const EndInner = () => {
         name="End title"
         style={{ fontFamily: SANS, fontSize: 110, fontWeight: 700, color: ORANGE, opacity: interpolate(frame, [0, 0.4 * fps], [0, 1], clamp) }}
       >
-        ARES-KIDS
-      </Interactive.Div>
-      <Interactive.Div name="End subtitle" style={{ marginTop: 12, fontFamily: SANS, fontSize: 56, color: "#ffffff" }}>
-        The Jezero Signal
+        ASTRA
       </Interactive.Div>
       <Interactive.Div name="Event and team" style={{ marginTop: 40, fontFamily: MONO, fontSize: 40, color: CYAN }}>
         NASA Space Apps Challenge 2026 · team hackteamVLDK

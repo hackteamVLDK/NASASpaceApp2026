@@ -1,4 +1,4 @@
-# ARES-KIDS demo video (30 s)
+# ASTRA demo video (30 s)
 
 A Remotion cut of the 30-second shot list in [docs/submission/DEMO_VIDEO.md](../docs/submission/DEMO_VIDEO.md),
 with captions generated from `docs/submission/DEMO_VIDEO.en.srt`. Pictures come from `assets/incoming/`

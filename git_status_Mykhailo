@@ -17,6 +17,15 @@ PUSHED (~13:45): "less text, calmer pace, ASTRA's voice, one design for the open
 FOR VLAD: SCENARIO timing numbers of the opening were updated (only numbers); the prose still says "Dark screen" for panel 0.
 Nothing held now: all files are free.
 
+RENAME (2026-11-15, Mykhailo's decision): the game is now called just "ASTRA" (was "ARES-KIDS: The Jezero Signal").
+Done everywhere except pitch/: title screen, browser tab, README, SCENARIO (title, overview, "MISSION ASTRA", Logbook
+story label), docs, trailer, demo video, the one-slide summary. "The Jezero Signal" stays as the story's mystery (finale
+card, mission "Find the Jezero Signal"). Mission Control's radio call sign is now "Ares-1" (the station), not
+"Ares-Kids", so it never sounds like Earth talking to the AI. Save keys (ares-kids-save-v1 ...) are unchanged on purpose.
+FOR PAVLO: please rename the pitch (pitch/index.html, pitch/README.md, the PDF backup) to "ASTRA"; I did not touch pitch/
+because you were editing it.
+FOR VLAD: video/ARES-KIDS_trailer_B_facts.mp4 has "ARES-KIDS" burned into its end title; it needs a new export to say ASTRA.
+
 ## (earlier) NOW (2026-11-15, from ~10:00) — big gameplay batch
 Mykhailo's request: (1) decisions must change the game a lot, (2) you can lose: 3 lives + a checkpoint before every
 decision, Game Over when they run out (this is A28, decided by Mykhailo), (3) things to do while rooms are building.

@@ -29,7 +29,7 @@ export const DemoVideo = () => {
             { text: " hackteamVLDK.", startMs: 1800, endMs: 2100, timestampMs: 1950, confidence: null },
             { text: " This", startMs: 2100, endMs: 2400, timestampMs: 2250, confidence: null },
             { text: " is", startMs: 2400, endMs: 2700, timestampMs: 2550, confidence: null },
-            { text: " ARES-KIDS.", startMs: 2700, endMs: 3000, timestampMs: 2850, confidence: null, pageBreakAfter: true },
+            { text: " ASTRA.", startMs: 2700, endMs: 3000, timestampMs: 2850, confidence: null, pageBreakAfter: true },
           ]}
         />
       </TransitionSeries.Sequence>
