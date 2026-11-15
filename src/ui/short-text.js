@@ -5,7 +5,7 @@
  */
 export const SHORT = Object.freeze({
   // Landing, tutorial, and the first two Sols: one idea or action at a time.
-  'astra.intro.landing': 'Welcome to Ares-1!',
+  'astra.intro.landing': 'Welcome to ASTRA Base!',
   'astra.intro.why_underground': 'Soil reduces space radiation',
   'astra.intro.status': 'Our base needs building',
   'astra.tut.hp_intro': 'This is your HP',

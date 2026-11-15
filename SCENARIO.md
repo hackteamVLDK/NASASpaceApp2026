@@ -192,7 +192,7 @@ The three "Learn:" lines match what the game teaches: solar power and dust (Sola
 **Scene layout.** Single vertical 2D world canvas (`1920 x 3200 px` logical units), side-view cutaway cross-section:
 
 - **Top zone (`Y: 0` to `Y: 1100`):** dusty butterscotch-orange Martian sky, distant Jezero Crater mountains, surface ground line at `Y: 1050`. On the surface: the airlock dome, the dust-covered Solar Array (pre-built), a regolith mound, the dish antenna **snapped in half by the storm** (useless, which is why the Lab later needs Pathfinder-X's dish), and 2 buried dormant drones (Drones #02 and #03; shown in the intro cutscene only).
-- **Subterranean zone (`Y: 1100` to `Y: 3200`):** cutaway of the Martian crust housing Ares-1:
+- **Subterranean zone (`Y: 1100` to `Y: 3200`):** cutaway of the Martian crust housing ASTRA Base:
   - *Left wing (operational, warm light):* Bedroom, Kitchen, Water & Air Life Support, and a small crew airlock shaft under the surface dome. The crew airlock is separate from the Garage & Airlock module: expeditions and the −2 Water airlock cost use the Garage & Airlock only.
   - *Right wing (unfinished, dark steel frames in sand):* all six buildable modules as frames: Battery & Heating, Workshop, Greenhouse, Garage & Airlock, Research & Comms Lab, Recreation & Storage. **Drone #01** sits here with a blinking red LED.
 
@@ -229,7 +229,7 @@ The three "Learn:" lines match what the game teaches: solar power and dust (Sola
 
 | Line ID | Trigger | Line |
 |---|---|---|
-| astra.intro.landing | Lander touches down | Touchdown confirmed! Welcome to Ares-1, our station in Jezero Crater. I'm ASTRA 6.7, your station AI. Gravity here is only 38% of Earth's, so try not to bounce into the ceiling! |
+| astra.intro.landing | Lander touches down | Touchdown confirmed! Welcome to ASTRA Base, our station in Jezero Crater. I'm ASTRA 6.7, your station AI. Gravity here is only 38% of Earth's, so try not to bounce into the ceiling! |
 | astra.intro.why_underground | Camera pans into base | Our base is built underground, under a thick blanket of Martian soil. Space radiation is invisible energy that zooms in from the Sun and deep space. Mars has very thin air and no magnetic shield around the whole planet, so space radiation reaches the ground. The soil above us blocks most of it. |
 | astra.intro.status | Tutorial hand-off, camera shows both wings | Good news: the Bedroom, Kitchen and Life Support work. Bad news: everything on the right is just steel frames, and our solar panels are buried in dust. |
 | astra.tut.hp_intro | HP bar highlights | This green bar is your HP, your health and energy. Hard work and radiation lower it. Sleep and fresh food restore your energy. Real radiation adds up over time, so astronauts limit their time outside. |
@@ -302,7 +302,7 @@ The three "Learn:" lines match what the game teaches: solar power and dust (Sola
 | log.pathfinder.04 | Black box playback | Warning: dust storm approaching. Switching to sleep mo— (fiction) |
 | astra.act3.blackbox_react1 | After playback | A thump every 37 minutes, like a clock. NASA's InSight lander felt more than 1,300 marsquakes, but quakes don't usually keep a schedule. Something down there is repeating. |
 | astra.act3.blackbox_react2 | After playback | And methane! On Earth, a lot of methane comes from living things, like microbes, tiny life too small to see. But it can also come from water reacting with certain rocks. NASA's Curiosity rover has sniffed methane on Mars too, and scientists are still working out where it comes from. |
-| astra.act3.earth_reply | First Earth contact succeeds | Message from Earth, sent {delay} ago: "Ares-1, this is Mission Control. We heard Pathfinder-X's log. Go find that signal, and stay safe!" (fiction) |
+| astra.act3.earth_reply | First Earth contact succeeds | Message from Earth, sent {delay} ago: "ASTRA Base, this is Mission Control. We heard Pathfinder-X's log. Go find that signal, and stay safe!" (fiction) |
 | astra.act3.roof_built | Regolith Roof Layer built (Sol 16) | Regolith Roof Layer finished! Every room is now under thick soil, so it blocks most of the radiation. Scientists think a few meters of soil could protect real Mars bases. |
 | astra.act3.ls_t2 | Life Support Tier 2 (Sol 16) | Life Support upgraded! Mars air is mostly carbon dioxide, the gas we breathe out, and our new unit pulls oxygen from it. NASA's MOXIE made 122 grams of oxygen on Mars, about what a small dog breathes in 10 hours! And we melt ice to top up our water loop. |
 | astra.act3.deep_scan | Lab Tier 2 Deep Scan (Sol 19) | Deep Scan complete! The pulse comes from a pocket under the canyon floor. My readings say: salty liquid water. Salt helps water stay liquid even when it's very cold. (the canyon pocket is fiction) |
@@ -323,7 +323,7 @@ The Rover leaves off-screen. The radio log fills line by line; the screen shakes
 | astra.finale.methane | 85% | So where does the methane come from? Salty water reacting with rocks can make methane with no life at all. Or, long ago, tiny microbes might have made it. Only more clues can tell us which. |
 | radio.exp5.06 | 95% | RADIO: Samples sealed in tubes, just like Perseverance does. Heading home! |
 | astra.finale.home | Rover returns | Mission accomplished, Commander! You rebuilt a whole base and woke three drones. You found a salty spring next to what may be the oldest clues of life on Mars. |
-| astra.finale.earth | +1 minute | Message from Earth, sent {delay} ago: "Ares-1, the whole world is cheering for you. Bring those samples home!" |
+| astra.finale.earth | +1 minute | Message from Earth, sent {delay} ago: "ASTRA Base, the whole world is cheering for you. Bring those samples home!" |
 | astra.finale.closing | Credits start | Real scientists are asking these same questions right now. Maybe one day, you'll be the one who answers them. |
 | ui.finale.card | Ending card | THE JEZERO SIGNAL — MISSION COMPLETE |
 
@@ -495,7 +495,7 @@ Pilot & Geologist; the Comms Officer is new.
 | char.mission_control.name | Rosa Varga |
 | char.mission_control.role | Mission Control, Earth |
 | char.mission_control.bio | Rosa is the CAPCOM: the one voice that talks to the crew from Earth. She has guided spacecraft for thirty years. Her messages arrive minutes late, but always with a smile. |
-| char.mission_control.trait | "Ares-1, Earth is with you." |
+| char.mission_control.trait | "ASTRA Base, Earth is with you." |
 | ui.char.rename | Rename your Commander |
 
 The co-op lobby uses these bios next to the role cards; the `lobbyBlurb` texts in Section 7 stay
@@ -503,7 +503,7 @@ as the one-line role summaries.
 
 **Mission Control's voice.** Rosa speaks only in Earth messages (`astra.act3.earth_reply`,
 `astra.finale.earth`, and future Earth-window messages). Her style: warm, calm, short. Her first message starts
-with "Ares-1, this is Mission Control"; later ones start with "Ares-1,". She never gives
+with "ASTRA Base, this is Mission Control"; later ones start with "ASTRA Base,". She never gives
 orders the player cannot follow. Every
 message reminds players of the light delay ("sent {delay} ago" is shown by ASTRA, not by Rosa).
 
@@ -1640,7 +1640,7 @@ gameplay values, tuned in playtests. In co-op the rating is shared; Crew Care av
 
 | Line ID | Trigger | Line |
 |---|---|---|
-| report.title | Report header | MISSION REPORT — ARES-1 |
+| report.title | Report header | MISSION REPORT — ASTRA BASE |
 | report.crew | Panel title | Crew health |
 | report.base | Panel title | Base status |
 | report.space_weather | Panel title | Space weather |

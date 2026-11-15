@@ -1,6 +1,6 @@
 /**
  * The campaign simulation (SCENARIO.md v2): a solo Commander and three builder drones rebuild
- * Ares-1 over 20 Sols and follow the Jezero Signal. Pure and deterministic: no DOM, no
+ * ASTRA Base over 20 Sols and follow the Jezero Signal. Pure and deterministic: no DOM, no
  * Math.random (a seeded generator lives in `state.rng`), no wall clock. One step = one Mars minute.
  *
  *   const s = createCampaign({ seed: 1 });

@@ -30,10 +30,10 @@ function filter(src, dst, robot) {
 
 const index = JSON.parse(fs.readFileSync(INDEX, 'utf8'));
 fs.mkdirSync(RAW, { recursive: true });
-// keep a clean copy of every recording before the first filtering
-for (const { file } of Object.values(index)) {
-  const raw = path.join(RAW, file);
-  if (!fs.existsSync(raw) && !Object.values(index).find((x) => x.file === file)?.filter) fs.copyFileSync(path.join(OUT, file), raw);
+// keep a clean copy of every recording before it is filtered: an entry without `filter` is a fresh (clean) render from
+// astra-voice.mjs, so its file replaces any older clean copy (e.g. after a line's text changed)
+for (const x of Object.values(index)) {
+  if (!x.filter) fs.copyFileSync(path.join(OUT, x.file), path.join(RAW, x.file));
 }
 
 const tryAt = process.argv.indexOf('--try');

@@ -12,7 +12,7 @@ and the scenario disagree, the scenario wins.
 
 ## The story so far (from the scenario and the team)
 
-2042, mission ASTRA, base Ares-1 in Jezero Crater. Builder **drones** were sent ahead
+2042, mission ASTRA, base ASTRA Base in Jezero Crater. Builder **drones** were sent ahead
 and built half of an underground base. A dust storm put them to sleep. **People then arrive
 by lander** and carry on, with the station AI **ASTRA 6.7** as their guide. In the backend:
 the crew do the building (job "Build"); every drone that is woken makes building faster by

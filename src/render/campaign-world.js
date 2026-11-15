@@ -1,5 +1,5 @@
 /**
- * Draws the cutaway of Ares-1 from CAMPAIGN state (browser only). Reads state, never changes it.
+ * Draws the cutaway of ASTRA Base from CAMPAIGN state (browser only). Reads state, never changes it.
  * The camera is { cx, cy, zoom }: world point (cx, cy) is at the screen centre. Room positions come from
  * LAYOUT (src/campaign/data.js) through geometry.js; bodies move by movers.js.
  *

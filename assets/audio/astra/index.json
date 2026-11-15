@@ -847,8 +847,8 @@
  },
  "astra.intro.landing": {
   "file": "astra.intro.landing.mp3",
-  "sec": 4.66,
-  "text": "Welcome to Ares One in Jezero Crater! I'm Astra, your station friend.",
+  "sec": 4.68,
+  "text": "Welcome to Astra Base in Jezero Crater! I'm Astra, your station friend.",
   "filter": "robot-0.55"
  },
  "astra.intro.status": {

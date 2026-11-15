@@ -26,7 +26,7 @@ export const WORLD = Object.freeze({
   subsurfaceTopY: 1100,
   camera: Object.freeze({ skyY: 400, surfaceY: 850, baseOverviewY: 2100 }),
   place: 'Jezero Crater',
-  base: 'Ares-1',
+  base: 'ASTRA Base',
   mission: 'ASTRA',
   year: 2042,
   // PROPOSALS

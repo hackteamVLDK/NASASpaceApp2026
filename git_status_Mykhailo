@@ -20,8 +20,8 @@ Nothing held now: all files are free.
 RENAME (2026-11-15, Mykhailo's decision): the game is now called just "ASTRA" (was "ARES-KIDS: The Jezero Signal").
 Done everywhere except pitch/: title screen, browser tab, README, SCENARIO (title, overview, "MISSION ASTRA", Logbook
 story label), docs, trailer, demo video, the one-slide summary. "The Jezero Signal" stays as the story's mystery (finale
-card, mission "Find the Jezero Signal"). Mission Control's radio call sign is now "Ares-1" (the station), not
-"Ares-Kids", so it never sounds like Earth talking to the AI. Save keys (ares-kids-save-v1 ...) are unchanged on purpose.
+card, mission "Find the Jezero Signal"). The station is now "ASTRA Base" (was Ares-1); Mission Control calls "ASTRA Base, this is Mission
+Control", so it never sounds like Earth talking to the AI ASTRA 6.7. Save keys (ares-kids-save-v1 ...) are unchanged on purpose.
 FOR PAVLO: please rename the pitch (pitch/index.html, pitch/README.md, the PDF backup) to "ASTRA"; I did not touch pitch/
 because you were editing it.
 FOR VLAD: video/ARES-KIDS_trailer_B_facts.mp4 has "ARES-KIDS" burned into its end title; it needs a new export to say ASTRA.

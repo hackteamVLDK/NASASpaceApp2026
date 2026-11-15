@@ -1,5 +1,5 @@
 /**
- * Draws the side-view cutaway of Ares-1 from simulation state (browser only).
+ * Draws the side-view cutaway of ASTRA Base from simulation state (browser only).
  * Reads state, never changes it. The world is 1920 x 3200 units (SCENARIO section 1); the
  * camera is { cy, zoom }: world point (960, cy) is the centre of the 1920 x 1080 screen.
  */

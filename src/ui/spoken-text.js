@@ -110,7 +110,7 @@ export const SPOKEN = Object.freeze({
   'astra.hp.surface_70': "Radiation adds up outside. Let's keep this trip short.",
   'astra.hp.zero_base': "Time for medical rest until tomorrow. Our drones and I will keep things running.",
   'astra.hp.zero_expedition': "A rescue drone will bring you and some supplies home for rest.",
-  'astra.intro.landing': "Welcome to Ares One in Jezero Crater! I'm Astra, your station friend.",
+  'astra.intro.landing': "Welcome to Astra Base in Jezero Crater! I'm Astra, your station friend.",
   'astra.intro.status': "Our Bedroom, Kitchen and Life Support work. Our solar panels need cleaning.",
   'astra.intro.why_underground': "Our underground base has thick soil shielding. It blocks most radiation, but some gets through.",
   'astra.logbook.first': "Your first Science Logbook card! We collect real facts as we explore.",
