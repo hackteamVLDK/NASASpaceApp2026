@@ -12,3 +12,4 @@ One row per delegated task, newest last. Written by `tools/codex/delegate.mjs`.
 | 2026-11-14 18:58 | [Pipe mini-game, energy gauge and pause bugs: root causes and fixes](records/20261114-195843-pipe-mini-game-energy-gauge-and-pause-bugs-root-.md) | bug | read-only | 0 | 0 |
 | 2026-11-14 19:06 | [Entry scene for the astronaut and a 3-floor base: proposals](records/20261114-200625-entry-scene-for-the-astronaut-and-a-3-floor-base.md) | proposal | read-only | 0 | 1 |
 | 2026-11-14 23:37 | [Review save validation (B4)](records/20261115-003748-review-save-validation-b4.md) | review | read-only | 1 | 0 |
+| 2026-11-15 06:38 | [Independent tests for Sol Plan and Fitness](records/20261115-073832-independent-tests-for-sol-plan-and-fitness.md) | tests | write | 0 | 1 |
