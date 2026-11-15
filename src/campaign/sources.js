@@ -67,3 +67,23 @@ export function whereToFind(item) {
 
 /** Every item the game knows must have a source. */
 export const itemsWithoutSource = () => ITEMS.filter((it) => !Object.hasOwn(SOURCES, it));
+
+/**
+ * Science behind the underground soil picture (src/render/soil-detail.js). Same shape as SOURCES:
+ * element id -> list of [source, URL, provenance tag]. Tags as SCENARIO requires: nasa_measurement, approximation, gameplay.
+ */
+export const SOIL_SOURCES = Object.freeze({
+  layers: [
+    ['Perseverance RIMFAX radar: lake sediments and erosion under Jezero (Science Advances 2024)', 'https://www.space.com/mars-perseverance-rover-radar-imager-ancient-lake', 'approximation'],
+    ['Perseverance RIMFAX: buried ancient delta (NASA/JPL/UCLA/UiO)', 'https://physicalsciences.ucla.edu/ucla-researchers-uncover-buried-ancient-delta-on-mars', 'approximation'],
+  ],
+  colour: [['NASA: why Mars is red (ferrihydrite mixed with basalt)', 'https://www.nasa.gov/solar-system/nasa-new-study-on-why-mars-is-red-supports-potentially-habitable-past', 'nasa_measurement']],
+  bedrock: [['Perseverance RIMFAX / crater floor: volcanic rock in Jezero', 'https://physicalsciences.ucla.edu/ucla-researchers-uncover-buried-ancient-delta-on-mars', 'nasa_measurement']],
+  boulders: [['Perseverance, Delta Scarp: flood-carried boulders (Mangold et al., Science 2021)', 'https://doi.org/10.1126/science.abl4051', 'nasa_measurement']],
+  veins: [
+    ['Curiosity ChemCam: hydrated calcium sulfates in Martian rocks', 'https://science.nasa.gov/resource/signs-of-hydrated-calcium-sulfates-in-martian-rocks?site=msl', 'nasa_measurement'],
+    ['Curiosity finds calcium-rich deposits (JPL)', 'https://www.jpl.nasa.gov/videos/curiosity-finds-calcium-rich-deposits/', 'nasa_measurement'],
+  ],
+  meteorite: [['Curiosity: iron-nickel meteorite "Cacao" (~30 cm)', 'https://science.nasa.gov/photojournal/curiosity-finds-a-meteorite-cacao/', 'nasa_measurement']],
+  ice: [['SWIM subsurface ice map (PIA26045): buried ice mostly poleward of ~40 deg; Jezero is ~18 deg N', 'https://photojournal.jpl.nasa.gov/catalog/PIA26045', 'gameplay']],
+});
