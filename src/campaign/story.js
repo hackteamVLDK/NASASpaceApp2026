@@ -172,6 +172,7 @@ export function onModuleStart(s, id, emit) {
 }
 
 export function onModuleBuilt(s, id, emit) {
+  if (id === 'recreation') say(emit, 'astra.fit.rec_open', 'cheerful'); // 3.11: the exercise bike and weight machine
   const l = MODULE_LINES[id]?.built;
   if (l) say(emit, l, 'cheerful');
   if (id === 'greenhouse') after(s, s.minute + SOL, 'harvest');

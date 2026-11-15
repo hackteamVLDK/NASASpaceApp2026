@@ -45,6 +45,16 @@ export const STORAGE_REFILL = Object.freeze({ below: 10, amount: 30, cooldownSol
 /** Shielding factors of rooms (3.6). */
 export const SHIELD = Object.freeze({ surface: 1.0, rightBeforeRoof: 0.3, left: 0.05, bedroom: 0.02 });
 
+/** Fitness of SCENARIO 3.11. The loss is an approximation (real direction, speed raised so it matters in 20 Sols); the rest are gameplay values. */
+export const FITNESS = Object.freeze({
+  start: 80, lossPerSol: 10,
+  bedroomPerHour: 10, recPerHour: 20, recT2PerHour: 25,
+  goodAt: 70, goodMorale: 1, // Fitness 70 or more: +1 Morale per Sol
+  lowAt: 40, lowWorkSpeed: 0.8, lowTripMult: 1.1, // below 40: work -20%, trips x1.10
+  criticalAt: 15, criticalHpPerSol: -2, criticalTripMult: 1.25, // 15 or less: -2 HP per Sol, trips x1.25 (the cap)
+  streakForBadge: 10, // Strong Bones: 70 or more for 10 Sols in a row (8.3)
+});
+
 export const SLEEP_FROM = 22;
 export const SLEEP_TO = 6;
 export const MEALS = Object.freeze([6, 12, 18]);

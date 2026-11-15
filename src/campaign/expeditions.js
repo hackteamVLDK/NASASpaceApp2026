@@ -11,6 +11,7 @@
  *   - the Scrap Run (`run`) and the Ice Run (`ice`, needs the Deep Ice Drill) are repeatable.
  */
 import { SOL, HP, DEEP_SCAN_RESEARCH, MINERAL_SCAN_RESEARCH } from './data.js';
+import { fitMult } from './plan.js';
 import { clockAt, online, after, clampTo } from './util.js';
 import { nextRandom } from '../sim/rng.js';
 import { addTask, scheduleBreakdown } from './story.js';
@@ -89,6 +90,7 @@ export function hpCost(s, ex, { rough = false } = {}) {
   let c = HP.radiationPerSol * sols * ROUTE[ex.route] * (1 - RR_COMMANDER);
   if (s.upgrades.rover_shielding) c *= 0.6;
   if (s.upgrades.suit_liner) c *= 0.75;
+  c *= fitMult(s.fitness ?? 80); // M_fit (3.6, 3.11), measured at launch
   return c + (rough ? 5 : 0);
 }
 

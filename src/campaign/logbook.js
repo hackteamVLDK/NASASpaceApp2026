@@ -91,6 +91,7 @@ export const BADGES = [
   ['panel_sweeper', (s) => s.stats.wipes >= 5, 'sticky_dust'],
   ['ice_miner', (s) => s.stats.melted >= 5, 'hidden_ice'],
   // 8.3: "Sleep 8 hours or more every Sol from Sol 1 to Sol 6" (a full night in the Bedroom is 22:00-06:00 = 480 minutes)
+  ['strong_bones', (s) => (s.stats.fitBest ?? 0) >= 10, 'strong_in_space'], // 8.3: Fitness 70+ for 10 Sols in a row
   ['well_rested', (s) => Array.isArray(s.stats.sleepNights) && s.stats.sleepNights.length === 6 && s.stats.sleepNights.every((m) => m >= 8 * 60), 'sleep_missions'],
   ['first_contact', (s) => Boolean(s.flags.earthContact), 'slow_messages'],
   ['space_gardener', (s) => s.stats.harvest >= 50, 'green_air'],
@@ -111,7 +112,11 @@ const STORY_FINDS = [['probe_power_core', 1], ['weather_sensor', 1], ['black_box
 
 export function buildReport(s) {
   const samples = Math.max(1, s.stats.samples);
-  const crewCare = (s.stats.hpSum / samples + s.stats.moraleSum / samples) / 2;
+  // 8.2: the average of HP, Fitness and Morale. Saves from before Fitness have no Fitness samples: then HP and Morale only.
+  const fitSamples = s.stats.fitSamples ?? 0;
+  const crewCare = fitSamples > 0
+    ? (s.stats.hpSum / samples + s.stats.moraleSum / samples + s.stats.fitSum / fitSamples) / 3
+    : (s.stats.hpSum / samples + s.stats.moraleSum / samples) / 2;
   const modulesBuilt = ['battery', 'workshop', 'greenhouse', 'garage', 'lab', 'recreation'].filter((id) => s.modules[id].status === 'online').length;
   const tier2 = Object.values(s.modules).filter((m) => m.tier === 2).length;
   const roof = s.modules.roof.status === 'online' ? 1 : 0;

@@ -13,9 +13,10 @@
 import { seedFrom, nextRandom } from '../sim/rng.js';
 import {
   SOL, START_MINUTE, RES, START_RES, CAP, NEEDS, BASE_HEAT_LOSS, RECYCLER, HP, SHIELD, SLEEP_FROM, SLEEP_TO, MEALS,
-  MODULES, BUILD_SOLS, UPGRADE_SOLS, DRONE_BUILD_POWER, STORM, RECIPES, UPGRADES, MODULE_LINES, BREAKDOWN_RULES, RULES, STORAGE_REFILL,
+  MODULES, FITNESS, BUILD_SOLS, UPGRADE_SOLS, DRONE_BUILD_POWER, STORM, RECIPES, UPGRADES, MODULE_LINES, BREAKDOWN_RULES, RULES, STORAGE_REFILL,
 } from './data.js';
 import { clockAt, isNight, online } from './util.js';
+import { blockAt, planMoralePerSol, workSpeed, exercisePlace, fitnessPerHour, PLAN_IDS } from './plan.js';
 import { storyMinute, onSol, applyChoice, choiceBlock, onModuleStart, onModuleBuilt, onKit, onMini, miniBlock, runTimer, onDroneAwake, onMove, startSoilWash, soilWashBlock, MINI_GAMES } from './story.js';
 export { soilWashBlock };
 import { expeditionMinute, startExpedition, radioChoice } from './expeditions.js';
@@ -38,6 +39,9 @@ export function createCampaign({ seed = 1, hpZeroEndsRun = RULES.hpZeroEndsRun }
     over: null, // { reason: 'hp' | 'trip', sol, minute } once the mission is over
     res: { ...START_RES },
     hp: HP.commanderMax,
+    fitness: FITNESS.start, // 3.11
+    plan: 'balanced', // 3.10: the Sol Plan preset in use
+    planNext: null, // a preset chosen today starts at the next midnight
     hpMax: HP.commanderMax,
     research: 0,
     modules,
@@ -98,6 +102,10 @@ export function contributions(s) {
   add('oxygen', 'Crew breathing', NEEDS.oxygen);
   add('food', 'Crew meals', NEEDS.food);
   add('morale', 'Crew needs', NEEDS.morale);
+  // The Sol Plan's Morale, counted against Balanced: the 3.4 snapshots are Balanced days, and 3.10 says Crunch is
+  // "4 Morale per Sol less than Balanced". The plan pauses on a trip (3.10, Solo).
+  // Not added: "Fitness 70 or more: +1 Morale per Sol" (3.11) contradicts the 3.4 snapshots; see docs/ERRORS.md B12.
+  if (!s.away) add('morale', 'Sol Plan (free time and work hours)', planMoralePerSol(PLAN_IDS.includes(s.plan) ? s.plan : 'balanced') - planMoralePerSol('balanced'));
   const blackout = s.res.power <= 0;
   const dry = s.res.water <= 0; // 3.1: with no water the Greenhouse pauses
   for (const id of Object.keys(MODULES)) {
@@ -141,10 +149,13 @@ export function locationAt(s) {
   if (s.away) return 'away';
   if (s.medRest || s.flags.shelter) return 'bedroom';
   if (s.order && s.minute < s.order.until) return s.order.place;
-  const { hourFloat, hour } = clockAt(s.minute);
-  if (isNight(hourFloat)) return 'bedroom';
-  if (MEALS.includes(hour)) return 'kitchen';
+  const { hour } = clockAt(s.minute);
+  const block = blockAt(s, hour); // the Sol Plan (3.10)
+  if (block === 'sleep') return 'bedroom';
+  if (block === 'meal' || MEALS.includes(hour)) return 'kitchen';
   if (s.flags.outside) return 'outside';
+  if (block === 'exercise') return exercisePlace(s);
+  if (block === 'free') return online(s, 'recreation') ? 'recreation' : 'kitchen';
   return online(s, 'workshop') ? 'workshop' : 'kitchen';
 }
 
@@ -193,10 +204,13 @@ function tick(s, emit) {
   refreshWhere(s, emit);
   stepHp(s, emit, now);
   if (s.status !== 'running') return; // the Commander ran out of HP: the mission is over
+  stepFitness(s, emit, now, dt);
   trackStats(s, dt, now);
 
   // drones: building, upgrading
-  const mult = s.res.morale < 30 ? 0.75 : 1;
+  // Morale below 30 slows the work; the Commander's Sol Plan and Fitness speed it up or slow it down (3.10, 3.11).
+  // While he is away the base runs on Autopilot at normal speed.
+  const mult = (s.res.morale < 30 ? 0.75 : 1) * (s.away ? 1 : workSpeed(s));
   for (const d of s.drones) {
     if (!d.task || d.status !== 'awake') continue;
     const m = s.modules[d.task.module];
@@ -260,10 +274,18 @@ function trackStats(s, dt, now) {
   if (s.where === 'outside' || s.where === 'away') st.outsideMin += 1;
   if (greenhouseWorking(s)) st.harvest += MODULES.greenhouse[s.modules.greenhouse.tier === 2 ? 't2' : 't1'].food * s.mult.food * dt;
   st.lowestHp = Math.min(st.lowestHp, s.hp);
-  if (now.minute === 0) { st.samples += 1; st.hpSum += s.hp; st.moraleSum += s.res.morale; }
+  if (now.minute === 0) {
+    st.samples += 1; st.hpSum += s.hp; st.moraleSum += s.res.morale;
+    st.fitSamples = (st.fitSamples ?? 0) + 1; st.fitSum = (st.fitSum ?? 0) + s.fitness; // Crew Care averages Fitness too (8.2)
+  }
 }
 
 function onNewSol(s, emit, now) {
+  // the Sol Plan chosen yesterday starts now (3.10); the Strong Bones streak counts Sols at Fitness 70+ (8.3)
+  if (s.planNext) { s.plan = s.planNext; s.planNext = null; }
+  s.stats.fitStreak = s.fitness >= FITNESS.goodAt ? (s.stats.fitStreak ?? 0) + 1 : 0;
+  s.stats.fitBest = Math.max(s.stats.fitBest ?? 0, s.stats.fitStreak);
+  if (now.sol === 2) emit({ type: 'astra', lineId: 'astra.plan.unlock', mood: 'cheerful' });
   s.stats.recycleStreak = s.recycleEta >= RECYCLER.ok ? s.stats.recycleStreak + 1 : 0;
   for (const k of Object.keys(s.low)) if (s.res[k] > 40) s.low[k] = false;
   emit({ type: 'sol', sol: now.sol });
@@ -288,6 +310,27 @@ function endRun(s, emit, reason) {
   emit({ type: 'gameover', reason, sol: s.over.sol });
 }
 
+/** Fitness (3.11): -10 a Sol in low gravity; exercise hours of the Sol Plan build it up; ASTRA warns when it gets low. */
+function stepFitness(s, emit, now, dt) {
+  if (typeof s.fitness !== 'number') s.fitness = FITNESS.start;
+  let f = s.fitness - FITNESS.lossPerSol * dt;
+  const exercising = !s.away && !s.medRest && blockAt(s, now.hour) === 'exercise' && s.where === exercisePlace(s);
+  if (exercising) {
+    f += fitnessPerHour(s) / 60;
+    if (now.minute === 1) {
+      s.stats.exerciseHours = (s.stats.exerciseHours ?? 0) + 1;
+      if (s.stats.exerciseHours === 1) emit({ type: 'astra', lineId: 'astra.fit.intro', mood: 'curious' });
+      if (s.stats.exerciseHours === 2) emit({ type: 'astra', lineId: 'astra.fit.mars', mood: 'curious' });
+    }
+  }
+  s.fitness = clamp(f, 0, 100);
+  const warn = [['fitLow', FITNESS.lowAt, 'astra.fit.low'], ['fitCritical', FITNESS.criticalAt + 0.5, 'astra.fit.critical']];
+  for (const [key, limit, line] of warn) {
+    if (s.fitness < limit && !s.low[key]) { s.low[key] = true; emit({ type: 'astra', lineId: line, mood: 'alert' }); }
+    if (s.fitness >= limit + 10) s.low[key] = false;
+  }
+}
+
 function stepHp(s, emit, now) {
   const dt = 1 / SOL;
   if (s.medRest && s.minute >= s.medRest.until) {
@@ -297,7 +340,8 @@ function stepHp(s, emit, now) {
   }
   if (s.medRest) return;
   let d = 0;
-  if (s.where === 'bedroom' && isNight(now.hourFloat) && !s.away) d += HP.sleepPerHour / 60;
+  if (s.where === 'bedroom' && blockAt(s, now.hour) === 'sleep' && !s.away) d += HP.sleepPerHour / 60; // the Sol Plan's Sleep block (3.10)
+  if ((s.fitness ?? FITNESS.start) <= FITNESS.criticalAt) d += FITNESS.criticalHpPerSol * dt; // 3.11: very low Fitness hurts (never below Med-Rest)
   if (s.away && isNight(now.hourFloat)) d += HP.roverSleepPerHour / 60; // camping in the Rover (3.6: +6 a night)
   const liner = s.where === 'outside' && s.upgrades.suit_liner ? 0.75 : 1; // D-T17d: "Surface HP loss x0.75" (SCENARIO 5.4), also on foot
   if (!s.away) d -= (HP.radiationPerSol * shieldFactor(s, s.where) * (s.flags.flare ? 3 : 1) * liner) * dt;
@@ -581,6 +625,14 @@ export function command(s, cmd) {
       s.flags.outside = cmd.place === 'outside';
       refreshWhere(s, emit); // the Commander sets off at once, even while the game is paused
       emit({ type: 'ordered', place: cmd.place });
+      break;
+    }
+    case 'setPlan': { // 3.10: a preset; it starts at the next midnight
+      if (!PLAN_IDS.includes(cmd.plan)) return fail('Pick Balanced, Crunch or Recover.');
+      if (clockAt(s.minute).sol < 2) return fail('The Sol Plan opens at dawn on Sol 2.');
+      s.planNext = cmd.plan === s.plan ? null : cmd.plan;
+      if (cmd.plan === 'crunch' && s.planNext) emit({ type: 'astra', lineId: 'astra.plan.crunch', mood: 'calm' });
+      emit({ type: 'plan', plan: cmd.plan, from: 'midnight' });
       break;
     }
     case 'craft': {
