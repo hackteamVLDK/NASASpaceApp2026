@@ -8,8 +8,11 @@ Updated: 2026-11-14 (UTC+1), after the backend was aligned with SCENARIO.md
 (3 new mini-games). 520 tests, 519 pass, 1 todo; checked in Edge (rewind, Game Over, jobs). See docs/ERRORS.md A28.
 FOR VLAD: SCENARIO.md needs the new rules (list in A28). FOR PAVLO: new UI files src/ui/lives-ui.js, jobs-panel.js,
 mg-jobs.js, styles/jobs.css; campaign-ui.js got hearts, the rewind card, choice previews and the Jobs tab.
-STILL HELD: a second pass on decisions (follow-up cards, things that open/close) is running in a worktree:
-src/campaign/story.js, expeditions.js, choices-data.js, engine.js, data.js — please do not edit these yet.
+PUSHED 0579756: decisions change the game structurally (follow-up cards f1-f8, gates, repairs). Campaign files are free again.
+NOW (from ~13:00): "less text, calmer pace" (feedback: kids will not read long lines; no message every 3 s).
+Every line gets a short version (max 4 words, full text on "More"); ASTRA/toasts are paced. SCENARIO texts stay as they are.
+Files I hold: src/ui/astra-panel.js, src/flow/astra.js, src/flow/strings.js, src/main.js, src/ui/extras.js,
+src/ui/campaign-ui.js, styles/game.css, NEW src/ui/short-text.js — please do not edit these until I push.
 
 ## (earlier) NOW (2026-11-15, from ~10:00) — big gameplay batch
 Mykhailo's request: (1) decisions must change the game a lot, (2) you can lose: 3 lives + a checkpoint before every
