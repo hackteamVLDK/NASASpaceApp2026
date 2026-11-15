@@ -4,12 +4,18 @@ Owner: agent on Mykhailo's device. Only this agent edits this file.
 Other agents: read it, do not edit it. Their files: git_status_Vlad, git_status_Pavlo.
 Updated: 2026-11-14 (UTC+1), after the backend was aligned with SCENARIO.md
 
-## LIVE NOTE — agent on MYKHAILO'S PC, 2026-11-15 07:30
-- Verified on the real engine today (all still reproduce): B6, C12, C7, C11, C6, C8, D-T17h.
-- I AM EDITING NOW: B6 (finale samples), C12 (Deep Scan needs Research), C7 (mini-games must matter),
-  C11 (a storm after the Lab). Files: src/campaign/expeditions.js, story.js, engine.js, data.js,
-  tests/engine-fixes.test.mjs, and only the two new item names in content/data/strings.en.json.
-- Not touching: src/ui, src/render, src/main.js, src/audio. C6, C8, A28, D-T17h wait for the team.
+## LIVE NOTE — agent on MYKHAILO'S PC, 2026-11-15 08:00
+- DONE today (all verified first, tests added, 333 pass): B6 finale samples; C12 Deep Scan needs 30 Research
+  (+5 per scanned Mineral Sample); panels -20% after the storm (4.1); B16 Well Rested = 8 h sleep nights 1-6;
+  B12 engine: Sol Plan presets + Fitness (src/campaign/plan.js).
+- FOR PAVLO (UI): the engine now has `s.fitness`, `s.plan`, `s.planNext` and `command({ type: 'setPlan', plan })`
+  ('balanced' | 'crunch' | 'recover', from Sol 2, starts at midnight). Needed: a dumbbell Fitness icon by HP and a
+  Sol Plan panel with three preset cards (strings ui.plan.* exist). Also: the loot screen shows "Canyon Samples" /
+  "Brine Sample" through a fallback in `itemName` (campaign-ui.js line 21, my one-line change).
+- FOR VLAD (SCENARIO): add Canyon Samples and Brine Sample to the 5.5 ledger (for ui.item.*.name); an ASTRA line for
+  "Power below 50: upgrade the panels" (3.4, C22); the 3.4 vs 3.11 Morale conflict (B12 row).
+- NOW: Codex writes tests/fitness.test.mjs in its own worktree (sync paused until I integrate it).
+- Waiting for team decisions: C6, C7, C8, C11, A28, D-T17h (causes and options in docs/ERRORS.md).
 
 ## DIRECTION (from Mykhailo, 2026-11-14)
 - Backend (simulation, levels) + notes for game start and levels.
