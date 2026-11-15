@@ -5,9 +5,9 @@ import { createCampaign, command, step } from '../src/campaign/engine.js';
 import { buildReport } from '../src/campaign/logbook.js';
 import { SOL } from '../src/campaign/data.js';
 
-test('an Emergency left open for 3 Sols costs 15 Morale, and ASTRA warns once', () => {
+test('SCENARIO mode: an Emergency left open for 3 Sols costs 15 Morale, and ASTRA warns once', () => {
   const run = (emergency) => {
-    const s = createCampaign();
+    const s = createCampaign({ hpZeroEndsRun: false }); // this test checks the original no-HP-loss Emergency rule
     command(s, { type: 'wakeDrone', drone: 'drone-01' });
     step(s, 17 * 60 - 1); // to 23:59 on Sol 1
     s.res.oxygen = 5; // low in both runs (it rises about 4 a Sol and stays under 20, so an open Emergency stays open)

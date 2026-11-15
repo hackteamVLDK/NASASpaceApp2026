@@ -4,7 +4,7 @@
  * as SCENARIO.md describes. The campaign simulation (src/campaign) runs only while playing;
  * the screen reads its state and sends commands, it never edits it.
  */
-import { loadStrings, setStringVars, t } from './flow/strings.js';
+import { loadStrings, setStringVars, t, addStrings } from './flow/strings.js';
 import { earthMarsLinkForSol, formatDelay } from './data/nasa/lightTime.js';
 import { loadAtlas } from './render/atlas.js';
 import { drawCampaign, buildSoil, createWalker, SCREEN } from './render/campaign-world.js';
@@ -23,6 +23,12 @@ import { createExtras } from './ui/extras.js';
 import { shieldingByPlace } from './campaign/hazards.js';
 import { startSolarWipe, startBatteryStep } from './ui/minigames.js';
 import { startMini2, hasMini2 } from './ui/minigames2.js';
+import { startJobMini, hasJobMini, STRINGS as JOB_MG_STRINGS } from './ui/mg-jobs.js';
+import { createJobsPanel, STRINGS as JOB_PANEL_STRINGS } from './ui/jobs-panel.js';
+import { STRINGS as LIVES_UI_STRINGS } from './ui/lives-ui.js';
+import { jobBoard, STRINGS as JOB_STRINGS } from './campaign/jobs.js';
+import { STRINGS as LIVES_STRINGS } from './campaign/lives.js';
+import { choicePreview, STRINGS as CHOICE_STRINGS } from './campaign/choices-data.js';
 import * as audio from './ui/audio.js';
 
 const SIM_MINUTES_PER_SECOND = SOL / SECONDS_PER_SOL; // 1 Sol = 4 real minutes at 1x (SCENARIO 3.1)
@@ -63,6 +69,7 @@ let tut = null; // { state, phase }
 let hits = [];
 let hover = null;
 let mini = null;
+let miniJob = null; // the job board id while a job's mini-game is open
 const walker = createWalker(); // the Commander's body (movers.js)
 const droneMovers = {}; // one body per drone
 const rover = { phase: 'parked', t0: 0, k: 0, boardAt: 0 }; // parked | boarding | out | gone | in
@@ -204,6 +211,9 @@ function handleEvents(events) {
       case 'ordered': break;
       case 'finale': checkAllBadges(); ui.showFinale(); break;
       case 'gameover': onGameOver(); break;
+      case 'life-lost': ui.handleEvent(e); break;
+      case 'rewind': onRewind(e); break;
+      case 'job-done': if (e.win) toast(e.reward ? `Job done! ${e.reward}` : 'Job done!', 3200); break;
       case 'toast': toast(e.text); break;
       case 'emergency': toast(`Emergency: ${e.kind}!`, 4000); break;
       case 'built': toast('Room finished!'); break;
@@ -226,7 +236,7 @@ function send(cmd) {
 
 // ------------------------------------------------------------------ mini-games
 
-function openMini(game, { onDone = null } = {}) {
+function openMini(game, { onDone = null, job = null } = {}) {
   if (mini || s.status !== 'running') return;
   $('mgWrap').hidden = false;
   $('mgBack').hidden = mode === 'tutorial'; // the tutorial steps cannot be skipped; every other job can be left
@@ -236,9 +246,11 @@ function openMini(game, { onDone = null } = {}) {
     onTitle: (x) => { document.querySelector('.mgTitle').textContent = x; },
     onHint: (x) => { document.querySelector('.mgHint').textContent = x; },
   };
-  const finish = (win) => { send({ type: 'miniResult', game, win }); };
+  // a job from the Jobs tab reports to the job board, not to the base's mini-game tasks; a lost round is simply retried, so only a win (or Back) closes the job
+  miniJob = job;
+  const finish = (win) => { if (job) { if (win) { miniJob = null; send({ type: 'jobResult', job, win: true }); } } else send({ type: 'miniResult', game, win }); };
   // B2: after three failed tries a free drone OFFERS to fix it (1 Sol of its time, SCENARIO section 4); in the tutorial the pass stays free
-  const help = mode === 'play' ? {
+  const help = mode === 'play' && !job ? {
     who: () => { const d = s.drones.find((x) => x.status === 'awake' && !x.task); return d ? NICK[d.id] : null; },
     block: () => droneFixBlock(s, game),
     ask: () => send({ type: 'droneFix', game }),
@@ -247,6 +259,10 @@ function openMini(game, { onDone = null } = {}) {
   const win = () => { closeMini(); finish(true); onDone?.(true); };
   if (game === 'solar_wipe') mini = startSolarWipe({ ...common, help, title: t('ui.mg.solar_wipe.title'), hint: 'Swipe across the panels to wipe the dust. Sparkly sticky spots need a few extra wipes.', onWin: () => { closeMini(); onSolarWin(); onDone?.(true); } });
   else if (game === 'battery') mini = startBatteryStep({ ...common, title: 'Wake up Drone #01', hint: 'Drag the charged battery into the hatch, then plug in the cable.', onDone: () => { closeMini(); onBatteryDone(); } });
+  else if (hasJobMini(game)) { // the job games end after each round: a lost round starts again at once (free retry, SCENARIO section 4)
+    const round = () => { mini = startJobMini(game, { ...common, title: t(`ui.mg.${game}.title`), hint: t(`ui.mg.${game}.hint`), onWin: win, onFail: () => { if (mini && !$('mgWrap').hidden) round(); } }); };
+    round();
+  }
   else if (hasMini2(game)) mini = startMini2(game, { ...common, help, delaySeconds, liner: Boolean(s.upgrades?.suit_liner) /* Suit Seal Check: one more thing to drag (SCENARIO 4.8) */, dishBent: Boolean(s.flags.dishBent) /* Dish Antenna: step 1 after a storm (SCENARIO 4.9) */, title: miniTitle(game), hint: '' /* the game's own line at the top says what to do; a second generic line only adds reading */, onWin: win, onFail: () => finish(false) });
   else { toast('That job is not ready yet.'); $('mgWrap').hidden = true; }
 }
@@ -255,8 +271,15 @@ function closeMini() {
   mini = null;
   $('mgWrap').hidden = true;
 }
-$('mgBack').addEventListener('click', () => { if (mini && mode !== 'tutorial') { audio.play('click'); closeMini(); } });
-window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && mini && mode !== 'tutorial') closeMini(); });
+/** Back or Escape: leave the mini-game; an open job ends without its reward (the job board sets a short cooldown). */
+function leaveMini() {
+  const job = miniJob;
+  miniJob = null;
+  closeMini();
+  if (job && s.job?.id === job) send({ type: 'jobResult', job, win: false });
+}
+$('mgBack').addEventListener('click', () => { if (mini && mode !== 'tutorial') { audio.play('click'); leaveMini(); } });
+window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && mini && mode !== 'tutorial') leaveMini(); });
 
 /** Required prep before an expedition: Wheel Pebble Vacuum, then a Suit Seal Check (SCENARIO 5.1). */
 function launchWithPrep(key) {
@@ -342,6 +365,15 @@ function onGameOver() {
   closeMini();
   document.querySelector('#speed [data-speed="0"]')?.click();
   audio.play('alert');
+}
+/** A life was lost: the engine has already put the state back at the last decision (lives.js). Bring the screen in line with it. */
+function onRewind() {
+  miniJob = null;
+  closeMini();
+  rover.phase = s.away ? 'gone' : 'parked';
+  rover.k = 0;
+  ui.handleEvent({ type: 'rewind' });
+  scheduleSave();
 }
 /** "Start over": forget the saved game and load the page again, which shows the start screen. */
 function restartGame() {
@@ -636,12 +668,14 @@ function loop(now) {
 async function boot() {
   const bar = document.querySelector('#loadbar i');
   await loadStrings();
+  addStrings({ ...LIVES_STRINGS, ...CHOICE_STRINGS, ...JOB_STRINGS, ...LIVES_UI_STRINGS, ...JOB_PANEL_STRINGS, ...JOB_MG_STRINGS }); // lines that are not in SCENARIO.md yet
   atlas = await loadAtlas((f) => { bar.style.width = `${f * 100}%`; });
   soil = buildSoil(atlas);
   s = createCampaign({ seed: 1 });
   guide = createGuide();
   astra = createAstraPanel(guide, atlas);
-  ui = createUi({ atlas, s, send, openMini });
+  const mountJobs = (host) => { const panel = createJobsPanel({ s, send, openMini, jobBoard }); host.append(panel.el); panel.update(); mountJobs.count = panel.count; return panel; };
+  ui = createUi({ atlas, s, send, openMini, mountJobs, choicePreview });
   ui.launch = launchWithPrep;
   extras = createExtras({ s, ui, openMap: () => ui.showMap(launchWithPrep) });
   void savedSol;

@@ -12,7 +12,7 @@
  *     above did not foresee is refused here instead of throwing in the middle of play.
  */
 import { createCampaign, step, command, STATE_VERSION } from './engine.js';
-import { MODULES, RES, RECIPES } from './data.js';
+import { MODULES, RES, RECIPES, LIVES, SOL } from './data.js';
 import { EXPEDITIONS } from './expeditions.js';
 import { MINI_GAMES } from './story.js';
 
@@ -56,6 +56,9 @@ function jobProblem(job, running) {
  * Meters and times are checked by the caller first.
  */
 export function validateState(s) {
+  if (!Number.isInteger(s.lives) || !Number.isInteger(s.livesMax) || s.livesMax !== LIVES.start || s.lives < 0 || s.lives > s.livesMax) return 'the lives counter is damaged';
+  const checkpointBad = checkpointProblem(s.checkpoint);
+  if (checkpointBad) return checkpointBad;
   if (!isObj(s.modules)) return 'the base is missing';
   for (const [id, m] of Object.entries(s.modules)) {
     if (!known(MODULES, id)) return `there is a room called "${String(id).slice(0, 24)}" that does not exist`;
@@ -84,6 +87,7 @@ export function validateState(s) {
   }
   if (!['running', 'complete'].includes(s.status)) return 'the mission state is damaged';
   if (!isObj(s.upgrades) || !isObj(s.flags) || !isObj(s.stats) || !isObj(s.emergency) || !isObj(s.low) || !isObj(s.mult)) return 'part of the base is damaged';
+  if (!Number.isInteger(s.stats.livesLost) || s.stats.livesLost < 0) return 'the lives lost counter is damaged';
   // records the story keeps inside the flags: the engine writes keys into them, so they must be objects (found by the random-damage test)
   for (const key of ['done', 'lastEvent', 'mini']) if (s.flags[key] !== undefined && !isObj(s.flags[key])) return 'the story record is damaged';
   const b = s.flags.breaks;
@@ -92,6 +96,27 @@ export function validateState(s) {
   for (const key of ['logbook', 'badges', 'choices', 'said']) if (!Array.isArray(s[key])) return `the ${key} are damaged`;
   if (!isStr(s.where) || !isNum(s.act) || !isNum(s.research) || !isNum(s.recycleEta) || !isNum(s.rng)) return 'part of the mission state is damaged';
   return null;
+}
+
+/** A snapshot will replace the whole live state: validate it as carefully as the outer save, without nesting. */
+function checkpointProblem(cp) {
+  if (cp == null) return null;
+  const bad = 'the checkpoint is damaged';
+  if (!isObj(cp) || !isNum(cp.sol) || !isNum(cp.minute) || !isStr(cp.label) || !isStr(cp.snap)) return bad;
+  if (cp.kind !== null && !PENDING_KINDS.includes(cp.kind)) return bad;
+  if (cp.id !== null && !isStr(cp.id)) return bad;
+  try {
+    const snap = JSON.parse(cp.snap, (key, value) => {
+      if (UNSAFE_KEYS.has(key)) throw new Error(bad);
+      return value;
+    });
+    if (!isObj(snap) || Object.hasOwn(snap, 'checkpoint') || snap.status !== 'running' || snap.minute !== cp.minute) return bad;
+    if (cp.sol !== Math.floor(cp.minute / SOL) + 1) return bad;
+    if (!isObj(snap.res) || !RES.every((k) => isNum(snap.res[k])) || !isNum(snap.hp) || !isNum(snap.hpMax)) return bad;
+    if (!isObj(snap.stats) || !Number.isInteger(snap.stats.livesLost) || snap.stats.livesLost < 0) return bad;
+    if (cp.kind !== (snap.pending?.kind ?? null) || cp.id !== (snap.pending?.id ?? null)) return bad;
+    return validateState(snap) ?? dryRunProblem(snap);
+  } catch { return bad; }
 }
 
 /** Play one Sol on a copy: a corruption nobody foresaw throws here instead of in the middle of play. Returns a reason, or null. */
@@ -128,6 +153,10 @@ function restore(saved) {
   if (saved.drones !== undefined && (!Array.isArray(saved.drones) || saved.drones.some((d) => !isObj(d)))) return { ok: false, reason: 'the drones are damaged' };
   const fresh = createCampaign({ seed: isNum(saved.seed) ? saved.seed : 1 });
   const state = deepMerge(fresh, saved);
+  // Never give an old save the fresh campaign's Mission start snapshot: that would erase its progress.
+  state.checkpoint = saved.checkpoint ?? null;
+  if (!Number.isInteger(state.livesMax) || state.livesMax !== LIVES.start) state.livesMax = LIVES.start;
+  if (!Number.isInteger(state.lives) || state.lives < 0 || state.lives > state.livesMax) state.lives = LIVES.start;
   // arrays of objects that gained fields over time
   state.drones = (Array.isArray(saved.drones) ? saved.drones : fresh.drones).map((d, i) => ({ ...fresh.drones[i], ...d, queue: Array.isArray(d.queue) ? d.queue : d.queue === undefined ? [] : d.queue }));
   // a meter that is not a number is reset; everything else the player had is kept

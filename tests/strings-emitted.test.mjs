@@ -2,10 +2,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { setStrings, hasString } from '../src/flow/strings.js';
+import { setStrings, addStrings, hasString } from '../src/flow/strings.js';
 import { autoplay } from '../tools/balance/campaign-bot.mjs';
+import { STRINGS as CHOICE_STRINGS } from '../src/campaign/choices-data.js';
+import { STRINGS as LIVES_STRINGS } from '../src/campaign/lives.js';
+import { STRINGS as JOB_STRINGS } from '../src/campaign/jobs.js';
 
 setStrings(JSON.parse(readFileSync(new URL('../content/data/strings.en.json', import.meta.url), 'utf8')));
+// lines that are not in SCENARIO.md yet: src/main.js adds the same modules' STRINGS at boot
+addStrings({ ...CHOICE_STRINGS, ...LIVES_STRINGS, ...JOB_STRINGS });
 
 /** The string IDs the UI looks up for one engine event (as src/main.js and src/ui/campaign-ui.js do). */
 function idsOf(e) {

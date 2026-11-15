@@ -4,8 +4,10 @@
  * line ID (strings.js); this file only decides WHEN something happens and WHAT it changes.
  * Delayed effects are timers with a name (`runTimer`), so the whole state stays plain data.
  */
-import { SOL, MODULES, MODULE_LINES, RECYCLER, BREAKDOWNS, BREAKDOWN_RULES, DEEP_SCAN_RESEARCH, MINERAL_SCAN_RESEARCH } from './data.js';
+import { SOL, MODULES, MODULE_LINES, RECYCLER, BREAKDOWNS, BREAKDOWN_RULES, DEEP_SCAN_RESEARCH, MINERAL_SCAN_RESEARCH, NEEDS, STORM } from './data.js';
 import { clockAt, online, at, addMod, after, clampTo, powerCapOf } from './util.js';
+import { CHOICE_RULES, CHOICE_EFFECTS, activeChoiceEffects } from './choices-data.js';
+export { STRINGS } from './choices-data.js';
 
 const say = (emit, lineId, mood = 'calm') => emit({ type: 'astra', lineId, mood });
 const EARTH_WINDOW_SOLS = 3; // SCENARIO 3.3: "Earth window every 3 Sols" (gameplay)
@@ -27,6 +29,7 @@ export const STORM_TO = at(6, 23);
 
 export function storyMinute(s, emit, now) {
   const { sol, hour } = now;
+  stepChoiceEffects(s, emit);
   once(s, 'act1', () => true, () => emit({ type: 'act', act: 1, lineId: 'astra.act1.title' }));
   if (now.minute === 0) scheduleBreakdown(s, emit, sol);
   once(s, 'sunset', () => sol === 1 && now.hourFloat >= 17.5, () => say(emit, 'astra.act1.first_sunset', 'curious'));
@@ -264,6 +267,86 @@ export function startSoilWash(s, emit) {
   return null;
 }
 
+/** Record the choice here too: radio choices bypass the engine's normal choice history. */
+export function rememberChoice(s, id, choice) {
+  // These fields are new to this batch; older save validators do not inspect them yet.
+  if (!s.path || typeof s.path !== 'object' || Array.isArray(s.path)) s.path = {};
+  s.path[id] = choice;
+  const key = `${id}${choice}`;
+  const fx = CHOICE_EFFECTS[key];
+  if (!fx) return;
+  if (!s.flags.choiceEffects || typeof s.flags.choiceEffects !== 'object' || Array.isArray(s.flags.choiceEffects)) s.flags.choiceEffects = {};
+  const records = s.flags.choiceEffects;
+  // Repeated events replace their own plan, rather than stacking unlimited free production.
+  records[id] = { key, start: s.minute, until: s.minute + CHOICE_RULES.durationSols * SOL,
+    nextChore: s.minute + CHOICE_RULES.choreEverySols * SOL, called: false };
+  after(s, s.minute + CHOICE_RULES.callbackSols * SOL, `choice:${key}:${s.minute}`);
+  refreshChoiceEffects(s);
+}
+
+/** Recompute from working modules, preserving tier changes, outages, dust and water limits. */
+export function refreshChoiceEffects(s) {
+  s.mods = s.mods.filter((m) => !m.id.startsWith('choice:'));
+  const blackout = s.res.power <= 0;
+  const works = (id) => online(s, id) && (!blackout || id === 'solar' || id === 'lifesupport') && (id !== 'greenhouse' || s.res.water > 0);
+  for (const r of activeChoiceEffects(s)) {
+    const fx = CHOICE_EFFECTS[r.key];
+    const amounts = { ...(fx.meters ?? {}) };
+    const add = (res, n) => { amounts[res] = (amounts[res] ?? 0) + n; };
+    for (const [id, res, fraction] of fx.rates ?? []) {
+      if (id === 'recycler') { add('water', -NEEDS.waterUsed * (1 - s.recycleEta) * fraction); continue; }
+      const ids = id === 'loads' ? Object.keys(MODULES).filter((m) => m !== 'solar') : [id];
+      for (const module of ids) {
+        if (!works(module)) continue;
+        let output = MODULES[module][s.modules[module].tier === 2 ? 't2' : 't1']?.[res] ?? 0;
+        if (module === 'solar') output *= s.mult.solar * (s.storm ? (s.modules.solar.tier === 2 ? STORM.solarT2 : STORM.solarT1) : 1);
+        if (module === 'battery' && res === 'power' && s.storm) output *= STORM.batteryPowerMult;
+        if (module === 'greenhouse' && res === 'food') output *= s.mult.food;
+        if (module === 'lifesupport' && res === 'oxygen') output *= (s.flags.filterClog || 1) * (s.flags.valveStuck ? BREAKDOWN_RULES.valveOutput : 1);
+        add(res, output * fraction);
+      }
+    }
+    if (fx.maintenance && s.tasks.some((t) => t.game === fx.maintenance)) {
+      add('power', fx.maintenancePower ?? 0);
+      add('water', fx.maintenanceWater ?? 0);
+      add('hp', fx.maintenanceHp ?? 0);
+    }
+    for (const [res, perSol] of Object.entries(amounts)) if (perSol) s.mods.push({ id: `choice:${r.key}:${res}`, res, perSol, untilMinute: r.until });
+  }
+}
+
+function stepChoiceEffects(s, emit) {
+  for (const r of activeChoiceEffects(s)) {
+    const fx = CHOICE_EFFECTS[r.key];
+    if (fx.research && online(s, 'lab') && s.res.power > 0) {
+      const output = MODULES.lab[s.modules.lab.tier === 2 ? 't2' : 't1'].research;
+      s.research = Math.max(0, s.research + output * fx.research / SOL);
+    }
+    if (s.minute < r.nextChore || s.away || s.pending) continue;
+    if (fx.maintenance) addTask(s, fx.maintenance, 'Our earlier choice needs another equipment check.');
+    if (fx.drone) {
+      // A delayed chore never fills every queue with copies of the same job.
+      const busy = s.drones.some((d) => d.task?.id === fx.drone.id || d.queue.some((j) => j.id === fx.drone.id));
+      if (!busy) droneChore(s, emit, fx.drone.id, fx.drone.module, fx.drone.sols);
+    }
+    r.nextChore = s.minute + CHOICE_RULES.choreEverySols * SOL;
+  }
+  refreshChoiceEffects(s);
+}
+
+function choiceCallback(s, timerId, emit) {
+  const [, key, start] = timerId.split(':');
+  const r = s.flags.choiceEffects?.[key.slice(0, -1)];
+  if (!r || r.key !== key || r.start !== Number(start) || r.called || s.minute >= r.until || s.minute < r.start + CHOICE_RULES.callbackSols * SOL) return;
+  r.called = true;
+  const fx = CHOICE_EFFECTS[r.key];
+  for (const [res, amount] of Object.entries(fx.callback)) {
+    if (res === 'research') s.research += amount;
+    else setRes(s, res, amount);
+  }
+  say(emit, `astra.choice.${r.key}.callback`, 'cheerful');
+}
+
 export function applyChoice(s, pending, choice, emit, rand) {
   const key = `${pending.id}${choice}`;
   const { sol } = clockAt(s.minute);
@@ -367,11 +450,13 @@ export function applyChoice(s, pending, choice, emit, rand) {
     default:
       if (pending.id === 'd5') s.flags.d5Choice = choice; // read by expeditions.js
   }
+  rememberChoice(s, pending.id, choice);
 }
 
 // ------------------------------------------------------------------ delayed effects
 
 export function runTimer(s, id, emit) {
+  if (id.startsWith('choice:')) { choiceCallback(s, id, emit); return; }
   const follow = (lineId, mood = 'cheerful') => say(emit, lineId, mood);
   switch (id) {
     case 'd1a': setRes(s, 'morale', 5); follow('astra.d1.a'); break;
@@ -490,6 +575,7 @@ export function onMini(s, { game, win, auto = false }, emit) {
     if (win) dropTask(s, 'wheel_vacuum'); // also clears the extra check after a Bumpy or Rough ride
     s.flags.prepWheel = win ? 'ok' : 'failed';
   } else if (game === 'suit_seal') {
-    if (win) s.flags.prepSuit = true;
+    if (win) { dropTask(s, 'suit_seal'); s.flags.prepSuit = true; }
   }
+  refreshChoiceEffects(s); // finishing a recurring check stops its cost immediately
 }

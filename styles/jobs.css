@@ -1,0 +1,12 @@
+/* Gameplay art direction: dark navy panels, cream hulls, cyan instruments, amber rewards. */
+.jobs-panel { display: grid; gap: 10px; min-width: 0; }
+.jobs-panel > h3 { margin: 0; color: var(--cyan, #00e5ff); }
+.job-card { display: grid; gap: 8px; padding: 12px; border: 2px solid var(--line, #38546e); border-radius: 6px; background: var(--panel, #0d2236); overflow-wrap: anywhere; }
+.job-card h4 { margin: 0; color: #f1e4cc; font-size: 18px; }
+.job-card p { margin: 0; font-size: 16px; line-height: 1.4; }
+.job-card .job-science { color: #bcd1e3; font-size: 14px; font-style: italic; }
+.job-reward { justify-self: start; max-width: 100%; padding: 4px 8px; border: 1px solid var(--amber, #ffb000); border-radius: 4px; color: #ffd180; font-size: 14px; }
+.job-card .job-start { min-height: 44px; width: 100%; padding: 8px 12px; border-radius: 4px; font-size: 16px; white-space: normal; }
+.job-card .job-start:focus-visible { outline: 3px solid var(--amber, #ffb000); outline-offset: 3px; }
+.job-card .job-start:disabled { opacity: 1; background: #162333; color: #afc0d0; border-color: #526478; cursor: default; }
+.jobs-empty { margin: 0; color: #bcd1e3; line-height: 1.4; }

@@ -1,4 +1,4 @@
-// HP 0 ends the mission with a Game Over (the player's wish, docs/ERRORS.md A28). SCENARIO says Med-Rest instead; one switch, RULES.hpZeroEndsRun.
+// Final-life HP 0 ends the mission with Game Over. SCENARIO mode still uses Med-Rest.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createCampaign, step, command, endsRunAtZeroHp } from '../src/campaign/engine.js';
@@ -7,6 +7,7 @@ import { at } from '../src/campaign/util.js';
 
 const ready = (opts) => {
   const s = createCampaign({ seed: 1, ...opts });
+  s.lives = 1; // exercise the existing Game Over contract on the final life
   command(s, { type: 'wakeDrone', drone: 'drone-01' });
   for (const d of s.drones) d.status = 'awake';
   for (const id of ['battery', 'workshop', 'greenhouse', 'garage', 'lab']) s.modules[id].status = 'online';
@@ -21,7 +22,7 @@ test('the rule is on by default: the player asked for a Game Over when HP runs o
   assert.equal(endsRunAtZeroHp({}), true, 'a save from before the rule uses the default');
 });
 
-test('HP 0 in the base ends the mission: status over, one gameover event, nothing moves, commands are refused', () => {
+test('final-life HP 0 in the base ends the mission: status over, one gameover event, nothing moves, commands are refused', () => {
   const s = ready();
   s.res.morale = 10;
   s.hp = 0.0001;
@@ -41,7 +42,7 @@ test('HP 0 in the base ends the mission: status over, one gameover event, nothin
   }
 });
 
-test('HP 0 on a Rover trip ends the mission too: no rescue drone, no loot screen, and the Commander is no longer "away"', () => {
+test('final-life HP 0 on a Rover trip ends the mission too: no loot screen and the Commander is no longer "away"', () => {
   const s = ready();
   s.minute = at(10, 8);
   assert.ok(command(s, { type: 'launch', expedition: 'run' }).ok);
@@ -93,8 +94,8 @@ test('a finished mission survives a JSON round trip and stays finished', () => {
   assert.equal(command(copy, { type: 'order', place: 'lab' }).ok, false);
 });
 
-test('a Commander who stays in the base and rests never reaches 0 HP over 12 idle Sols', () => {
-  const s = ready();
+test('SCENARIO mode: a Commander who stays in the base and rests never reaches 0 HP over 12 idle Sols', () => {
+  const s = ready({ hpZeroEndsRun: false }); // empty meters now hurt HP only in lives mode
   for (let i = 0; i < 12 * 24 && s.status === 'running'; i++) { step(s, 60); if (s.pending) command(s, { type: 'choose', choice: 'a' }); }
   assert.equal(s.status, 'running');
   assert.ok(s.hp > 50);

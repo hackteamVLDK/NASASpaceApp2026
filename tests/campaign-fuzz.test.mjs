@@ -71,9 +71,11 @@ test('random commands never break the state (10 seeds, 25 Sols each)', () => {
       if (cmd) command(s, cmd);
       let v = broken(s, manualSurface);
       assert.deepEqual(v, [], `seed ${seed}, Sol ${clockAt(s.minute).sol}, after ${JSON.stringify(cmd)}`);
-      step(s, 1 + Math.floor(rnd() * (rnd() < 0.2 ? 400 : 60)));
+      const events = step(s, 1 + Math.floor(rnd() * (rnd() < 0.2 ? 400 : 60)));
+      if (events.some((e) => e.type === 'rewind')) manualSurface = Boolean(s.flags.outside); // rewind restores earlier commands too
       v = broken(s, manualSurface);
       assert.deepEqual(v, [], `seed ${seed}, Sol ${clockAt(s.minute).sol}, after stepping`);
+      if (s.status !== 'running') break; // the final life stops play; refused commands cannot change the tracker
     }
   }
 });

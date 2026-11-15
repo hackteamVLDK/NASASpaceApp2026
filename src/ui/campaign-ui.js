@@ -14,6 +14,7 @@ import { CARDS, BADGES, buildReport } from '../campaign/logbook.js';
 import { LOW_LIMITS } from '../campaign/hazards.js';
 import { missingItems, whereText } from '../campaign/sources.js';
 import { choiceBlock } from '../campaign/story.js';
+import { createLivesUi, usedTriesText, STRINGS } from './lives-ui.js';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
@@ -37,7 +38,8 @@ const CARD_TOPICS = [
 const cardIcon = (id) => ICON[CARD_TOPICS.find(([re]) => re.test(id))?.[1] ?? 'star'];
 export const miniTitle = (g) => (hasString(MINI_NAME[g]) ? t(MINI_NAME[g]) : g.replaceAll('_', ' '));
 
-export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }) {
+export function createUi({ atlas, s, send, openMini, closeModalHook = () => {}, choicePreview = () => [], mountJobs = null }) {
+  const uiText = (id) => hasString(id) ? t(id) : STRINGS[id];
   const icon = (i, px = 28) => { const c = el('canvas'); c.width = c.height = 32; c.style.width = c.style.height = `${px}px`; atlas.cell(c.getContext('2d'), 'icons', i, 0, 0, 32, 32); return c; };
 
   // ---------------------------------------------------------------- gauges
@@ -61,15 +63,27 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
     G[d.id] = { g, bar: g.querySelector('i'), val: g.querySelector('.val'), d };
   }
   let lastRes = {};
+  const lives = createLivesUi({ s, read: uiText, onTryAgain: () => {
+    closeModal();
+    if (s.pending) showChoice(s.pending.kind, s.pending.id);
+    modalRoot.querySelector('button')?.focus();
+  } });
+  G.hp.g.append(lives.el);
 
   // ---------------------------------------------------------------- tabs
   const tabs = ['base', 'workshop', 'drones', 'tasks', 'logbook'];
+  if (mountJobs) tabs.splice(tabs.indexOf('tasks') + 1, 0, 'jobs');
+  // Keep the same mounted DOM across tab switches and rewind; its update reads the same state object.
+  const jobsHost = mountJobs ? el('div', 'jobs-host') : null;
+  let jobsMounted = false;
+  let jobsPanel = null;
+  let jobsCount = null;
   const side = $('side');
   side.innerHTML = `<section id="tabsBox"><div id="tabBar"></div><div id="tabBody"></div></section><section id="radioBox" hidden><h3>Rover radio</h3><div id="radioBar"><i></i></div><div id="radioLines"></div></section><section><button id="mapBtn" disabled>Crater map</button> <button id="reportBtn">Mission report</button></section>`;
   let tab = 'base';
   const tabBar = $('tabBar');
   for (const id of tabs) {
-    const b = el('button', '', { base: 'Base', workshop: 'Workshop', drones: 'Drones', tasks: 'Tasks', logbook: 'Logbook' }[id]);
+    const b = el('button', '', { base: 'Base', workshop: 'Workshop', drones: 'Drones', tasks: 'Tasks', logbook: 'Logbook', jobs: uiText('ui.jobs.tab') }[id]);
     b.dataset.tab = id;
     b.addEventListener('click', () => { tab = id; sig = ''; play('uiTabSwitch'); });
     tabBar.append(b);
@@ -79,6 +93,14 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
   let revealPending = false;
   let shownTab = null; // the tab the side list was last drawn for: its scroll position is kept only inside the same tab
   const selectedDrone = () => (selected?.startsWith('drone:') ? selected.slice(6) : undefined);
+
+  function renderJobs(body) {
+    body.append(jobsHost);
+    if (!jobsMounted) {
+      jobsPanel = mountJobs(jobsHost);
+      jobsMounted = true;
+    }
+  }
 
   function renderBase(body) {
     for (const id of ['solar', 'bedroom', 'kitchen', 'lifesupport', 'battery', 'workshop', 'greenhouse', 'garage', 'lab', 'recreation', 'roof']) {
@@ -247,10 +269,10 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
   modalRoot.hidden = true;
   $('stage').append(modalRoot);
   let modalKey = null;
-  const closeModal = () => { modalRoot.hidden = true; modalRoot.innerHTML = ''; modalKey = null; closeModalHook(); };
+  const closeModal = () => { modalRoot.hidden = true; modalRoot.innerHTML = ''; modalKey = null; modalRoot.removeAttribute('aria-labelledby'); modalRoot.removeAttribute('aria-describedby'); closeModalHook(); };
   // A24: every window gets a close button (top right) and Esc closes it, except the ones that need an answer:
   // a decision (dilemma, event, radio) must be chosen, and Game Over has its own two buttons.
-  const mustAnswer = () => !modalKey || modalKey.startsWith('choice:') || modalKey === 'gameover';
+  const mustAnswer = () => !modalKey || modalKey.startsWith('choice:') || modalKey === 'gameover' || modalKey === 'life-lost';
   const addCloseButton = () => {
     if (modalRoot.hidden || mustAnswer()) return;
     const card = modalRoot.querySelector('.card');
@@ -299,9 +321,24 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
         if (why) { play('actionDenied'); b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); return; } // the card stays open
         play('dilemmaChoice');
         const res = send(radio ? { type: 'radio', choice: c } : { type: 'choose', choice: c });
-        if (res?.ok !== false) closeModal(); // a refused answer must not close the card
+        // A choice can trigger a rescue synchronously. Keep that new card open.
+        if (res?.ok !== false && modalKey === key) closeModal();
       });
-      box.append(b);
+      const option = el('div', 'choice-option');
+      option.append(b);
+      const preview = choicePreview(id, c).slice(0, 3);
+      if (preview.length) {
+        const list = el('ul', 'choice-preview');
+        list.id = `preview-${id}-${c}`;
+        for (const line of preview) {
+          const li = el('li');
+          li.textContent = line;
+          list.append(li);
+        }
+        b.setAttribute('aria-describedby', list.id);
+        option.append(list);
+      }
+      box.append(option);
     }
     void warm;
     modalRoot.innerHTML = '';
@@ -333,8 +370,40 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
     modalKey = 'gameover';
     modalRoot.hidden = false;
     modalRoot.innerHTML = `<div class="card gameover"><div class="hd">MISSION OVER</div><h1>GAME OVER</h1><p>${why}</p><p class="stats">You reached Sol ${o.sol} \u00B7 ${s.stats.builds} rooms built \u00B7 ${s.stats.expeditions} trips \u00B7 ${s.logbook.length} Logbook cards</p><p>Real astronaut teams learn from every hard day. Do you want to try again from the beginning?</p><div class="choices"><button class="choice" id="goAgain">Start over</button><button class="choice" id="goReport">See the report</button></div></div>`;
+    const used = usedTriesText(s, uiText);
+    if (used) modalRoot.querySelector('h1').after(el('p', 'tries-used', used));
     $('goAgain').addEventListener('click', () => { play('click'); onRestart(); });
     $('goReport').addEventListener('click', () => { play('click'); showReport(); });
+  }
+
+  function showLifeLost(event) {
+    // The final try belongs to the existing Game Over flow, which opens on the next frame.
+    if (event.livesLeft === 0) { lives.update(); closeModal(); return; }
+    modalKey = 'life-lost';
+    modalRoot.hidden = false;
+    modalRoot.replaceChildren(lives.showLoss(event));
+    modalRoot.setAttribute('aria-labelledby', 'lifeLostTitle');
+    modalRoot.setAttribute('aria-describedby', 'lifeLostText');
+    modalRoot.querySelector('button').focus();
+  }
+
+  function refreshAfterRewind() {
+    sig = '';
+    shownTab = null;
+    selected = null;
+    revealPending = false;
+    lastRes = {};
+    for (const e of Object.values(G)) delete e.g.dataset.trend;
+    radioLines.length = 0;
+    $('radioLines').replaceChildren();
+    $('radioBar').firstElementChild.style.width = '0%';
+    $('stage').querySelectorAll('.actcard').forEach((card) => card.remove());
+    // The rescue acknowledgement stays above the restored decision until Try again.
+    if (modalKey !== 'life-lost') {
+      closeModal();
+      if (s.pending) showChoice(s.pending.kind, s.pending.id);
+    }
+    ui.update();
   }
 
   function showFinale() {
@@ -360,6 +429,7 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
     const RUN = { run: { label: 'Scrap', title: 'Scrap Run' }, ice: { label: 'Ice', title: 'Ice Run' } };
     const lootText = (loot) => [loot.sp ? `${loot.sp} Spare Parts` : null, ...Object.entries(loot.items).map(([i, n]) => `${n}\u00D7 ${itemName(i)}`)].filter(Boolean).join(', ');
     const ends = s.rules?.hpZeroEndsRun ?? RULES.hpZeroEndsRun;
+    const hpWarning = ends ? uiText(s.lives === 1 ? 'ui.lives.last_warning' : 'ui.lives.trip_warning') : 'At 0 HP a rescue drone brings the Commander home.';
     const show = (k) => {
       const ex = EXPEDITIONS[k];
       const why = ex.requires(s);
@@ -368,7 +438,7 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
       const margin = ex.id === 4 ? 20 : 6; // a Rough trip adds 5 HP; the space-weather choice on Expedition 4 costs up to 14
       const sure = !why && !s.away && s.hp <= cost; // the Commander would not come back
       const risky = !why && !s.away && !sure && s.hp <= cost + margin;
-      info.innerHTML = `<h2>${RUN[k]?.title ?? name(ex.nameId)}</h2><p>Time: ${days} Sol · HP cost about ${Math.round(cost)} · Risk: ${ex.scripted ? 'scripted' : ex.risk}</p><p>Brings home: ${lootText(expectedLoot(s, ex))}${k === 'ice' ? '. Each Ice Core melts into 25 Water.' : ''}</p>${why ? `<p class="why">Locked: ${why}</p>` : s.away ? '<p class="why">The Rover is already out.</p>' : ''}${sure ? `<p class="why danger">Too dangerous: the trip costs about ${Math.round(cost)} HP and the Commander has ${Math.round(s.hp)}. Rest first.</p>` : ''}${risky ? `<p class="why warn">Risky: the Commander has ${Math.round(s.hp)} HP and the trip costs about ${Math.round(cost)}. ${ends ? 'If HP reaches 0 the mission is over.' : 'At 0 HP a rescue drone brings the Commander home.'}</p>` : ''}`;
+      info.innerHTML = `<h2>${RUN[k]?.title ?? name(ex.nameId)}</h2><p>Time: ${days} Sol · HP cost about ${Math.round(cost)} · Risk: ${ex.scripted ? 'scripted' : ex.risk}</p><p>Brings home: ${lootText(expectedLoot(s, ex))}${k === 'ice' ? '. Each Ice Core melts into 25 Water.' : ''}</p>${why ? `<p class="why">Locked: ${why}</p>` : s.away ? '<p class="why">The Rover is already out.</p>' : ''}${sure ? `<p class="why danger">Too dangerous: the trip costs about ${Math.round(cost)} HP and the Commander has ${Math.round(s.hp)}. Rest first.</p>` : ''}${risky ? `<p class="why warn">Risky: the Commander has ${Math.round(s.hp)} HP and the trip costs about ${Math.round(cost)}. ${hpWarning}</p>` : ''}`;
       if (!why && !s.away && !sure) {
         const b = el('button', 'choice', 'Prepare and launch');
         b.dataset.launch = String(k);
@@ -402,12 +472,18 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
     get selected() { return selected; },
     highlight(id) { for (const e of Object.values(G)) e.g.classList.toggle('pulse', e.d.id === id); },
     pushRadio(id) { radioLines.push(hasString(id) ? t(id) : id); if (radioLines.length > 6) radioLines.shift(); sig = ''; },
-    showChoice, showActCard, showLoot, showFinale, showGameOver, closeModal, openModal, showReport,
-    setTab(id) { tab = id; sig = ''; },
+    // main.js routes both new engine events here from its existing handleEvents dispatcher.
+    handleEvent(event) {
+      if (event.type === 'life-lost') showLifeLost(event);
+      else if (event.type === 'rewind') refreshAfterRewind();
+    },
+    showChoice, showActCard, showLoot, showFinale, showGameOver, showLifeLost, refreshAfterRewind, closeModal, openModal, showReport,
+    setTab(id) { if (tabs.includes(id)) { tab = id; sig = ''; } },
     showMap: (launch) => showMap(launch ?? ui.launch),
     get modalOpen() { return !modalRoot.hidden; },
     get modalKey() { return modalKey; },
     update() {
+      lives.update();
       const c = clockAt(s.minute);
       $('clock').textContent = `Sol ${c.sol} · ${String(c.hour).padStart(2, '0')}:${String(c.minute).padStart(2, '0')}${s.storm ? ' · DUST STORM' : ''}`;
       for (const [k, e] of Object.entries(G)) {
@@ -435,13 +511,13 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
         if ($('radioLines').innerHTML !== html) $('radioLines').innerHTML = html;
       } else radioLines.length = 0;
       $('mapBtn').disabled = !online(s, 'garage');
-      const next = `${tab}|${selected}|${JSON.stringify([s.drones.map((d) => (d.queue ?? []).length), s.logbook.length, s.badges.length, s.res.sp | 0, s.items, s.kits, s.upgrades, s.tasks.length, s.crafting?.recipe, s.away?.id, s.drones.map((d) => d.status + (d.task?.module ?? '')), Object.values(s.modules).map((m) => m.status + m.tier + (m.upgrading ? `u${Math.floor(m.upgrading.progress * 20)}` : '') + (m.status === 'building' ? Math.floor(m.progress * 50) : Math.floor(m.progress * 10))), s.crafting ? Math.floor(s.crafting.progress * 20) : -1])}`;
+      const next = tab === 'jobs' ? tab : `${tab}|${selected}|${JSON.stringify([s.drones.map((d) => (d.queue ?? []).length), s.logbook.length, s.badges.length, s.res.sp | 0, s.items, s.kits, s.upgrades, s.tasks.length, s.crafting?.recipe, s.away?.id, s.drones.map((d) => d.status + (d.task?.module ?? '')), Object.values(s.modules).map((m) => m.status + m.tier + (m.upgrading ? `u${Math.floor(m.upgrading.progress * 20)}` : '') + (m.status === 'building' ? Math.floor(m.progress * 50) : Math.floor(m.progress * 10))), s.crafting ? Math.floor(s.crafting.progress * 20) : -1])}`;
       if (next !== sig) {
         sig = next;
         const body = $('tabBody');
         const keepScroll = tab === shownTab ? body.scrollTop : 0; // a redraw (a build ticking on) must not throw the list back to the top
         body.innerHTML = '';
-        ({ base: renderBase, workshop: renderWorkshop, drones: renderDrones, tasks: renderTasks, logbook: renderLogbook })[tab](body);
+        ({ base: renderBase, workshop: renderWorkshop, drones: renderDrones, tasks: renderTasks, logbook: renderLogbook, jobs: renderJobs })[tab](body);
         shownTab = tab;
         body.scrollTop = keepScroll;
         for (const b of tabBar.children) b.classList.toggle('on', b.dataset.tab === tab);
@@ -451,6 +527,21 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {} }
           if (row) body.scrollTop = Math.max(0, row.offsetTop - body.offsetTop - 12);
         }
         tabBar.querySelector('[data-tab="tasks"]').textContent = s.tasks.length ? `Tasks (${s.tasks.length})` : 'Tasks';
+      }
+      if (jobsMounted) jobsPanel?.update?.();
+      if (mountJobs?.count) {
+        const count = mountJobs.count();
+        if (count !== jobsCount) {
+          jobsCount = count;
+          const b = tabBar.querySelector('[data-tab="jobs"]');
+          b.textContent = uiText('ui.jobs.tab');
+          if (count > 0) {
+            const badge = el('span', 'jobs-badge');
+            badge.textContent = count;
+            b.append(badge);
+          }
+          b.setAttribute('aria-label', uiText('ui.jobs.ready').replace('{count}', count));
+        }
       }
     },
   };

@@ -20,11 +20,18 @@ export const RECYCLER = Object.freeze({ ok: 0.98, cracked: 0.7 });
 
 /**
  * Rules the team can switch. Provenance: `gameplay`.
- * `hpZeroEndsRun`: when the Commander's HP reaches 0, the mission is over and the screen offers a new start. The player asked for
+ * `hpZeroEndsRun`: HP 0 costs a life and rewinds; the last life ends the mission. The player asked for
  * this (2026-11-14, docs/ERRORS.md A28). SCENARIO 3.1, 3.6 and 5.1 say the opposite: Med-Rest (back to 50 HP after a Sol) or, on a
  * trip, a rescue drone, and Section 6 says no choice can end the run. `true` follows the player, `false` follows SCENARIO.
  */
 export const RULES = Object.freeze({ hpZeroEndsRun: true });
+
+/** Team override (2026-11-15), all `gameplay`: lives, rewind recovery and base-only HP loss at empty meters. */
+export const LIVES = Object.freeze({
+  start: 3,
+  restoreHpMin: 60,
+  emptyMeterHpPerSol: Object.freeze({ oxygen: 60, heat: 30, water: 30, food: 20 }),
+});
 
 /**
  * C6 (team decision, 2026-11-15): an ignored Emergency is not free. Provenance: `gameplay`.

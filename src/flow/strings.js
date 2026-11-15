@@ -6,9 +6,21 @@
  */
 let table = {};
 let vars = {};
+let base = {}; // from SCENARIO.md (content/data/strings.en.json)
+let extra = {};
 
 export function setStrings(obj) {
-  table = obj;
+  base = obj;
+  table = { ...extra, ...base };
+}
+
+/**
+ * Lines that are not in SCENARIO.md yet (a module's exported `STRINGS`, e.g. lives, jobs, decision callbacks).
+ * They survive a later `setStrings`; a SCENARIO line with the same ID always wins.
+ */
+export function addStrings(obj) {
+  extra = { ...extra, ...obj };
+  table = { ...extra, ...base };
 }
 
 /**

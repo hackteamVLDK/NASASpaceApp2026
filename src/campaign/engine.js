@@ -13,15 +13,17 @@
 import { seedFrom, nextRandom } from '../sim/rng.js';
 import {
   SOL, START_MINUTE, RES, START_RES, CAP, NEEDS, BASE_HEAT_LOSS, RECYCLER, HP, SHIELD, SLEEP_FROM, SLEEP_TO, MEALS,
-  MODULES, FITNESS, BUILD_SOLS, UPGRADE_SOLS, DRONE_BUILD_POWER, STORM, RECIPES, UPGRADES, MODULE_LINES, BREAKDOWN_RULES, RULES, STORAGE_REFILL, EMERGENCY_COST, EMERGENCY_CLEAR_AT,
+  MODULES, FITNESS, BUILD_SOLS, UPGRADE_SOLS, DRONE_BUILD_POWER, STORM, RECIPES, UPGRADES, MODULE_LINES, BREAKDOWN_RULES, RULES, LIVES, STORAGE_REFILL, EMERGENCY_COST, EMERGENCY_CLEAR_AT,
 } from './data.js';
 import { clockAt, isNight, online } from './util.js';
 import { blockAt, planMoralePerSol, workSpeed, exercisePlace, fitnessPerHour, PLAN_IDS } from './plan.js';
 import { storyMinute, onSol, applyChoice, choiceBlock, onModuleStart, onModuleBuilt, onKit, onMini, miniBlock, runTimer, onDroneAwake, onMove, startSoilWash, soilWashBlock, MINI_GAMES } from './story.js';
 export { soilWashBlock };
 import { expeditionMinute, startExpedition, radioChoice } from './expeditions.js';
+import { takeCheckpoint, loseLife } from './lives.js';
+import { jobFields, jobCommand, stepJobs, jobBuildMult } from './jobs.js';
 
-export const STATE_VERSION = 1;
+export const STATE_VERSION = 2;
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const has = (o, k) => Object.hasOwn(o, k);
 
@@ -30,13 +32,16 @@ export { clockAt, isNight, isDay, online } from './util.js';
 export function createCampaign({ seed = 1, hpZeroEndsRun = RULES.hpZeroEndsRun } = {}) {
   const modules = {};
   for (const [id, m] of Object.entries(MODULES)) modules[id] = { status: m.prebuilt ? 'online' : 'unbuilt', tier: 1, progress: 0, drone: null, upgrading: null };
-  return {
+  const s = {
     version: STATE_VERSION,
     rng: seedFrom(seed),
     minute: START_MINUTE,
-    status: 'running', // running | over (the Commander ran out of HP, see `endRun`) | complete
+    status: 'running', // running | over (no lives left) | complete
     rules: { hpZeroEndsRun }, // see RULES in data.js
     over: null, // { reason: 'hp' | 'trip', sol, minute } once the mission is over
+    lives: LIVES.start,
+    livesMax: LIVES.start,
+    checkpoint: null,
     res: { ...START_RES },
     hp: HP.commanderMax,
     fitness: FITNESS.start, // 3.11
@@ -68,9 +73,13 @@ export function createCampaign({ seed = 1, hpZeroEndsRun = RULES.hpZeroEndsRun }
     logbook: [],
     badges: [],
     choices: [],
-    stats: { builds: 0, miniWins: 0, flares: 0, expeditions: 0, samples: 0, hpSum: 0, moraleSum: 0, lowestHp: HP.commanderMax, outsideMin: 0, emergencies: 0, flareMaxLoss: 0, recycleStreak: 0, wipes: 0, melted: 0, medRests: 0, harvest: 0 },
+    path: {}, // { [decision id]: choice } (choices-data.js: every choice has a lasting effect)
+    stats: { livesLost: 0, builds: 0, miniWins: 0, flares: 0, expeditions: 0, samples: 0, hpSum: 0, moraleSum: 0, lowestHp: HP.commanderMax, outsideMin: 0, emergencies: 0, flareMaxLoss: 0, recycleStreak: 0, wipes: 0, melted: 0, medRests: 0, harvest: 0 },
     where: 'bedroom',
+    ...jobFields(), // the job board (jobs.js): things to do while the drones build
   };
+  takeCheckpoint(s, 'Mission start');
+  return s;
 }
 
 // ------------------------------------------------------------------ rates
@@ -178,9 +187,20 @@ function shieldFactor(s, where) {
 export function step(s, minutes = 1) {
   const events = [];
   const emit = (e) => events.push(e);
+  // Old saves can already have an open card. Capture it before checking the pause below.
+  const checkpointDecision = (appeared = false) => {
+    if (s.pending && (appeared || !s.checkpoint || s.pending.kind !== s.checkpoint.kind || s.pending.id !== s.checkpoint.id)) {
+      takeCheckpoint(s, undefined, s.pending.kind, s.pending.id);
+    }
+  };
+  if (s.status === 'running') {
+    if (!s.checkpoint) takeCheckpoint(s, s.pending ? undefined : 'Mission start', s.pending?.kind ?? null, s.pending?.id ?? null);
+    checkpointDecision();
+  }
   for (let i = 0; i < minutes && s.status === 'running'; i++) {
     if (s.pending) break; // the game waits for the player's choice
-    tick(s, emit);
+    if (tick(s, emit)) break; // a life loss restores time: stop this batch too
+    checkpointDecision(true);
   }
   return events;
 }
@@ -202,15 +222,14 @@ function tick(s, emit) {
   // the Commander
   if (s.order && s.minute >= s.order.until) { s.order = null; s.flags.outside = false; }
   refreshWhere(s, emit);
-  stepHp(s, emit, now);
-  if (s.status !== 'running') return; // the Commander ran out of HP: the mission is over
+  if (stepHp(s, emit, now)) return true; // rewind or Game Over: do not mutate the restored state
   stepFitness(s, emit, now, dt);
   trackStats(s, dt, now);
 
   // drones: building, upgrading
   // Morale below 30 slows the work; the Commander's Sol Plan and Fitness speed it up or slow it down (3.10, 3.11).
   // While he is away the base runs on Autopilot at normal speed.
-  const mult = (s.res.morale < 30 ? 0.75 : 1) * (s.away ? 1 : workSpeed(s));
+  const mult = (s.res.morale < 30 ? 0.75 : 1) * (s.away ? 1 : workSpeed(s)) * jobBuildMult(s);
   for (const d of s.drones) {
     if (!d.task || d.status !== 'awake') continue;
     const m = s.modules[d.task.module];
@@ -245,19 +264,20 @@ function tick(s, emit) {
   for (const t of s.timers.filter((x) => s.minute >= x.at)) { onTimer(s, t, emit); }
   s.timers = s.timers.filter((x) => s.minute < x.at);
   if (endsRunAtZeroHp(s)) {
-    // On a trip, a Commander at 0 HP does not come home: the rescue drone and the loot screen of SCENARIO 5.1 are not shown.
+    // Delay trip events until we know whether this minute costs a life.
     const trip = [];
     expeditionMinute(s, (e) => trip.push(e));
     if (s.hp <= 0) {
       for (const e of trip) if (e.type !== 'returned' && !(e.type === 'astra' && e.lineId === 'astra.hp.zero_expedition')) emit(e);
       if (!s.away && s.where === 'away') refreshWhere(s, emit);
-      endRun(s, emit, 'trip');
-      return;
+      loseLife(s, emit, 'trip');
+      return true;
     }
     trip.forEach(emit);
   } else expeditionMinute(s, emit);
   if (!s.away && s.where === 'away') refreshWhere(s, emit); // the Rover just came home: the Commander is back in the base
   checkMeters(s, emit);
+  stepJobs(s, emit, now);
   storyMinute(s, emit, now);
 }
 
@@ -305,18 +325,8 @@ function onTimer(s, t, emit) {
   runTimer(s, t.id, emit);
 }
 
-/** Does HP 0 end the run (the player's wish) or send the Commander to Med-Rest (SCENARIO)? Saves from before the rule use the default. */
+/** Does HP 0 cost a life (team override) or send the Commander to Med-Rest (SCENARIO)? */
 export const endsRunAtZeroHp = (s) => s.rules?.hpZeroEndsRun ?? RULES.hpZeroEndsRun;
-
-/** The mission is over: the Commander ran out of HP. Nothing moves after this; the screen offers a new start. */
-function endRun(s, emit, reason) {
-  if (s.status !== 'running') return;
-  s.status = 'over';
-  if (s.medRest) { s.medRest = null; s.stats.medRests = Math.max(0, s.stats.medRests - 1); } // the trip's rescue had started a Med-Rest: it does not count
-  s.pending = null;
-  s.over = { reason, sol: clockAt(s.minute).sol, minute: s.minute };
-  emit({ type: 'gameover', reason, sol: s.over.sol });
-}
 
 /** Fitness (3.11): -10 a Sol in low gravity; exercise hours of the Sol Plan build it up; ASTRA warns when it gets low. */
 function stepFitness(s, emit, now, dt) {
@@ -343,6 +353,7 @@ function stepFitness(s, emit, now, dt) {
 
 function stepHp(s, emit, now) {
   const dt = 1 / SOL;
+  if (s.hp <= 0 && endsRunAtZeroHp(s)) return loseLife(s, emit, s.away ? 'trip' : 'hp');
   if (s.medRest && s.minute >= s.medRest.until) {
     s.hp = HP.medRestHp;
     s.medRest = null;
@@ -358,10 +369,22 @@ function stepHp(s, emit, now) {
   if (greenhouseWorking(s) && s.res.food >= 30 && !s.flags.freshOff) d += (s.modules.greenhouse.tier === 2 ? HP.freshCropsT2 : HP.freshCropsT1) * dt + (s.flags.soilBeds ? dt : 0);
   if (s.res.morale >= HP.moraleThreshold) d += HP.highMorale * dt;
   for (const m of s.mods) if (m.res === 'hp') d += m.perSol * dt;
+  if (endsRunAtZeroHp(s) && !s.away) {
+    for (const [meter, loss] of Object.entries(LIVES.emptyMeterHpPerSol)) {
+      const key = `danger_${meter}`;
+      if (s.res[meter] <= 0) {
+        d -= loss * dt;
+        if (!s.low[key]) {
+          s.low[key] = true;
+          emit({ type: 'astra', lineId: `astra.lives.${key}`, mood: 'calm' });
+        }
+      } else s.low[key] = false;
+    }
+  }
   s.hp = clamp(s.hp + d, 0, s.hpMax);
   hpLines(s, emit);
+  if (s.hp <= 0 && endsRunAtZeroHp(s)) return loseLife(s, emit, s.away ? 'trip' : 'hp');
   if (s.hp <= 0 && !s.away) {
-    if (endsRunAtZeroHp(s)) { endRun(s, emit, 'hp'); return; }
     s.medRest = { until: s.minute + SOL };
     s.stats.medRests += 1;
     emit({ type: 'astra', lineId: 'astra.hp.zero_base', mood: 'calm' });
@@ -590,6 +613,8 @@ export function command(s, cmd) {
   const emit = (e) => events.push(e);
   const fail = (error) => ({ ok: false, error });
   if (s.status !== 'running') return fail('The mission is over.');
+  const job = jobCommand(s, cmd, emit); // startJob / jobResult (jobs.js); null for every other command
+  if (job) return job.ok ? { ok: true, events } : fail(job.error);
   switch (cmd?.type) {
     case 'wakeDrone': {
       const d = s.drones.find((x) => x.id === cmd.drone);

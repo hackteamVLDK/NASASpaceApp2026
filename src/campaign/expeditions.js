@@ -14,7 +14,8 @@ import { SOL, HP, DEEP_SCAN_RESEARCH, MINERAL_SCAN_RESEARCH } from './data.js';
 import { fitMult } from './plan.js';
 import { clockAt, online, after, clampTo } from './util.js';
 import { nextRandom } from '../sim/rng.js';
-import { addTask, scheduleBreakdown } from './story.js';
+import { addTask, scheduleBreakdown, rememberChoice } from './story.js';
+import { CHOICE_EFFECTS, activeChoiceEffects, choiceTripMult } from './choices-data.js';
 
 const RR_COMMANDER = 0.15;
 const ROUTE = { floor: 1.0, rim: 1.25, delta: 1.25, canyon: 1.5 };
@@ -81,7 +82,7 @@ export function durationMinutes(s, ex) {
   if (s.modules.garage.tier === 2 && ex.id !== 5) sols = Math.max(1, sols - 1);
   if (ex.id === 5 && s.modules.garage.tier !== 2) sols = 2;
   if (ex.id === 5 && s.modules.garage.tier === 2) sols = 1;
-  return sols * SOL;
+  return Math.round(sols * SOL * choiceTripMult(s, 'tripTime'));
 }
 
 /** HP the Commander loses over the whole trip. */
@@ -91,12 +92,18 @@ export function hpCost(s, ex, { rough = false } = {}) {
   if (s.upgrades.rover_shielding) c *= 0.6;
   if (s.upgrades.suit_liner) c *= 0.75;
   c *= fitMult(s.fitness ?? 80); // M_fit (3.6, 3.11), measured at launch
-  return c + (rough ? 5 : 0);
+  return c * choiceTripMult(s, 'tripHp') + (rough ? 5 : 0);
 }
 
 /** What the trip would bring home if all goes well (the map card shows this). */
 export function expectedLoot(s, ex) {
-  return isExp4Return(s, ex) ? EXP4_REST : ex.loot;
+  if (isExp4Return(s, ex)) return EXP4_REST;
+  if (ex.id === 'run') return { ...ex.loot, sp: Math.floor(ex.loot.sp * choiceTripMult(s, 'salvage')) };
+  if (ex.id === 'ice') {
+    const extra = activeChoiceEffects(s).reduce((n, r) => n + (CHOICE_EFFECTS[r.key].extraIce ?? 0), 0);
+    return { ...ex.loot, items: { ...ex.loot.items, ice_core: ex.loot.items.ice_core + extra } };
+  }
+  return ex.loot;
 }
 
 /** Launch an expedition. Returns an error string or null. */
@@ -118,6 +125,8 @@ export function startExpedition(s, key, emit) {
   const second = isExp4Return(s, ex);
   const dur = durationMinutes(s, ex);
   s.away = { id: ex.id, key, start: s.minute, end: s.minute + dur, risk, hpTotal: hpCost(s, ex), hpDone: 0, fired: [], decisionDone: second, halfLoot: false, rescued: false, result: null };
+  // Lock the offered reward at launch: a plan expiring during travel never changes promised cargo.
+  if (ex.id === 'run' || ex.id === 'ice') s.away.choiceLoot = expectedLoot(s, ex);
   if (second) {
     s.away.customLoot = EXP4_REST; // the rest of the treasure; no second space-weather dilemma
     s.away.second = true;
@@ -156,6 +165,7 @@ export function radioChoice(s, choice, emit) {
   if (!s.pending || s.pending.kind !== 'radio' || !s.away) return 'Nothing to decide.';
   if (!['a', 'b'].includes(choice)) return 'Pick a or b.';
   const a = s.away;
+  const id = s.pending.id;
   s.pending = null;
   a.decisionDone = true;
   if (a.id === 2) {
@@ -163,6 +173,8 @@ export function radioChoice(s, choice, emit) {
   } else if (a.id === 3) {
     if (choice === 'a') { a.extraIce = 1; setTripEnd(a, s.minute, a.end + 0.25 * SOL); a.hpTotal += 4; }
   }
+  s.choices.push(`${id}${choice}`);
+  rememberChoice(s, id, choice);
   emit({ type: 'radio-chosen', choice });
   return null;
 }
@@ -264,7 +276,7 @@ function finish(s, ex, emit) {
   const result = a.result ?? 'smooth';
   const rough = result === 'rough';
   const half = a.halfLoot || rough;
-  const base = a.customLoot ?? ex.loot;
+  const base = a.customLoot ?? a.choiceLoot ?? ex.loot;
   const got = { sp: Math.floor(base.sp * (half && !a.customLoot ? 0.5 : 1)), items: {} };
   for (const [it, n] of Object.entries(base.items)) {
     const keep = ex.story.includes(it) ? n : half && !a.customLoot ? Math.floor(n / 2) : n;
