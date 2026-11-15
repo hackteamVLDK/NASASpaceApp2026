@@ -128,47 +128,60 @@ New lines that break a rule above are rewritten before they go into this file.
 
 State `INTRO_TEXT` (the storyboard). It replaced the 8-line text crawl on 2026-11-15: nobody read 8 typed lines.
 Goals: (a) hook a 7–12-year-old with a mystery, (b) tell a jury in seconds that the game teaches real NASA science.
-About 20 s, picture first. The old crawl story is kept word for word in the Logbook card `mission_file` (Section 8.1).
+About 22.5 s, picture first. The old crawl story is kept word for word in the Logbook card `mission_file` (Section 8.1).
+Its old buried-drone wording is legacy text; the opening below shows the correct starting base.
 
-- **Panels 1–3** are drawn full screen on the canvas with the game's own sprites (Rover/Pathfinder-X, drones,
-  base, sky, dust). Each has ONE big line: at most 8 words, bold, 64 px or more at 1920 x 1080, white, with one key word
-  in Martian Orange `#FF6B35`.
-- **Timing:** panel 0 shows for 3.5 s, panels 1 and 2 for 5 s each, panel 3 for 6 s (3 s per line); then the briefing
-  waits for the player. Gentle fades (0.4 s) between panels.
+- **Panels 0–3** use real campaign frames: the same sky with distant crater rim, `buildSoil` ground strip,
+  sprites, surface lighting and storm overlay as `drawCampaign`. No separate canyon walls or invented room layout.
+  Panels 1–2 frame open crater floor away from the base; the Rover sprite stands on the game's ground line.
+  Panel 3 uses a fresh `createCampaign` state: dusty solar panels, working left rooms, unfinished frames and
+  dormant drones with red lights. The base is not buried by the storm. Drone #01 needs charging; #02 and #03
+  need a Repair Kit / Reboot Kit from the Workshop. The later landing's two drone sand mounds stay unchanged.
+- **Captions:** one or two short lines per panel, each at most 8 words, shown together; bold, 64 px or more at
+  1920 x 1080, white, with one key word per line in Martian Orange `#FF6B35`. Outlines and a shadow band keep
+  text readable over the frames. The briefing's longer second goal wraps inside its tile.
+- **Timing:** panel 0 shows for 3.5 s, panels 1 and 2 for 6 s each, panel 3 for 7 s; then the briefing waits for
+  the player. Each two-line panel gets one extra second to read. Gentle fades (0.4 s) between panels.
 - **Input:** tap, click, Space or Enter goes to the next panel. `Skip >>` (top-right) jumps to the briefing, never past
   it, so everyone sees the goals. Progress dots at the bottom (one per panel).
-- **Reduce motion:** fades only; no shaking, sliding or pulsing rings (the rings are drawn still).
+- **Reduce motion:** fades only; no shaking, sliding or pulsing rings (rings, storm and drone lights are drawn still).
 - **Audio:** the intro night tune keeps playing. Panel 1: one soft thump per seismic ring. Panel 2: short radio static
   when the last signal bar drops.
 - **START MISSION** goes to the landing cutscene: the opening clock jumps to 19.0 s (`DESCENT`); the cutscene times
-  below keep their values.
+  below keep their values. The storyboard's 22.5 s clock is separate from that legacy landing clock.
 
-| Panel | Label | What the player sees | Lines |
-|---|---|---|---|
-| 0 | gameplay | Dark screen, a badge and one line; auto-advance after 3.5 s | `intro.badge`, `intro.00` |
-| 1 | fiction | Pathfinder-X in a canyon at dusk; slow seismic rings pulse out of the ground under it | `intro.01` (key word "strange") |
-| 2 | fiction | Dust sweeps across; the Rover's signal bars drop one by one, then radio static | `intro.02` (key word "silent") |
-| 3 | fiction | Drones dig a cutaway base; then sand pours over them (the line changes halfway) | `intro.03` (key word "Robots"), `intro.04` (key word "storm") |
-| 4 | gameplay | Mission briefing: title, 3 big icon tiles (goal + what it teaches), the facts line, a big button | `intro.05`, `intro.goal1`–`3`, `intro.learn1`–`3`, `intro.facts`, `intro.start` |
+| Panel | Label | What the player sees | Lines | Duration |
+|---|---|---|---|---|
+| 0 | gameplay | Real starting base frame, a NASA badge and one line | `intro.badge`, `intro.00` | 3.5 s |
+| 1 | fiction | Pathfinder-X on open crater floor, distant rim behind; slow signal rings | `intro.01` (key word "strange"), `intro.01b` ("find") | 6 s |
+| 2 | fiction | Same ground and Rover in the campaign dust storm; signal bars drop | `intro.02` ("Sun"), `intro.02b` ("silent") | 6 s |
+| 3 | fiction | Real starting base cutaway: dusty panels, unfinished frames, dormant red-lit drones; no new burial | `intro.03` ("Dust"), `intro.04` ("one") | 7 s |
+| 4 | gameplay | Mission briefing over the same base: title, 3 goal/learning tiles, facts line, START MISSION | `intro.05`, `intro.goal1`–`3`, `intro.learn1`–`3`, `intro.facts`, `intro.start` | Wait for player |
 
 | Line ID | Line |
 |---|---|
 | intro.badge | Based on real NASA missions |
 | intro.00 | Learn how people could live on Mars |
-| intro.01 | 2038. A rover hears something strange. |
-| intro.02 | A dust storm. The rover goes silent. |
-| intro.03 | 2042. Robots dig your base… |
-| intro.04 | …but the storm buries them too. |
+| intro.01 | 2038. Rover Pathfinder-X hears a strange signal. |
+| intro.01b | It drives off to find it. |
+| intro.02 | A dust storm hides the Sun. |
+| intro.02b | The rover is lost. Its signal goes silent. |
+| intro.03 | 2042. Dust covers our solar panels. |
+| intro.04 | Robots lost power. Only one can wake. |
 | intro.05 | YOUR MISSION |
-| intro.goal1 | Wake the drones |
+| intro.goal1 | Wake the robot |
 | intro.learn1 | Learn: solar power and Mars dust |
-| intro.goal2 | Keep the crew safe |
+| intro.goal2 | Build and keep the crew safe |
 | intro.learn2 | Learn: air, water, food and radiation |
-| intro.goal3 | Find the signal |
+| intro.goal3 | Find the lost rover |
 | intro.learn3 | Learn: how NASA rovers explore Mars |
 | intro.facts | Every fact in the game comes from NASA missions. Collect them in your Logbook. |
 | intro.start | START MISSION |
 
+The fictional 2038 rover follows the signal toward the canyon in the story bible; this opening shows its approach
+across the open crater floor. Dust hides sunlight and cuts solar power; the signal is lost during the storm.
+The goals connect the crew to the robots sent ahead in 2042 and to recovering Pathfinder-X in Expedition 2.
+"Only one can wake" means Drone #01 can wake after charging; the other two need repairs, not just a charge.
 The three "Learn:" lines match what the game teaches: solar power and dust (Solar Wipe, the storm, cards `sunlight`,
 `sticky_dust`, `global_storms`), air, water, food and radiation (Life Support, Greenhouse, Radiation view, cards `moxie`,
 `perchlorates`, `space_salad`, `surface_dose`, `soil_blanket`), and rovers (the expeditions, cards `ingenuity`,

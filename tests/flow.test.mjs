@@ -30,7 +30,7 @@ test('state machine uses the states named in SCENARIO.md', () => {
 });
 
 test('storyboard lines match the scenario table and keep the panel rules', () => {
-  const ids = ['intro.badge', 'intro.00', 'intro.01', 'intro.02', 'intro.03', 'intro.04', 'intro.05',
+  const ids = ['intro.badge', 'intro.00', 'intro.01', 'intro.01b', 'intro.02', 'intro.02b', 'intro.03', 'intro.04', 'intro.05',
     'intro.goal1', 'intro.learn1', 'intro.goal2', 'intro.learn2', 'intro.goal3', 'intro.learn3', 'intro.facts', 'intro.start'];
   for (const id of ids) assert.equal(t(id), row(id)[1], `${id} text`);
   const P = STORYBOARD.panels;
@@ -47,7 +47,7 @@ test('storyboard lines match the scenario table and keep the panel rules', () =>
   assert.equal(STORYBOARD.keyColor, '#FF6B35');
   assert.equal(STORYBOARD.skipLabel, 'Skip >>');
   const total = panelStart(4);
-  assert.ok(total === 19.5, `19.5 s before the briefing (${total} s before it)`);
+  assert.ok(total === 22.5, `22.5 s before the briefing (${total} s before it)`);
   assert.equal(P[4].tiles.length, 3);
 });
 
@@ -60,8 +60,10 @@ test('the storyboard advances on time and on tap, and Skip stops at the briefing
   assert.equal(nextPanelAt(0.2), 3.5);
   assert.equal(nextPanelAt(BRIEFING_AT + 1), BRIEFING_AT + 1); // a tap on the briefing does not start the mission
   const p3 = panelStart(3);
-  assert.equal(storyAt(p3 + 0.5).line.id, 'intro.03');
-  assert.equal(storyAt(p3 + 3.5).line.id, 'intro.04');
+  assert.deepEqual(storyAt(p3 + 0.5).lines.map(l => l.id), ['intro.03', 'intro.04']);
+  assert.deepEqual(storyAt(p3 + 6.5).lines.map(l => l.id), ['intro.03', 'intro.04']);
+  assert.deepEqual(STORYBOARD.panels.map(p => p.dur), [3.5, 6, 6, 7, Infinity]);
+  for (const i of [1, 2, 3]) assert.equal(storyAt(panelStart(i) + 1).lines.length, 2);
   const cues = storyCuesBetween(0, BRIEFING_AT);
   assert.equal(cues.filter((c) => c.id === 'canyonSeismicThump').length, STORYBOARD.panels[1].rings.length);
   assert.equal(cues.filter((c) => c.id === 'staticZap').length, 1);
@@ -97,8 +99,8 @@ test('opening timing agrees with the scenario and leaves ASTRA until the camera 
     assert.ok(times, `scenario has a timeline for ${p.state}`);
     assert.deepEqual(times.slice(1).map(Number), [p.from, p.to]);
   }
-  assert.ok(scenario.includes(`panel 0 shows for ${OPENING_TIMING.title} s, panels 1 and 2 for ${OPENING_TIMING.signal} s each, panel 3 for ${OPENING_TIMING.drones} s (${OPENING_TIMING.droneLine} s per line)`));
-  assert.deepEqual(STORYBOARD.panels.slice(0, 4).map((p) => p.dur), [3.5, 5, 5, 6]);
+  assert.ok(scenario.includes(`panel 0 shows for ${OPENING_TIMING.title} s, panels 1 and 2 for ${OPENING_TIMING.signal} s each, panel 3 for ${OPENING_TIMING.drones} s; then the briefing waits for`));
+  assert.deepEqual(STORYBOARD.panels.slice(0, 4).map((p) => p.dur), [3.5, 6, 6, 7]);
   assert.deepEqual(CUTSCENE.phases.map((p) => p.to - p.from), [6, 5, 9]);
   const a = CUTSCENE.astra;
   assert.ok(a.landingAt >= CUTSCENE.camera.gameplaySettleAt);

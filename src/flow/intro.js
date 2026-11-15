@@ -21,7 +21,7 @@ export const FLOW_STATES = Object.freeze([
 
 /** Opening durations in seconds; provenance: gameplay (reading pace, not Mars measurements). */
 export const OPENING_TIMING = Object.freeze({
-  title: 3.5, signal: 5, storm: 5, drones: 6, droneLine: 3,
+  title: 3.5, signal: 6, storm: 6, drones: 7,
   fade: 0.4, descent: 6, touchdown: 5, pan: 9,
   parachuteDrift: 4.5, dustBurst: 1, shake: 0.3,
 });
@@ -55,9 +55,9 @@ export const STORYBOARD = Object.freeze({
   skipPosition: 'top-right',
   panels: Object.freeze([
     Object.freeze({ id: 'title', label: 'gameplay', dur: OPENING_TIMING.title, lines: Object.freeze([Object.freeze({ id: 'intro.00', key: 'Mars' })]), badge: 'intro.badge' }),
-    Object.freeze({ id: 'signal', label: 'fiction', dur: OPENING_TIMING.signal, lines: Object.freeze([Object.freeze({ id: 'intro.01', key: 'strange' })]), rings: Object.freeze([0.7, 2.2, 3.7]) }),
-    Object.freeze({ id: 'storm', label: 'fiction', dur: OPENING_TIMING.storm, lines: Object.freeze([Object.freeze({ id: 'intro.02', key: 'silent' })]), barsDropAt: Object.freeze([1, 1.8, 2.6, 3.4]) }),
-    Object.freeze({ id: 'drones', label: 'fiction', dur: OPENING_TIMING.drones, lines: Object.freeze([Object.freeze({ id: 'intro.03', key: 'Robots', until: OPENING_TIMING.droneLine }), Object.freeze({ id: 'intro.04', key: 'storm', from: OPENING_TIMING.droneLine })]), sandFrom: OPENING_TIMING.droneLine }),
+    Object.freeze({ id: 'signal', label: 'fiction', dur: OPENING_TIMING.signal, lines: Object.freeze([Object.freeze({ id: 'intro.01', key: 'strange' }), Object.freeze({ id: 'intro.01b', key: 'find' })]), rings: Object.freeze([0.7, 2.2, 3.7]) }),
+    Object.freeze({ id: 'storm', label: 'fiction', dur: OPENING_TIMING.storm, lines: Object.freeze([Object.freeze({ id: 'intro.02', key: 'Sun' }), Object.freeze({ id: 'intro.02b', key: 'silent' })]), barsDropAt: Object.freeze([1, 1.8, 2.6, 3.4]) }),
+    Object.freeze({ id: 'drones', label: 'fiction', dur: OPENING_TIMING.drones, lines: Object.freeze([Object.freeze({ id: 'intro.03', key: 'Dust' }), Object.freeze({ id: 'intro.04', key: 'one' })]) }),
     Object.freeze({ id: 'briefing', label: 'gameplay', dur: Infinity, title: 'intro.05',
       tiles: Object.freeze([
         Object.freeze({ goal: 'intro.goal1', learn: 'intro.learn1', icon: 'drone' }),
@@ -78,14 +78,14 @@ export function panelStart(i) {
 /** The briefing's start: where Skip goes (never past it). */
 export const BRIEFING_AT = panelStart(STORYBOARD.panels.length - 1);
 
-/** What the storyboard shows at `st`: panel index, time inside it, its fade-in (0..1) and the visible line. */
+/** What the storyboard shows at `st`: panel index, time inside it, its fade-in (0..1) and the visible lines. The first line alias is kept for callers that use it. */
 export function storyAt(st) {
   const P = STORYBOARD.panels;
   let i = 0;
   while (i < P.length - 1 && st >= panelStart(i + 1)) i++;
   const local = st - panelStart(i);
-  const line = P[i].lines?.find((l) => (l.from ?? 0) <= local && local < (l.until ?? Infinity)) ?? null;
-  return { index: i, panel: P[i], local, fade: Math.min(1, local / STORYBOARD.fadeSec), line, briefing: i === P.length - 1 };
+  const lines = P[i].lines ?? [];
+  return { index: i, panel: P[i], local, fade: Math.min(1, local / STORYBOARD.fadeSec), lines, line: lines[0] ?? null, briefing: i === P.length - 1 };
 }
 
 /** Tap, click, Space or Enter: the start of the next panel (the briefing stays). */

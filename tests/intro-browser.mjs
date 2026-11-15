@@ -84,7 +84,25 @@ try {
   assert.ok(await evaluate(`window.__ares.storyT >= ${panelStart(2)} && window.__ares.storyT < ${panelStart(3)}`));
   await evaluate(`window.__ares.story(${panelStart(2) + 3.7})`); await capture('03-story-storm');
   await evaluate(`window.__ares.story(${panelStart(3) + 1})`); await capture('04-story-drones');
-  await evaluate(`window.__ares.story(${panelStart(3) + 4.8})`); await capture('05-story-buried');
+  await evaluate(`window.__ares.story(${panelStart(3) + 4.8})`); await capture('05-story-robots-still-asleep');
+  assert.equal(await evaluate(`(async () => {
+    const [{drawStory, STORY_VIEWS}, {loadAtlas}, {buildSoil, drawCampaign}, {createCampaign}, {storyAt}, {t}] = await Promise.all([
+      import('/src/render/intro-story.js'), import('/src/render/atlas.js'), import('/src/render/campaign-world.js'),
+      import('/src/campaign/engine.js'), import('/src/flow/intro.js'), import('/src/flow/strings.js')]);
+    const atlas = await loadAtlas(), soil = buildSoil(atlas);
+    const make = () => { const c = document.createElement('canvas'); c.width = 1920; c.height = 1080; return c.getContext('2d'); };
+    const actual = make(), expected = make(), state = createCampaign({seed:1});
+    const before = JSON.stringify(window.__ares.s);
+    drawStory(actual, storyAt(${panelStart(3) + 1}), {atlas, soil, nowMs:1000, t});
+    drawCampaign(expected, atlas, {s:state, ...STORY_VIEWS.base, nowMs:1000, worldMs:1000, dtMs:0, soil, droneMovers:{},
+      cut:{showCrew:false, showMound:false, buried:false}});
+    // Below the captions and above the dots, every pixel must match a real initial campaign frame.
+    const a = actual.getImageData(0, 300, 1920, 700).data, b = expected.getImageData(0, 300, 1920, 700).data;
+    if (!a.every((v, i) => v === b[i])) return false;
+    for (const at of [${panelStart(1) + 1}, ${panelStart(2) + 1}, ${BRIEFING_AT + 1}])
+      drawStory(actual, storyAt(at), {atlas, soil, nowMs:1000, t});
+    return before === JSON.stringify(window.__ares.s);
+  })()`), true, 'base pixels match the real starting campaign; story rendering preserves the live state');
   await evaluate(`document.querySelector('#skipBtn').click()`); await settle();
   assert.ok(await evaluate(`window.__ares.storyT >= ${BRIEFING_AT} && !document.querySelector('#introStart').hidden`));
   await evaluate(`window.__ares.story(${BRIEFING_AT + 1})`);

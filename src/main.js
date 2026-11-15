@@ -532,19 +532,10 @@ function stepRover(nowMs) {
   if (!s.away && (rover.phase === 'gone' || rover.phase === 'boarding')) { rover.phase = 'parked'; rover.k = 0; } // a loaded game, or a trip that was cancelled
 }
 
-/** The briefing cards sit over the actual, still campaign world. */
-function drawBriefingWorld() {
-  drawCampaign(ctx, atlas, {
-    s, cx: GAMEPLAY_VIEW.centerX, cy: GAMEPLAY_VIEW.centerY, zoom: GAMEPLAY_VIEW.zoom,
-    nowMs: 0, worldMs: 0, dtMs: 0, soil, walker, droneMovers, rover,
-    cut: { showCrew: false, showMound: true, buried: true },
-  });
-}
-
 function render(nowMs) {
   if (mode === 'loading') { drawIntroSurface(ctx, { atlas, soil }); return; }
   if (inStory()) {
-    drawStory(ctx, storyAt(storyT), { atlas, nowMs, reduceMotion: prefs.reduceMotion, t, soil, drawBackdrop: drawBriefingWorld });
+    drawStory(ctx, storyAt(storyT), { atlas, nowMs, reduceMotion: prefs.reduceMotion, t, soil });
     hits = []; return;
   }
   let S;
