@@ -26,6 +26,13 @@ export const RECYCLER = Object.freeze({ ok: 0.98, cracked: 0.7 });
  */
 export const RULES = Object.freeze({ hpZeroEndsRun: true });
 
+/**
+ * C6 (team decision, 2026-11-15): an ignored Emergency is not free. Provenance: `gameplay`.
+ * While an Emergency stays open, Morale -5 at the end of each Sol (never below 0, no HP change).
+ * The Mission Rating loses 1 star after more than 3 Sols with Heat, Food or Oxygen at 0, and 2 after more than 8.
+ */
+export const EMERGENCY_COST = Object.freeze({ moralePerSol: 5, zeroSolsOneStar: 3, zeroSolsTwoStars: 8, zeroRes: Object.freeze(['heat', 'food', 'oxygen']) });
+
 export const HP = Object.freeze({
   commanderMax: 100,
   sleepPerHour: 1.5,

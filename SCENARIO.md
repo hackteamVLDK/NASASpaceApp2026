@@ -322,6 +322,7 @@ Sandbox rules: random events (Section 6) keep firing, the repeatable runs stay o
 | astra.res.food_low | Food below 25 | Food stores are low. Check the Greenhouse, and keep those plants happy! |
 | astra.res.morale_low | Morale below 30 | The crew is feeling down. A visit to the Recreation room or a message from Earth would help. |
 | astra.res.storage_save | Storage auto-refill fires | Good thing we packed spares! I opened the emergency stores. |
+| astra.res.emergency_worry | An Emergency is still open at the end of a Sol (once per stretch) | The base is in trouble and the crew is getting worried. Let's fix it soon! |
 | astra.coop.role_missing | Co-op task with no matching role | Nobody on our crew is trained for this. You can still do it, it'll just take a bit longer. |
 
 ### Module Tier 2 upgrade lines
@@ -505,6 +506,8 @@ A solo Commander finishes all six modules by Sol 15, all Tier 2 upgrades by Sol 
 | Morale | 70 | 100 | Builds and crafts 25% slower |
 | Spare Parts (SP) | 60 | 999 | Scrap Run always available |
 | Astronaut HP | 100 | Role max (90–120) | Med-Rest Mode (Section 3.6) |
+
+**An ignored Emergency (team decision, 2026-11-15; data label: gameplay).** While an Emergency Mode stays open, the crew loses 5 Morale at the end of each Sol (never below 0; no HP change, no death). The first time this happens in a stretch, ASTRA says `astra.res.emergency_worry`. Sols with Heat, Food or Oxygen at 0 also count against the Mission Rating (Section 8).
 
 ### 3.2 Per-astronaut needs (per Sol)
 
@@ -1587,6 +1590,8 @@ The recommended solo path ends Sol 20 with 15 Base Builder points and about 40 c
 badges (50–56 Science points), so a careful first run earns about 7 of 9 stars; 3 Science stars
 need extra events, choices and sandbox play. All thresholds are
 gameplay values, tuned in playtests. In co-op the rating is shared; Crew Care averages everyone.
+
+**Empty supplies (team decision, 2026-11-15; data label: gameplay).** A Sol during which Heat, Food or Oxygen was at 0 counts as a Sol with empty supplies. More than 3 such Sols cost 1 star, more than 8 cost 2. The stars come off Crew Care first, then Base Builder, then Science Explorer, and every category keeps at least 1 star. The Base panel shows "Sols with empty supplies: N".
 
 | Line ID | Trigger | Line |
 |---|---|---|
