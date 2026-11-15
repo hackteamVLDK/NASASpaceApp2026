@@ -30,10 +30,12 @@ Not mine: B12/C10 (roles, Sol Plans: team decision), B6/C12 (Mykhailo's expediti
   before Continue loads it), B2 (after 3 failed tries a drone OFFERS help for 1 Sol: engine command `droneFix` + `droneFixBlock`, `src/ui/drone-offer.js`), C11 dish step (A42).
 - Mini-game looks (A42): `src/ui/mg-kit.js` + `src/ui/mg-scenes.js`, a scene per game; the rules kept their hit areas and timing; Reduce motion respected.
   Played to the win with the real mouse in Edge: Heat Pump, Valve Balance, Water Sort (also the wrong order), Nutrient Match, Air Filter, Antenna (also the bent dish), Wheel Vacuum, battery step.
-- Pitch deck for the live 90-second pitch (new folder `pitch/`, nobody else edits it): `pitch/index.html` (7 slides, HTML, works offline; N = speaker script,
+- Pitch deck for the live 90-second pitch (new folder `pitch/`, nobody else edits it): slide 6 is the mission (the invisible science of Mars made playable),
+  slide 7 the promise (labelled numbers, 100 fact-checked claims, 51 NASA-linked logbook cards). No Steam or monetization: the team did not want it.
+  `pitch/index.html` (7 slides, HTML, works offline; N = speaker script,
   T = rehearsal clock) + `pitch/ARES-KIDS-pitch.pdf` (static backup) + `pitch/README.md` (keys, timing, which claims need a source).
   Checked in Edge: 36 checks (fonts over file://, at most 15 words per slide, nothing outside the stage, no overlaps, keys, Reduce motion, phone size).
-  Open point for the team: slide 7 says "Playable now in your browser", but there is no public deploy yet (ERRORS C18).
+  Open point for the team: slide 7 says "Come play."; a public link needs the Pages deploy (ERRORS C18).
 - npm test: 330 of 330 pass (2026-11-15, on the tree before the commit; 4 new tests in tests/dish-bent.test.mjs).
 
 ## NEXT
