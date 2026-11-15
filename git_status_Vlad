@@ -1,6 +1,7 @@
 # git_status_Vlad
 
 ## DOING NOW
+- 2026-11-15: DONE C30: the game is live on GitHub Pages: https://hackteamvldk.github.io/NASASpaceApp2026/ (workflow .github/workflows/pages.yml deploys every push to main after npm test). Files: .github/workflows/pages.yml, .nojekyll, README.md, docs/ERRORS.md. Nothing in progress.
 - 2026-11-15: DONE C29 on main: intro storyboard fixes (cross-section base, sand mound, layered canyon, turning Mars, Mission file paragraphs) and much more visible soil detail. Files: src/render/intro-story.js, src/render/soil-detail.js, src/render/world.js, src/campaign/logbook.js, src/ui/campaign-ui.js, tests/flow.test.mjs, docs/ERRORS.md. Nothing in progress.
 - 2026-11-15: DONE C28 on main: the intro text crawl is now a picture storyboard + YOUR MISSION briefing (intro.* strings), the old crawl kept as the Logbook story card mission_file. Files: src/flow/intro.js, src/render/intro-story.js (new), src/main.js, index.html, styles/game.css, src/campaign/logbook.js, src/ui/campaign-ui.js, content/tools/extract-*.mjs, content/data/*.json, tests/flow.test.mjs, SCENARIO.md. Nothing in progress.
 - 2026-11-15: DONE C27 on main: procedural NASA-based soil detail (layers, erosion surface, delta, basalt, boulders, rocks, veins, cracks, meteorites, ice lenses, dust band). Files: NEW src/render/soil-detail.js, src/render/world.js (buildSoil only, on top of Pavlo's 16e9c2c), src/campaign/sources.js (SOIL_SOURCES), tests/soil-sources.test.mjs, docs/ERRORS.md. Nothing in progress.

@@ -1,5 +1,7 @@
 # ASTRA
 
+**Play now: <https://hackteamvldk.github.io/NASASpaceApp2026/>**
+
 A browser game for **NASA Space Apps Challenge 2026**: a 2D pixel-art side-view cutaway of a partly
 finished underground Mars base. Builder drones fell asleep in a dust storm; you land, wake them,
 finish the base and keep the crew alive. It teaches real trade-offs (life support, power,
