@@ -18,7 +18,7 @@ import { choiceBlock } from '../campaign/story.js';
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 const name = (id) => (hasString(id) ? t(id) : id);
-const itemName = (it) => t(`ui.item.${it}.name`);
+const itemName = (it) => (hasString(`ui.item.${it}.name`) ? t(`ui.item.${it}.name`) : it.split('_').map((w) => w[0].toUpperCase() + w.slice(1)).join(' '));
 const costText = (c = {}) => [c.sp ? `${c.sp} SP` : null, c.water ? `${c.water} Water` : null, ...Object.entries(c.items ?? {}).map(([i, n]) => `${n}× ${itemName(i)}`)].filter(Boolean).join(', ');
 const MINI_NAME = { solar_wipe: 'ui.mg.solar_wipe.title', heat_pump: 'ui.mg.heat_pump_reroute.title', valve_balance: 'ui.mg.valve_balance.title', water_sort: 'ui.mg.water_sort.title', nutrient_match: 'ui.mg.nutrient_match.title', air_filter: 'ui.mg.air_filter_scrub.title', antenna: 'ui.mg.dish_antenna_alignment.title', wheel_vacuum: 'ui.mg.wheel_pebble_vacuum.title', suit_seal: 'ui.mg.suit_seal_check.title' };
 /** A18: one hint row per missing component, saying where to find it. */

@@ -88,6 +88,14 @@ export const BREAKDOWN_RULES = Object.freeze({
 
 export const BUILD_SOLS = 2; // with one drone (3.1)
 export const UPGRADE_SOLS = 0.5;
+/**
+ * Research the Lab T2 Deep Scan needs before it can find the signal (SCENARIO 2.3: "That research powers the
+ * Lab Tier 2 Deep Scan, which unlocks the Canyon Anomaly"; the scenario gives no number). Gameplay value:
+ * on the 3.8 path the Lab stands from Sol 15 (+5 a Sol, +8 at Tier 2), plus +5 per scanned Mineral Sample
+ * (5.5), D3 B +5 and D4 B +10, which is about 30-50 by Sol 19.
+ */
+export const DEEP_SCAN_RESEARCH = 30;
+export const MINERAL_SCAN_RESEARCH = 5; // 5.5: each Mineral Sample gives +5 Research when scanned
 export const DRONE_BUILD_POWER = -5; // per Sol while a drone builds
 export const STORM = Object.freeze({ solarT1: 0.3, solarT2: 0.5, batteryPowerMult: 4 });
 

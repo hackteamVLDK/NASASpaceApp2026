@@ -4,7 +4,7 @@
  * line ID (strings.js); this file only decides WHEN something happens and WHAT it changes.
  * Delayed effects are timers with a name (`runTimer`), so the whole state stays plain data.
  */
-import { SOL, MODULES, MODULE_LINES, RECYCLER, BREAKDOWNS, BREAKDOWN_RULES } from './data.js';
+import { SOL, MODULES, MODULE_LINES, RECYCLER, BREAKDOWNS, BREAKDOWN_RULES, DEEP_SCAN_RESEARCH, MINERAL_SCAN_RESEARCH } from './data.js';
 import { clockAt, online, at, addMod, after, clampTo, powerCapOf } from './util.js';
 
 const say = (emit, lineId, mood = 'calm') => emit({ type: 'astra', lineId, mood });
@@ -55,13 +55,28 @@ export function storyMinute(s, emit, now) {
     emit({ type: 'logbook', card: 'marsquakes' });
     addTask(s, 'antenna', 'Earth is listening. Point the dish.');
   });
-  once(s, 'deepScan', () => s.modules.lab.tier === 2 && sol >= 19, () => say(emit, 'astra.act3.deep_scan', 'cheerful'));
+  scanMinerals(s, emit);
+  once(s, 'deepScan', () => deepScanDone(s), () => say(emit, 'astra.act3.deep_scan', 'cheerful'));
   once(s, 'finalPrep', () => canFinale(s), () => say(emit, 'astra.act3.final_prep', 'cheerful'));
   once(s, 'sandbox', () => sol >= 21, () => { emit({ type: 'sandbox' }); say(emit, 'astra.sandbox.start', 'cheerful'); });
   once(s, 'milestone50', () => sol >= 50, () => say(emit, 'astra.sandbox.milestone_50', 'cheerful'));
 }
 
-export const canFinale = (s) => Boolean(s.upgrades.titanium_wheels && s.upgrades.deep_ice_drill && s.upgrades.rover_shielding && s.modules.garage.tier === 2 && s.modules.lab.tier === 2);
+/** The Deep Scan has found the signal: the Lab is at Tier 2 and has gathered enough Research (C12). */
+export const deepScanDone = (s) => s.modules.lab.tier === 2 && s.research >= DEEP_SCAN_RESEARCH;
+
+/** Once the Lab stands, every Mineral Sample that came home is scanned once: +5 Research each (5.5). */
+function scanMinerals(s, emit) {
+  if (!online(s, 'lab')) return;
+  const found = s.stats.mineralsFound ?? 0;
+  const scanned = s.stats.mineralsScanned ?? 0;
+  if (found <= scanned) return;
+  s.research += (found - scanned) * MINERAL_SCAN_RESEARCH;
+  s.stats.mineralsScanned = found;
+  emit({ type: 'toast', text: `The Lab scanned ${found - scanned} Mineral Sample${found - scanned > 1 ? 's' : ''}: +${(found - scanned) * MINERAL_SCAN_RESEARCH} Research.` });
+}
+
+export const canFinale = (s) => Boolean(s.upgrades.titanium_wheels && s.upgrades.deep_ice_drill && s.upgrades.rover_shielding && s.modules.garage.tier === 2 && deepScanDone(s));
 
 function endStorm(s, emit) {
   s.storm = null;
@@ -69,6 +84,7 @@ function endStorm(s, emit) {
   say(emit, 'astra.act1.storm_end', 'cheerful');
   emit({ type: 'storm', on: false });
   s.flags.panelsCleaned = false;
+  s.mult.solar = Math.min(s.mult.solar, 1 - BREAKDOWN_RULES.solarLoss); // 4.1: dusty panels give 20% less until wiped
   if (online(s, 'lab')) s.flags.dishBent = true; // C11 / SCENARIO 4.9: a storm bends the dish (if there is one); the next Earth window starts with a swipe to put it right
   addTask(s, 'solar_wipe', 'The storm left dust on the panels.');
   s.flags.filterDue = clockAt(s.minute).sol + 1;

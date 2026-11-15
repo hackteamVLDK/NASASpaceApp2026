@@ -6,6 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createCampaign, step, command, rates } from '../src/campaign/engine.js';
 import { whereToFind, itemsWithoutSource } from '../src/campaign/sources.js';
+import { DEEP_SCAN_RESEARCH, MINERAL_SCAN_RESEARCH } from '../src/campaign/data.js';
 import { EXPEDITIONS, durationMinutes, expectedLoot, finaleBlock } from '../src/campaign/expeditions.js';
 import { play } from '../tools/balance/strategy-lab.mjs';
 import { readFileSync } from 'node:fs';
@@ -112,10 +113,44 @@ test('the finale plays both science lines, at 75% and 85% of the trip', () => {
   const s = readyBase();
   s.modules.garage.tier = 2;
   s.modules.lab.tier = 2;
+  s.research = DEEP_SCAN_RESEARCH;
   assert.equal(finaleBlock(s), null);
-  const lines = trip(s, 5).filter((e) => e.type === 'astra').map((e) => e.lineId);
+  const events = trip(s, 5);
+  const lines = events.filter((e) => e.type === 'astra').map((e) => e.lineId);
   assert.ok(lines.includes('astra.finale.leopard') && lines.includes('astra.finale.methane'), lines.join(', '));
   assert.ok(lines.indexOf('astra.finale.leopard') < lines.indexOf('astra.finale.methane'));
+  // B6: the finale brings the Canyon Samples and the Brine Sample home (5.2), even after a rescue
+  const loot = events.find((e) => e.type === 'returned').loot;
+  assert.equal(loot.items.canyon_samples, 1);
+  assert.equal(loot.items.brine_sample, 1);
+});
+
+test('C12: the Deep Scan needs Research; Mineral Samples are scanned once the Lab stands', () => {
+  const s = readyBase();
+  s.modules.garage.tier = 2;
+  s.modules.lab.tier = 2;
+  s.research = 10;
+  assert.match(finaleBlock(s), /more Research for the Deep Scan \(10 of 30/);
+  assert.equal(command(s, { type: 'launch', expedition: 5 }).ok, false);
+  s.stats.mineralsFound = 4;
+  const events = step(s, 2); // the Lab scans the samples within a minute
+  assert.equal(s.research, 10 + 4 * MINERAL_SCAN_RESEARCH + (s.research - 10 - 4 * MINERAL_SCAN_RESEARCH));
+  assert.ok(s.research >= 30, `four samples are enough here (${s.research})`);
+  assert.ok(events.some((e) => e.type === 'toast' && /Mineral Sample/.test(e.text)));
+  const again = s.research;
+  step(s, 2);
+  assert.ok(s.research - again < 1, 'a sample is scanned only once');
+  assert.equal(finaleBlock(s), null);
+});
+
+test('SCENARIO 4.1: after the dust storm the panels give 20% less until they are wiped', () => {
+  const s = createCampaign({ seed: 1 });
+  command(s, { type: 'wakeDrone', drone: 'drone-01' });
+  while (!s.flags._stormBegin || s.storm) { if (s.pending) command(s, { type: 'choose', choice: 'a' }); step(s, 60); }
+  assert.ok(s.mult.solar <= 0.8 + 1e-9, `solar output x${s.mult.solar} (at most 0.8; dustier if a dust devil also hit)`);
+  assert.ok(s.tasks.some((t) => t.game === 'solar_wipe'));
+  command(s, { type: 'miniResult', game: 'solar_wipe', win: true });
+  assert.equal(s.mult.solar, 1);
 });
 
 test('the map says exactly what the finale still needs', () => {

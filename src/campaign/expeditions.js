@@ -10,7 +10,7 @@
  *     crew raced home on Dilemma 5 (choice A);
  *   - the Scrap Run (`run`) and the Ice Run (`ice`, needs the Deep Ice Drill) are repeatable.
  */
-import { SOL, HP } from './data.js';
+import { SOL, HP, DEEP_SCAN_RESEARCH, MINERAL_SCAN_RESEARCH } from './data.js';
 import { clockAt, online, after, clampTo } from './util.js';
 import { nextRandom } from '../sim/rng.js';
 import { addTask, scheduleBreakdown } from './story.js';
@@ -37,6 +37,7 @@ export function finaleBlock(s) {
   if (!s.upgrades.rover_shielding) missing.push('Regolith Radiation Shielding');
   if (s.modules.garage.tier !== 2) missing.push(`the Long-Range Battery (Garage upgrade: 1 Rare Battery Cell${s.flags.exp4Repeat ? ', more are waiting at the Delta Cliffs' : ''})`);
   if (s.modules.lab.tier !== 2) missing.push('the Lab Deep Scan (Lab upgrade)');
+  else if (s.research < DEEP_SCAN_RESEARCH) missing.push(`more Research for the Deep Scan (${Math.floor(s.research)} of ${DEEP_SCAN_RESEARCH}: the Lab adds some every Sol, and each Mineral Sample adds ${MINERAL_SCAN_RESEARCH})`);
   return missing.length ? `Still needed: ${missing.join('; ')}.` : null;
 }
 
@@ -60,7 +61,7 @@ export const EXPEDITIONS = Object.freeze({
     loot: { sp: 25, items: { rare_battery_cell: 3, lab_sensor_kit: 1, mineral_sample: 3, titanium_plate: 1, circuit_board: 2 } }, story: ['lab_sensor_kit'],
     radio: [0, 20, 35, 50, 60, 80, 100], astra: { 20: 'astra.exp4.at20', 35: 'astra.exp4.at35' }, decision: { at: 60, dilemma: 'd5' }, mapPos: [0.2, 0.55] },
   5: { id: 5, nameId: 'ui.exp5.name', sol: 2, route: 'canyon', risk: 'low', scripted: true, requires: once(5, (s) => finaleBlock(s)),
-    loot: { sp: 30, items: {} }, story: [],
+    loot: { sp: 30, items: { canyon_samples: 1, brine_sample: 1 } }, story: ['canyon_samples', 'brine_sample'], // 5.2: Canyon Samples, Brine Sample, 30 SP
     radio: [0, 25, 50, 55, 70, 95], radioIdMap: { 0: '01', 25: '02', 50: '03', 55: '04', 70: '05', 95: '06' }, astra: { 75: 'astra.finale.leopard', 85: 'astra.finale.methane' }, mapPos: [0.08, 0.35] },
   run: { id: 'run', nameId: 'ui.exp_run.name', sol: 1, route: 'floor', risk: 'low', requires: (s) => (online(s, 'garage') ? null : 'Build the Garage & Airlock first.'),
     loot: { sp: 15, items: {} }, story: [], radio: [0, 50, 100], radioPool: { 0: [1, 2], 50: [1, 3], 100: [1, 2] }, mapPos: [0.6, 0.7] },
@@ -273,6 +274,7 @@ function finish(s, ex, emit) {
   }
   s.res.sp = clampTo(s.res.sp + got.sp, 0, 999);
   for (const [it, n] of Object.entries(got.items)) s.items[it] = (s.items[it] ?? 0) + n;
+  if (got.items.mineral_sample) s.stats.mineralsFound = (s.stats.mineralsFound ?? 0) + got.items.mineral_sample; // scanned by the Lab (story.js)
   if (rough) { s.hp = clampTo(s.hp - 5, 0, s.hpMax); }
   if (s.hp <= 0) { s.medRest = { until: s.minute + SOL }; s.stats.medRests += 1; } // the rescue ends in Med-Rest, which counts
   // 4.7: sharp rocks after a Bumpy or Rough ride: the wheels need a check before the next trip
