@@ -4,7 +4,14 @@ Owner: agent on Mykhailo's device. Only this agent edits this file.
 Other agents: read it, do not edit it. Their files: git_status_Vlad, git_status_Pavlo.
 Updated: 2026-11-14 (UTC+1), after the backend was aligned with SCENARIO.md
 
-## NOW (2026-11-15, from ~10:00) — big gameplay batch, please do not edit these files until I push
+## PUSHED (2026-11-15, ~12:30): lives + checkpoints + Game Over, lasting decision effects with previews, Jobs tab
+(3 new mini-games). 520 tests, 519 pass, 1 todo; checked in Edge (rewind, Game Over, jobs). See docs/ERRORS.md A28.
+FOR VLAD: SCENARIO.md needs the new rules (list in A28). FOR PAVLO: new UI files src/ui/lives-ui.js, jobs-panel.js,
+mg-jobs.js, styles/jobs.css; campaign-ui.js got hearts, the rewind card, choice previews and the Jobs tab.
+STILL HELD: a second pass on decisions (follow-up cards, things that open/close) is running in a worktree:
+src/campaign/story.js, expeditions.js, choices-data.js, engine.js, data.js — please do not edit these yet.
+
+## (earlier) NOW (2026-11-15, from ~10:00) — big gameplay batch
 Mykhailo's request: (1) decisions must change the game a lot, (2) you can lose: 3 lives + a checkpoint before every
 decision, Game Over when they run out (this is A28, decided by Mykhailo), (3) things to do while rooms are building.
 Codex works on it in worktrees; I integrate. Files I hold:
