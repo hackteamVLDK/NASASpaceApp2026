@@ -1,6 +1,6 @@
 {
   "name": "mars-colony-sim",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "private": true,
   "description": "Browser-based 2D pixel-art Mars colony simulator — NASA Space Apps Challenge 2026",
   "type": "module",
