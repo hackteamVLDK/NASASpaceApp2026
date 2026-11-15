@@ -121,9 +121,9 @@ export function paintSoilDetail(ctx, o) {
       return dist <= R * j;
     };
     for (let y = Math.floor(cy - R); y <= cy + R; y++) for (let x = Math.floor(cx - R); x <= cx + R; x++) {
-      if (!inside(x, y)) { if (inside(x - 1, y - 1) && !inside(x, y - 1)) mix(x, y, P.crack, 0.55); continue; } // shadow lower right
+      if (!inside(x, y)) { if (inside(x - 1, y - 1)) mix(x, y, P.crack, 0.45); continue; } // shadow lower right
       const edgeTop = !inside(x, y - 1) || !inside(x - 1, y);
-      const edgeLow = !inside(x, y + 1) || !inside(x + 1, y);
+      const edgeLow = !inside(x, y + 1) && !inside(x + 1, y);
       put(x, y, edgeTop ? shade(body, 1.35) : edgeLow ? shade(body, 0.62) : (hash(x * 3 + seed, y) > 0.86 ? shade(body, 0.85) : body));
     }
     if (R >= 3) for (let c = 0; c < 1 + (hash(seed, 7) > 0.5 ? 1 : 0); c++) { // 1-2 pixel cracks
@@ -141,8 +141,8 @@ export function paintSoilDetail(ctx, o) {
   for (let i = 0; i < nRocks; i++) {
     const near = hash(i, 401) < 0.35;
     const d = near ? 4 + Math.floor(hash(i, 402) * 70) : SOIL_ZONES.surfaceBand + Math.floor(hash(i, 402) * (H - G - SOIL_ZONES.surfaceBand - 10));
-    const R = near ? 1 + Math.floor(hash(i, 403) * 2) : 2 + Math.floor(hash(i, 403) ** 1.5 * 7);
-    const base = d > basaltAt(0) ? P.basaltLight : hash(i, 404) > 0.5 ? grey(shade(top.light, 1.08), 0.35) : grey(shade(low.light, 0.95), 0.5);
+    const R = near ? 1 + Math.floor(hash(i, 403) * 2) : 2 + Math.floor(hash(i, 403) ** 1.2 * 8);
+    const base = d > basaltAt(0) ? P.basaltLight : hash(i, 404) > 0.5 ? grey(shade(top.light, 1.2), 0.35) : grey(shade(low.light, 1.15), 0.5);
     rock(Math.floor(hash(i, 400) * W), G + d, R, base, 1000 + i);
   }
 
