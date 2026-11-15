@@ -1,232 +1,211 @@
-/**
- * Procedural pixel-art detail on top of the pre-rendered soil tiles (browser only, drawn ONCE by buildSoil).
- * Everything is written into the canvas pixels directly: whole pixels at the 0.5 soil scale, no blur, no per-frame cost.
- * Deterministic: every random choice comes from the `hash` passed in (the one in world.js), so the picture never
- * changes between frames or reloads. Colours are sampled from the terrain tiles already drawn on the canvas.
+﻿/**
+ * Procedural development stand-in, baked ONCE by buildSoil at 0.5 px/world unit.
+ * Crisp whole pixels; all variation uses world.js's deterministic hash.
+ * Palette comes from terrain swatches, never from a mosaic under the picture.
  *
- * Science behind each element (citations in src/campaign/sources.js, SOIL_SOURCES):
- *   layers       approximation   RIMFAX radar under Jezero: flat lake sediments, an erosion surface, a buried tilted delta
- *   colour       nasa_measurement rust/ochre from iron oxides (ferrihydrite with basalt), greyer with depth
- *   bedrock      nasa_measurement volcanic (basaltic) rock on the Jezero crater floor (Perseverance)
- *   boulders     nasa_measurement flood-carried boulders in the Jezero delta (Mangold et al., Science 2021)
- *   veins        nasa_measurement calcium-sulfate veins filling cracks (Curiosity ChemCam)
- *   meteorite    nasa_measurement iron-nickel meteorite "Cacao" (Curiosity, ~30 cm)
- *   ice lenses   gameplay         see the comment at drawIce
- *   cracks, pebbles, wheel tracks  gameplay (decoration)
- * Sizes and depths are scaled to the game world (approximation); they are not survey depths.
+ * Science notes (citations and provenance in campaign/sources.js, SOIL_SOURCES):
+ * layers      approximation    RIMFAX: lake sediments, erosion, a buried tilted delta
+ * colour      nasa_measurement iron-oxide rust/ochre, greyer basalt with depth
+ * bedrock     nasa_measurement volcanic rock on the Jezero crater floor
+ * boulders    nasa_measurement flood-carried boulders in the Jezero delta
+ * veins       nasa_measurement pale calcium sulfate filling cracks (Curiosity)
+ * meteorite   nasa_measurement iron-nickel meteorite Cacao (Curiosity)
+ * ice lenses  gameplay         see drawIce: ice here is not a Jezero measurement
+ * cracks, pebbles, tracks      gameplay decoration
+ * Layout, sizes, spacing, colours and depths below are illustrative render choices
+ * (approximation/gameplay), not measured dimensions or simulation parameters.
  */
-
-// Zone depths in canvas pixels below the ground line (1 canvas px = 2 world units). Provenance: approximation
-// (RIMFAX saw lake layers on top, an erosion surface, the delta below; the real delta lies more than 35 m down).
 export const SOIL_ZONES = Object.freeze({ surfaceBand: 60, erosion: 335, basalt: 615 });
+const clamp01 = v => Math.max(0, Math.min(1, v));
+const smooth = v => { const t = clamp01(v); return t * t * (3 - 2 * t); };
+const blend = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
+const shade = (c, n) => c.map(v => Math.max(0, Math.min(255, v + n)));
+const grey = (c, t) => blend(c, Array(3).fill((c[0] + c[1] + c[2]) / 3), t);
 
-const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+/** Continuous value noise; knots have no discontinuity (including former 40 px tile edges). */
+function noise(x, span, seed, hash) {
+  const u = x / span, i = Math.floor(u);
+  return (hash(i, seed) * (1 - smooth(u - i)) + hash(i + 1, seed) * smooth(u - i)) * 2 - 1;
+}
 
-/**
- * @param {CanvasRenderingContext2D} ctx  the soil canvas (already holds the tiles)
- * @param {object} o  { w, h, groundPx, hash, avoid: [{x,y,w,h}] in canvas px, ice: [{x,y}] tile centres in canvas px, airlockX, garageX }
- */
+/** Geometry shared with regression checks; all depths are relative to the ground in canvas pixels. */
+export function soilProfile(w, hash) {
+  const wave = x => 7 * noise(x, 190, 71, hash) + 2 * noise(x, 73, 72, hash);
+  return {
+    wave,
+    erosionAt: x => SOIL_ZONES.erosion + wave(x),
+    basaltAt: x => SOIL_ZONES.basalt + 9 * noise(x, 240, 73, hash),
+    // One buried delta lobe, four inclined beds, tapered at both sides and top/bottom.
+    deltaAt: x => ({ top: 425 + (x - w * 0.67) * 0.12 + wave(x), strength: smooth((1 - Math.abs(x - w * 0.67) / (w * 0.16)) * 3) }),
+  };
+}
+
+/** Reject whole rocks near rooms, ice, edges and each other: never clip a rock into a rectangle. */
+export function planSoilRocks({ w, h, groundPx: g, hash, avoid = [], ice = [] }) {
+  const rocks = [];
+  const exclusions = [...avoid, ...ice.map(p => ({ x: p.x - 24, y: p.y - 11, w: 48, h: 22 }))];
+  const count = Math.round(w * Math.max(0, h - g) / 27000);
+  for (let i = 0; i < count * 5 && rocks.length < count; i++) {
+    const meteorite = rocks.length < 2;
+    const x = Math.floor(hash(i, 400) * w);
+    const y = meteorite ? g + 100 + Math.floor(hash(i, 402) * 180) : g + 12 + Math.floor(hash(i, 402) * Math.max(1, h - g - 28));
+    const depth = clamp01((y - g) / Math.max(1, h - g));
+    const r = meteorite ? 4 : 3 + Math.floor(hash(i, 403) * (3 + depth * 12));
+    const bounds = { x: x - r, y: y - r, w: r * 2 + 1, h: r * 2 + 1 };
+    if (bounds.x < 3 || bounds.y < g + 10 || x + r >= w - 3 || y + r >= h - 3) continue;
+    if (exclusions.some(a => bounds.x < a.x + a.w + 6 && bounds.x + bounds.w > a.x - 6 && bounds.y < a.y + a.h + 6 && bounds.y + bounds.h > a.y - 6)) continue;
+    if (rocks.some(a => Math.hypot(x - a.x, y - a.y) < r + a.r + 12)) continue;
+    rocks.push({ x, y, r, seed: i, meteorite });
+  }
+  return rocks;
+}
+
+/** Median tile colours discard highlights and cracks; no tile's painted texture survives. */
+export function soilPalette(swatches) {
+  const fallback = [[156, 78, 51], [113, 73, 60], [77, 70, 72]];
+  if (!swatches) return fallback;
+  return [[0, 4], [4, 8], [8, 10]].map(([from, to], zone) => {
+    const colours = [];
+    for (let y = 0; y < 40; y++) for (let x = from * 40; x < to * 40; x++) {
+      const k = (y * 400 + x) * 4;
+      if (swatches[k + 3] > 200) colours.push([swatches[k], swatches[k + 1], swatches[k + 2]]);
+    }
+    if (!colours.length) return fallback[zone];
+    colours.sort((a,b) => a[0]+a[1]+a[2]-b[0]-b[1]-b[2]);
+    const middle = colours.slice(Math.floor(colours.length * 0.35), Math.ceil(colours.length * 0.65));
+    return [0,1,2].map(c => Math.round(middle.reduce((s,p) => s+p[c],0) / middle.length));
+  });
+}
+
+/** {w,h,groundPx,hash,avoid,ice,swatches,airlockX,garageX}; all coordinates in soil pixels. */
 export function paintSoilDetail(ctx, o) {
-  const { w: W, h: H, groundPx: G, hash } = o;
+  const { w: W, h: H, groundPx: G, hash, avoid = [], ice = [] } = o;
   let img;
-  try { img = ctx.getImageData(0, 0, W, H); } catch { return; } // a tainted canvas: keep the plain tiles
-  const D = img.data;
-  const blocked = new Uint8Array(W * H);
-  for (const r of o.avoid) {
-    for (let y = Math.max(0, r.y | 0); y < Math.min(H, Math.ceil(r.y + r.h)); y++) blocked.fill(1, y * W + Math.max(0, r.x | 0), y * W + Math.min(W, Math.ceil(r.x + r.w)));
-  }
-  const free = (x, y) => x >= 0 && y >= G + 1 && x < W && y < H && !blocked[y * W + x];
-
-  // ---- palette, sampled from the tiles (light / mid / dark by brightness, per zone)
-  const sample = (d0, d1) => {
-    const px = [];
-    for (let i = 0; i < 4000; i++) {
-      const x = Math.floor(hash(i, 901) * W), y = G + d0 + Math.floor(hash(i, 902) * (d1 - d0));
-      if (y >= H) continue;
-      const k = (y * W + x) * 4;
-      if (D[k + 3] > 200) px.push([D[k], D[k + 1], D[k + 2]]);
-    }
-    if (!px.length) return null;
-    px.sort((a, b) => (a[0] + a[1] + a[2]) - (b[0] + b[1] + b[2]));
-    const avg = (from, to) => { const s = [0, 0, 0]; const part = px.slice(Math.floor(px.length * from), Math.max(Math.floor(px.length * from) + 1, Math.floor(px.length * to))); for (const p of part) { s[0] += p[0]; s[1] += p[1]; s[2] += p[2]; } return s.map((v) => Math.round(v / part.length)); };
-    return { dark: avg(0, 0.2), mid: avg(0.4, 0.6), light: avg(0.8, 1) };
-  };
-  const top = sample(SOIL_ZONES.surfaceBand, SOIL_ZONES.erosion) ?? { dark: [92, 38, 28], mid: [150, 70, 44], light: [196, 112, 66] };
-  const low = sample(SOIL_ZONES.erosion, SOIL_ZONES.basalt) ?? top;
-  const deep = sample(SOIL_ZONES.basalt + 220, H - G - 2) ?? { dark: [56, 52, 56], mid: [92, 88, 92], light: [128, 124, 126] };
-  const grey = (c, k) => { const l = (c[0] + c[1] + c[2]) / 3; return c.map((v) => Math.round(v + (l - v) * k)); };
-  const shade = (c, f) => c.map((v) => Math.max(0, Math.min(255, Math.round(v * f))));
-  const P = {
-    ochre: shade(top.light, 1.22), rust: shade(top.dark, 0.82), line: shade(top.dark, 0.5),
-    deltaLight: grey(shade(low.light, 1.2), 0.15), deltaDark: grey(shade(low.dark, 0.82), 0.15), deltaLine: shade(low.dark, 0.5),
-    dust: shade(top.light, 1.18),
-    basalt: grey(deep.mid, 0.7), basaltDark: grey(shade(deep.dark, 0.85), 0.7), basaltLight: grey(deep.light, 0.6),
-    vein: [255, 252, 236], veinYellow: [252, 240, 178], crack: shade(top.dark, 0.45),
-    iron: [168, 172, 178], ironLight: [214, 217, 221], ironDark: [92, 95, 101],
-    ice: [206, 232, 246], white: [255, 255, 255],
-  };
-  const mix = (x, y, c, a) => {
-    if (!free(x, y) || a <= 0) return;
-    const k = (y * W + x) * 4;
-    D[k] = Math.round(D[k] + (c[0] - D[k]) * a); D[k + 1] = Math.round(D[k + 1] + (c[1] - D[k + 1]) * a); D[k + 2] = Math.round(D[k + 2] + (c[2] - D[k + 2]) * a);
-  };
-  const put = (x, y, c) => mix(x, y, c, 1);
-  const bright = new Uint8Array(W * H); // veins and ice keep their light colour under the depth gradient
-  const putBright = (x, y, c) => { if (free(x, y)) { put(x, y, c); bright[y * W + x] = 1; } };
-
-  // ---- 1) layers, the erosion surface and the bedrock contact (approximation, RIMFAX)
-  const erosionAt = (x) => SOIL_ZONES.erosion + Math.round(10 * Math.sin(x / 97 + 1.3) + 6 * Math.sin(x / 41 + 0.4) + 3 * Math.sin(x / 13));
-  const basaltAt = (x) => SOIL_ZONES.basalt + Math.round(8 * Math.sin(x / 130) + 5 * Math.sin(x / 53 + 2));
-  const lakeLayer = new Int16Array(1400); // depth -> layer number (thin, regular: 4-8 px each)
-  for (let d = 0, n = 0; d < lakeLayer.length; n++) { const t = 8 + Math.floor(hash(n, 11) * 7), ln = 2 + (hash(n, 12) > 0.5 ? 1 : 0); for (let i = 0; i < t && d < lakeLayer.length; i++, d++) lakeLayer[d] = i < ln ? -(n + 1) : n; }
-  const deltaLayer = new Int16Array(4096); // tilted coordinate -> layer number (thicker: 6-12 px)
-  for (let u = 0, n = 0; u < deltaLayer.length; n++) { const t = 10 + Math.floor(hash(n, 23) * 8), ln = 2 + (hash(n, 24) > 0.5 ? 1 : 0); for (let i = 0; i < t && u < deltaLayer.length; i++, u++) deltaLayer[u] = i < ln ? -(n + 1) : n; }
-  const TILT = 0.27; // tan(15 deg): delta foresets dip 10-20 deg (approximation)
-  for (let x = 0; x < W; x++) {
-    const ero = erosionAt(x), bas = basaltAt(x);
-    const wob = Math.round(2 * Math.sin(x / 211) + Math.sin(x / 67 + 0.7));
-    for (let d = 2; G + d < H; d++) {
-      const y = G + d;
-      if (!free(x, y)) continue;
-      if (d < SOIL_ZONES.surfaceBand) { // 8) fine, light dust near the surface
-        mix(x, y, P.dust, 0.3 * (1 - d / SOIL_ZONES.surfaceBand) + (hash(x, y) > 0.8 ? 0.08 : 0));
-        continue;
-      }
-      if (d < ero) { // lake sediments: nearly horizontal, alternating ochre / rust with thin darker lines
-        const L = lakeLayer[Math.min(lakeLayer.length - 1, d + wob + 4)];
-        if (L < 0) mix(x, y, P.line, 0.8); else mix(x, y, L % 2 ? P.rust : P.ochre, 0.7);
-      } else if (d <= ero + 3) { // the erosion surface cuts across the layers: a dark wavy line with a light lag on top
-        mix(x, y, d === ero ? P.ochre : P.line, d === ero ? 0.6 : 0.75);
-      } else if (d < bas) { // the buried delta: tilted layers, truncated at the top by the erosion surface
-        const u = Math.min(deltaLayer.length - 1, Math.max(0, Math.floor(d - x * TILT + 1000)));
-        const L = deltaLayer[u];
-        if (L < 0) mix(x, y, P.deltaLine, 0.78); else mix(x, y, L % 2 ? P.deltaDark : P.deltaLight, 0.66);
-      } else { // basalt bedrock: grey, blocky joints
-        const k = d - bas;
-        mix(x, y, P.basalt, 0.55 + 0.3 * clamp01(k / 250));
-        if (k === 0) mix(x, y, P.basaltDark, 0.6);
-        else if (k % 14 === 0 || (x + Math.floor(k / 14) * 9) % 23 === 0) mix(x, y, P.basaltDark, 0.35);
-      }
-      // 2) greyer with depth (iron-oxide rust fades into grey basalt below)
-      if (d > SOIL_ZONES.surfaceBand) {
-        const k = (y * W + x) * 4, g = Math.min(0.4, (d - SOIL_ZONES.surfaceBand) / 1100 * 0.5), l = (D[k] + D[k + 1] + D[k + 2]) / 3;
-        D[k] = Math.round(D[k] + (l - D[k]) * g); D[k + 1] = Math.round(D[k + 1] + (l - D[k + 1]) * g); D[k + 2] = Math.round(D[k + 2] + (l - D[k + 2]) * g);
+  try { img = ctx.getImageData(0, 0, W, H); } catch { return false; }
+  const D = img.data, blocked = new Uint8Array(W * H), quiet = new Float32Array(W * H);
+  // Smoothly reduce detail around the rooms, while painting the SAME strata through their interiors.
+  // Only discrete decorations are blocked; skipping background pixels would expose rectangular seams.
+  for (const r of avoid) {
+    for (let y = Math.max(G + 9, Math.floor(r.y - 48)); y < Math.min(H, Math.ceil(r.y + r.h + 48)); y++) {
+      for (let x = Math.max(0, Math.floor(r.x - 48)); x < Math.min(W, Math.ceil(r.x + r.w + 48)); x++) {
+        const dx = Math.max(r.x - x, 0, x - (r.x + r.w)), dy = Math.max(r.y - y, 0, y - (r.y + r.h));
+        const k = y * W + x;
+        quiet[k] = Math.max(quiet[k], 1 - smooth(Math.hypot(dx, dy) / 48));
+        if (dx === 0 && dy === 0) blocked[k] = 1;
       }
     }
   }
-
-  // ---- 3) rocks and boulders: a light top edge, a dark shadow, a crack or two
-  const rock = (cx, cy, R, body, seed) => {
-    const inside = (x, y) => {
-      const dx = x - cx, dy = (y - cy) * 1.25, dist = Math.hypot(dx, dy);
-      const a = Math.atan2(dy, dx), j = 0.82 + 0.18 * hash(seed, Math.floor((a + Math.PI) * 2.2));
-      return dist <= R * j;
+  const [top, lower, bed] = soilPalette(o.swatches);
+  const low = grey(lower, 0.15), basalt = grey(bed, 0.7);
+  const profile = soilProfile(W, hash);
+  // Broad, irregularly spaced beds. Each boundary uses the same continuous world coordinate.
+  const beds = [];
+  for (let d = SOIL_ZONES.surfaceBand, i = 0; d < H - G + 40; i++) {
+    beds.push({ depth: d, tone: Math.round((hash(i, 12) - 0.5) * 17) });
+    d += 23 + Math.floor(hash(i, 11) * 26);
+  }
+  const tones = new Int8Array(H + 80), boundaries = new Uint8Array(H + 80);
+  for (let i = 0; i < beds.length; i++) {
+    const a = beds[i].depth, b = beds[i+1]?.depth ?? tones.length;
+    tones.fill(beds[i].tone, a, Math.min(b, tones.length)); boundaries[a] = 1;
+  }
+  const write = (x,y,c) => { const k=(y*W+x)*4; D[k]=c[0];D[k+1]=c[1];D[k+2]=c[2];D[k+3]=255; };
+  const free = (x,y) => x>=0 && x<W && y>=G+9 && y<H && !blocked[y*W+x];
+  const mix = (x,y,c,a) => {
+    if (!free(x,y)) return;
+    const k=(y*W+x)*4, f=a*(1-quiet[y*W+x]*0.4);
+    D[k]=Math.round(D[k]+(c[0]-D[k])*f);D[k+1]=Math.round(D[k+1]+(c[1]-D[k+1])*f);D[k+2]=Math.round(D[k+2]+(c[2]-D[k+2])*f);
+  };
+  // Precompute the broad material transition and depth tint per row, outside the pixel loop.
+  const rows = [];
+  for(let d=0;d<H-G;d++) {
+    let c=blend(top,low,smooth((d-SOIL_ZONES.surfaceBand)/(SOIL_ZONES.erosion+80)));
+    c=blend(c,basalt,smooth((d-SOIL_ZONES.basalt+30)/95));
+    rows.push(c);
+  }
+  for (let x=0;x<W;x++) {
+    const wob=profile.wave(x), ero=profile.erosionAt(x), bas=profile.basaltAt(x), delta=profile.deltaAt(x);
+    for(let y=G+9;y<H;y++) {
+      const d=y-G, k=y*W+x, u=Math.max(0,Math.min(tones.length-1,Math.round(d-wob)));
+      const sediment=1-smooth((d-bas+20)/45);
+      let tone=(tones[u]-(boundaries[u] ? 3 : 0))*sediment;
+      if(d<SOIL_ZONES.surfaceBand) tone=8*(1-d/SOIL_ZONES.surfaceBand);
+      if(Math.abs(d-ero)<1) tone-=5;
+      const t=d-delta.top;
+      if(delta.strength>0 && t>0 && t<104) {
+        const n=Math.min(3,Math.floor(t/26));
+        tone+=(n%2 ? -5 : 4)*delta.strength*smooth(t/18)*smooth((104-t)/18);
+      }
+      // Very sparse, low contrast grain. No repeating grid or per-tile coordinate.
+      if(hash(x,y)>0.982) tone-=3;
+      tone*=1-quiet[k]*0.55;
+      const c=rows[d], p=k*4;
+      D[p]=Math.max(0,c[0]+tone);D[p+1]=Math.max(0,c[1]+tone);D[p+2]=Math.max(0,c[2]+tone);D[p+3]=255;
+    }
+  }
+  const rocks=planSoilRocks(o), occupied=new Uint8Array(W*H);
+  for(const {x:cx,y:cy,r,seed,meteorite} of rocks) {
+    // A bevelled polygon raster: three solid colours, a one-pixel outline, one upper-left highlight.
+    const ry=Math.max(2,Math.round(r*0.72)), bevel=Math.max(1,Math.round(r*(0.25+hash(seed,410)*0.15)));
+    const inside=(x,y)=>{
+      const dx=x-cx, dy=y-cy;
+      return Math.abs(dx)<=r && Math.abs(dy)<=ry &&
+        Math.abs(dx)+Math.abs(dy)<=r+ry-bevel-(dx>0&&dy<0?1:0) &&
+        !(dx<-r+1 && dy>ry-2);
     };
-    const e = Math.max(1, Math.round(R / 5)); // edge and shadow thickness grow with the rock
-    const sh = Math.max(1, Math.round(R / 6));
-    for (let y = Math.floor(cy - R - 1); y <= cy + R + sh + 1; y++) for (let x = Math.floor(cx - R - 1); x <= cx + R + sh + 1; x++) {
-      if (!inside(x, y)) { if (inside(x - sh, y - sh)) mix(x, y, P.crack, 0.6); continue; } // a dark shadow, lower right
-      let top = false, low = false;
-      for (let k = 1; k <= e && !top; k++) top = !inside(x, y - k) || !inside(x - k, y);
-      if (!top) for (let k = 1; k <= e && !low; k++) low = !inside(x, y + k) || !inside(x + k, y);
-      put(x, y, top ? shade(body, 1.45) : low ? shade(body, 0.6) : (hash(x * 3 + seed, y) > 0.86 ? shade(body, 0.86) : body));
+    const d=cy-G, body=shade(meteorite ? grey(blend(top,basalt,0.65),0.7) : blend(d>SOIL_ZONES.basalt ? basalt : rows[d],basalt,0.25),12);
+    const dark=shade(body,-15), light=shade(body,10);
+    for(let y=cy-ry;y<=cy+ry;y++) for(let x=cx-r;x<=cx+r;x++) {
+      if(!inside(x,y))continue;
+      const edge=!inside(x-1,y)||!inside(x+1,y)||!inside(x,y-1)||!inside(x,y+1);
+      const highlight=!inside(x-2,y-2) && y<cy && x<cx+Math.round(r/3);
+      write(x,y,edge ? dark : highlight ? light : body);occupied[y*W+x]=1;
     }
-    if (R >= 3) for (let c = 0; c < 1 + (hash(seed, 7) > 0.5 ? 1 : 0); c++) { // 1-2 pixel cracks
-      let x = Math.round(cx - R / 2 + hash(seed, 8 + c) * R), y = Math.round(cy - R / 3);
-      for (let i = 0; i < Math.max(2, R * 0.8); i++) { if (inside(x, y)) put(x, y, shade(body, 0.5)); y++; x += hash(seed, 20 + i) > 0.5 ? 1 : 0; }
-    }
-  };
-  // a few large flood boulders in the upper layers (nasa_measurement: delta boulders carried by floods)
-  for (let i = 0; i < 6; i++) {
-    const x = Math.floor(hash(i, 301) * W), d = SOIL_ZONES.surfaceBand + 30 + Math.floor(hash(i, 302) * 200);
-    rock(x, G + d, 13 + Math.floor(hash(i, 303) * 9), grey(shade(top.light, 0.9), 0.45), 300 + i);
+    if(meteorite) for(let p=0;p<3;p++)write(cx-1+p,cy+(p%2),dark);
   }
-  // 160-180 rocks of mixed sizes; small pebbles near the surface
-  const nRocks = 580 + Math.floor(hash(5, 5) * 40); // about 600
-  for (let i = 0; i < nRocks; i++) {
-    const near = hash(i, 401) < 0.2;
-    const d = near ? 4 + Math.floor(hash(i, 402) * 70) : SOIL_ZONES.surfaceBand + Math.floor(hash(i, 402) * (H - G - SOIL_ZONES.surfaceBand - 10));
-    const R = near ? 3 + Math.floor(hash(i, 403) * 2) : 3 + Math.floor(hash(i, 403) ** 2.2 * 27); // 6-60 px across
-    const base = d > basaltAt(0) ? P.basaltLight : hash(i, 404) > 0.5 ? grey(shade(top.light, 1.2), 0.35) : grey(shade(low.light, 1.15), 0.5);
-    rock(Math.floor(hash(i, 400) * W), G + d, R, base, 1000 + i);
-  }
-
-  // ---- 4) calcium-sulfate veins: thin white / pale-yellow lines that branch and cross the layers (nasa_measurement)
-  const veinEnds = [];
-  const vein = (x, y, len, seed, depth = 0) => {
-    const col = hash(seed, 1) > 0.5 ? P.vein : P.veinYellow;
-    let dx = hash(seed, 2) > 0.5 ? 1 : -1;
-    for (let i = 0; i < len; i++) {
-      putBright(x, y, col); putBright(x + 1, y, col); // 2 px wide
-      if (hash(seed, 100 + i) > 0.6) x += dx; else y += 1;
-      if (hash(seed, 300 + i) > 0.93) dx = -dx;
-      if (depth === 0 && hash(seed, 500 + i) > 0.965) vein(x, y, 8 + Math.floor(hash(seed, 600 + i) * 16), seed * 7 + i, 1);
-    }
-    veinEnds.push([x, y]);
-  };
-  const nVeins = 20 + Math.floor(hash(9, 9) * 6); // 20-25
-  for (let i = 0; i < nVeins; i++) vein(Math.floor(hash(i, 501) * W), G + SOIL_ZONES.surfaceBand + Math.floor(hash(i, 502) * (H - G - 200)), 120 + Math.floor(hash(i, 503) * 140), 700 + i);
-
-  // ---- 5) cracks: thin dark zig-zag fractures; some end in a vein
-  for (let i = 0; i < 28; i++) {
-    let x, y;
-    const toVein = i < veinEnds.length && hash(i, 801) > 0.55;
-    if (toVein) [x, y] = veinEnds[i]; else { x = Math.floor(hash(i, 802) * W); y = G + SOIL_ZONES.surfaceBand + Math.floor(hash(i, 803) * (H - G - 120)); }
-    let dx = hash(i, 804) > 0.5 ? 1 : -1, run = 0;
-    const len = 14 + Math.floor(hash(i, 805) * 28);
-    for (let k = 0; k < len; k++) {
-      if (!(toVein && k === 0)) put(x, y, P.crack);
-      y -= toVein ? 1 : -1; x += dx;
-      if (++run > 2 + Math.floor(hash(i, 900 + k) * 3)) { dx = -dx; run = 0; }
+  // A few short unbranched mineral seams, gently curved, pale relative to their host rock.
+  // They receive the same depth tint as the soil: no emissive mask, yellow or white lightning.
+  for(let i=0;i<7;i++) {
+    const x0=Math.floor(hash(i,501)*W), y0=G+90+Math.floor(hash(i,502)*Math.max(1,H-G-190));
+    const len=30+Math.floor(hash(i,503)*45), dx=hash(i,504)>0.5 ? 1 : -1;
+    for(let n=0;n<len;n++) {
+      const x=x0+dx*n, y=y0+Math.round(n*0.24+2*noise(n,38,510+i,hash));
+      if(free(x,y)&&!occupied[y*W+x]) { const p=(y*W+x)*4;mix(x,y,blend([D[p],D[p+1],D[p+2]],[177,163,147],0.23),1); }
     }
   }
-
-  // ---- 6) iron-nickel meteorites like "Cacao": small silver-grey pitted rocks in a rust layer (nasa_measurement)
-  for (let i = 0; i < 2; i++) {
-    let x = Math.floor(hash(i, 1101) * W), d = SOIL_ZONES.surfaceBand + 40 + Math.floor(hash(i, 1102) * 180);
-    for (let t = 0; t < 12 && (lakeLayer[d] < 0 || lakeLayer[d] % 2 === 0); t++) d++; // sit in a rust (dark) layer
-    rock(x, G + d, 5, P.iron, 1100 + i);
-    for (let p = 0; p < 5; p++) put(x - 2 + Math.floor(hash(i, 1110 + p) * 5), G + d - 2 + Math.floor(hash(i, 1120 + p) * 4), P.ironDark); // pits
+  // Sparse, irregular basalt fractures; no tiled or rectangular joints.
+  for(let i=0;i<14;i++) {
+    const x0=Math.floor(hash(i,802)*W), y0=G+SOIL_ZONES.basalt+25+Math.floor(hash(i,803)*Math.max(1,H-G-SOIL_ZONES.basalt-90));
+    const len=18+Math.floor(hash(i,805)*34), dx=hash(i,804)>0.5?1:-1;
+    for(let n=0;n<len;n++) { const x=x0+Math.round(n*0.3*dx+noise(n,17,820+i,hash)*2), y=y0+n;if(free(x,y)&&!occupied[y*W+x])mix(x,y,shade(basalt,-16),0.5); }
   }
-
-  drawIce(o.ice, putBright);
-
-  // ---- 8) faint wheel tracks on the surface, leading to the airlock
-  if (o.airlockX != null && o.garageX != null) {
-    const [a, b] = [Math.min(o.airlockX, o.garageX), Math.max(o.airlockX, o.garageX)];
-    for (let x = Math.floor(a); x < b; x++) if (x % 5 < 2) { mix(x, G + 3, P.line, 0.3); mix(x + 2, G + 6, P.line, 0.22); }
-  }
-
-  // depth gradient: darker with depth, a little stronger at the very bottom; veins and ice stay bright
-  const stops = o.depthGradient ?? [[0, 0], [0.8, 0.5], [1, 0.72]];
-  const tint = o.depthTint ?? [24, 6, 12];
-  for (let y = 0; y < H; y++) {
-    const f = y / (H - 1);
-    let a = 0;
-    for (let i = 1; i < stops.length; i++) if (f <= stops[i][0]) { const [f0, a0] = stops[i - 1], [f1, a1] = stops[i]; a = a0 + (a1 - a0) * ((f - f0) / (f1 - f0)); break; }
-    if (a <= 0) continue;
-    for (let x = 0, k = y * W * 4; x < W; x++, k += 4) {
-      if (bright[y * W + x]) continue;
-      D[k] = Math.round(D[k] + (tint[0] - D[k]) * a); D[k + 1] = Math.round(D[k + 1] + (tint[1] - D[k + 1]) * a); D[k + 2] = Math.round(D[k + 2] + (tint[2] - D[k + 2]) * a);
+  if(o.airlockX!=null && o.garageX!=null) {
+    const a=Math.min(o.airlockX,o.garageX),b=Math.max(o.airlockX,o.garageX);
+    // Preserve the original surface-strip tracks (above the rebuilt underground pixels).
+    for(let x=Math.floor(a);x<b;x++)if(x%5<2)for(const y of [G+3,G+6]) {
+      if(x>=0&&x<W&&y>=0&&y<H&&!blocked[y*W+x]) { const p=(y*W+x)*4;D[p]*=0.9;D[p+1]*=0.9;D[p+2]*=0.9; }
     }
   }
-  ctx.putImageData(img, 0, 0);
+  const stops=o.depthGradient??[[0,0],[0.8,0.5],[1,0.72]],tint=o.depthTint??[24,6,12];
+  for(let y=0;y<H;y++) {
+    const f=y/Math.max(1,H-1);let a=stops.at(-1)[1];
+    for(let i=1;i<stops.length;i++)if(f<=stops[i][0]){const [f0,a0]=stops[i-1],[f1,a1]=stops[i];a=a0+(a1-a0)*(f-f0)/(f1-f0);break;}
+    for(let x=0,p=y*W*4;x<W;x++,p+=4)for(let c=0;c<3;c++)D[p+c]=Math.round(D[p+c]+(tint[c]-D[p+c])*a);
+  }
+  drawIce(ice,(x,y,c)=>{if(free(x,y))write(x,y,c);});
+  ctx.putImageData(img,0,0);
   return true;
 }
 
-/**
- * 7) Ice lenses (gameplay). Drawn only where the game already places ice pockets (rare, deep: buildSoil's tiles).
- * Real buried ice is mapped mostly poleward of ~40 deg latitude (SWIM map, PIA26045); Jezero is at ~18 deg N,
- * so ice under this base is a game simplification.
- */
-function drawIce(ice, put) {
-  for (const { x: cx, y: cy } of ice) {
-    const rx = 21, ry = 8;
-    for (let y = -ry; y <= ry; y++) for (let x = -rx; x <= rx; x++) {
-      const v = (x * x) / (rx * rx) + (y * y) / (ry * ry);
-      if (v > 1) continue;
-      const rim = (x * x) / ((rx - 1) * (rx - 1)) + (y * y) / ((ry - 1) * (ry - 1)) > 1;
-      put(cx + x, cy + y, rim ? [255, 255, 255] : [206, 232, 246]);
+/** Gameplay: keep buildSoil's existing ice centres. SWIM maps ice mainly poleward of ~40°;
+ * Jezero is ~18° N, so these lenses illustrate a resource, not measured local ice. */
+function drawIce(ice,put) {
+  for(const {x:cx,y:cy} of ice) {
+    const rx=21,ry=8;
+    for(let y=-ry;y<=ry;y++)for(let x=-rx;x<=rx;x++) {
+      if(x*x/(rx*rx)+y*y/(ry*ry)>1)continue;
+      const rim=x*x/((rx-1)*(rx-1))+y*y/((ry-1)*(ry-1))>1;
+      put(cx+x,cy+y,rim?[255,255,255]:[206,232,246]);
     }
   }
 }

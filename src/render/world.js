@@ -39,11 +39,23 @@ export function buildSoil(atlas) {
   c.height = Math.round((WORLD.height - WORLD.groundY + 60) * SOIL.scale);
   const ctx = c.getContext('2d');
   ctx.imageSmoothingEnabled = false;
+  // The underground is one continuous raster, not independent 80-unit texture tiles.
+  // These render-only dimensions preserve the surface strip and original ice layout.
+  ctx.fillStyle = '#9c4e33';
+  ctx.fillRect(0, Math.round(40 * SOIL.scale), c.width, c.height);
   const tile = 80;
   const ice = [];
-  const put = (idx, wx, wy, crop = null) => {
-    atlas.cell(ctx, 'terrain', idx, (wx - SOIL.x0) * SOIL.scale, (wy - (WORLD.groundY - 40)) * SOIL.scale, tile * SOIL.scale + 1, tile * SOIL.scale + 1, crop);
-  };
+  // Sample the real terrain palette separately. Never leave a tile's stripes, stones or
+  // bedrock grid underneath the new strata, even inside the room exclusion rectangles.
+  let swatches;
+  if (atlas.has('terrain')) {
+    const palette = document.createElement('canvas');
+    palette.width = 400; palette.height = 40;
+    const p = palette.getContext('2d', { willReadFrequently: true });
+    p.imageSmoothingEnabled = false;
+    for (let i = 0; i < 10; i++) atlas.cell(p, 'terrain', i + 4, i * 40, 0, 40, 40);
+    try { swatches = p.getImageData(0, 0, 400, 40).data; } catch { /* use the documented fallback palette */ }
+  }
   for (let wx = SOIL.x0; wx < SOIL.x1; wx += tile) {
     const col = Math.round((wx - SOIL.x0) / tile);
     // surface row: skip the sky part of the picture
@@ -51,20 +63,15 @@ export function buildSoil(atlas) {
     if (sr) atlas.cell(ctx, 'terrain', 0, (wx - SOIL.x0) * SOIL.scale, 0, tile * SOIL.scale + 1, 58 * SOIL.scale, [sr.x, sr.y + sr.h * 0.27, sr.w, sr.h * 0.73]);
     for (let wy = WORLD.groundY + 18; wy < WORLD.height; wy += tile) {
       const row = Math.round((wy - WORLD.groundY) / tile);
-      let idx;
-      if (wy < 1560) idx = 4 + Math.floor(hash(col, row) * 4);        // regolith (indexes 4..7)
-      else if (wy < 2700) idx = 8 + Math.floor(hash(col, row) * 4);   // compacted soil, stones (8..11)
-      else idx = 12 + Math.floor(hash(col, row) * 2);                 // bedrock (12, 13)
-      if (wy > 1800 && hash(col * 7, row * 3) > 0.985) { idx = 14 + Math.floor(hash(row, col) * 2); ice.push({ x: Math.round((wx + tile / 2 - SOIL.x0) * SOIL.scale), y: Math.round((wy + tile / 2 - (WORLD.groundY - 40)) * SOIL.scale) }); } // an ice pocket
-      put(idx, wx, wy);
+      if (wy > 1800 && hash(col * 7, row * 3) > 0.985) ice.push({ x: Math.round((wx + tile / 2 - SOIL.x0) * SOIL.scale), y: Math.round((wy + tile / 2 - (WORLD.groundY - 40)) * SOIL.scale) });
     }
   }
-  // procedural detail on top of the tiles (layers, rocks, veins, ice lenses ...), never over the rooms or the shaft
+  // Continuous strata also behind rooms; exclusions apply only to discrete decorations.
   const toPx = (r, m = 4) => ({ x: (r.x - m - SOIL.x0) * SOIL.scale, y: (r.y - m - (WORLD.groundY - 40)) * SOIL.scale, w: (r.w + 2 * m) * SOIL.scale, h: (r.h + 2 * m) * SOIL.scale });
   const avoid = Object.keys(LAYOUT.rooms).filter((id) => roomRect(id).y > WORLD.groundY - 1).map((id) => toPx(roomRect(id)));
   avoid.push(toPx({ x: LAYOUT.shaftX, y: WORLD.groundY - 40, w: LAYOUT.shaftWidth, h: baseBottom - WORLD.groundY + 40 }));
   const painted = paintSoilDetail(ctx, {
-    w: c.width, h: c.height, groundPx: Math.round(40 * SOIL.scale), hash, avoid, ice,
+    w: c.width, h: c.height, groundPx: Math.round(40 * SOIL.scale), hash, avoid, ice, swatches,
     airlockX: (SURFACE.airlock.x - SOIL.x0) * SOIL.scale, garageX: (roomRect('garage').x + LAYOUT.roomWidth / 2 - SOIL.x0) * SOIL.scale,
   });
   if (!painted) { // no pixel access (a tainted canvas): the plain depth gradient
