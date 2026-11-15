@@ -14,7 +14,10 @@ Updated: 2026-11-14 (UTC+1), after the backend was aligned with SCENARIO.md
   "Brine Sample" through a fallback in `itemName` (campaign-ui.js line 21, my one-line change).
 - FOR VLAD (SCENARIO): add Canyon Samples and Brine Sample to the 5.5 ledger (for ui.item.*.name); an ASTRA line for
   "Power below 50: upgrade the panels" (3.4, C22); the 3.4 vs 3.11 Morale conflict (B12 row).
-- NOW: Codex writes tests/fitness.test.mjs in its own worktree (sync paused until I integrate it).
+- DONE (video, with Vlad): trailer/ = 40 s gameplay trailer in Remotion (real game recordings, game code untouched;
+  render steps in trailer/README.md; MP4 is not in Git, ask me for it). video/ = 30 s demo cut from
+  docs/submission/DEMO_VIDEO.md. Both folders are mine; edit only after asking.
+- fitness tests by Codex are integrated (368 tests: 367 pass, 1 todo = the Morale conflict above).
 - Waiting for team decisions: C6, C7, C8, C11, A28, D-T17h (causes and options in docs/ERRORS.md).
 
 ## DIRECTION (from Mykhailo, 2026-11-14)
