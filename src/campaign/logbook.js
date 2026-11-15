@@ -7,6 +7,8 @@
  * Not modelled yet: Fitness (3.11), so the Strong Bones badge and the Fitness part of Crew Care are left out.
  */
 
+import { EMERGENCY_COST } from './data.js';
+
 /** [id, tier, triggers, real mission or organisation, source URL] */
 export const CARDS = [
   ['gravity', 'core', ['astra.intro.landing'], 'NASA Mars Fact Sheet', 'https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html'],
@@ -119,10 +121,16 @@ export function buildReport(s) {
   const science = s.logbook.length + 2 * s.badges.length;
   const stars = (v, two, three) => (v >= three ? 3 : v >= two ? 2 : 1);
   const rating = { crew: stars(crewCare, 60, 80), base: stars(builder, 8, 13), science: stars(science, 40, 60) };
+  // C6: Sols with Heat, Food or Oxygen at 0 cost stars: 1 after more than 3, 2 after more than 8 (gameplay). Taken from
+  // Crew Care first, then Base Builder, then Science Explorer; every category keeps at least 1 star.
+  const zeroSols = s.stats.zeroSols ?? 0;
+  let lost = zeroSols > EMERGENCY_COST.zeroSolsTwoStars ? 2 : zeroSols > EMERGENCY_COST.zeroSolsOneStar ? 1 : 0;
+  const starsLost = lost;
+  for (const k of ['crew', 'base', 'science']) while (lost > 0 && rating[k] > 1) { rating[k] -= 1; lost -= 1; }
   return {
     crewCare, builder, science, rating, total: rating.crew + rating.base + rating.science,
     hp: s.hp, lowestHp: s.stats.lowestHp, medRests: s.stats.medRests, outsideHours: Math.round(s.stats.outsideMin / 60),
-    meters: { ...s.res }, emergencies: s.stats.emergencies, flares: s.stats.flares, flareMaxLoss: s.stats.flareMaxLoss ?? 0,
+    meters: { ...s.res }, emergencies: s.stats.emergencies, zeroSols, starsLost, flares: s.stats.flares, flareMaxLoss: s.stats.flareMaxLoss ?? 0,
     // B16: the story finds the player brought home (they are used up later, so the flags of the trips count too)
     storyFinds: STORY_FINDS.filter(([item, trip]) => (s.items?.[item] ?? 0) > 0 || Boolean(s.flags?.done?.[trip])).map(([item]) => item),
     modulesBuilt, tier2, roof, dronesAwake: s.drones.filter((d) => d.status === 'awake').length,

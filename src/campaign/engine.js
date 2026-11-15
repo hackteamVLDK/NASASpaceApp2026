@@ -13,7 +13,7 @@
 import { seedFrom, nextRandom } from '../sim/rng.js';
 import {
   SOL, START_MINUTE, RES, START_RES, CAP, NEEDS, BASE_HEAT_LOSS, RECYCLER, HP, SHIELD, SLEEP_FROM, SLEEP_TO, MEALS,
-  MODULES, BUILD_SOLS, UPGRADE_SOLS, DRONE_BUILD_POWER, STORM, RECIPES, UPGRADES, MODULE_LINES, BREAKDOWN_RULES, RULES, STORAGE_REFILL,
+  MODULES, BUILD_SOLS, UPGRADE_SOLS, DRONE_BUILD_POWER, STORM, RECIPES, UPGRADES, MODULE_LINES, BREAKDOWN_RULES, RULES, STORAGE_REFILL, EMERGENCY_COST,
 } from './data.js';
 import { clockAt, isNight, online } from './util.js';
 import { storyMinute, onSol, applyChoice, choiceBlock, onModuleStart, onModuleBuilt, onKit, onMini, miniBlock, runTimer, onDroneAwake, onMove, startSoilWash, soilWashBlock, MINI_GAMES } from './story.js';
@@ -260,11 +260,19 @@ function trackStats(s, dt, now) {
   if (s.where === 'outside' || s.where === 'away') st.outsideMin += 1;
   if (greenhouseWorking(s)) st.harvest += MODULES.greenhouse[s.modules.greenhouse.tier === 2 ? 't2' : 't1'].food * s.mult.food * dt;
   st.lowestHp = Math.min(st.lowestHp, s.hp);
+  if (EMERGENCY_COST.zeroRes.some((k) => s.res[k] <= 0)) s.flags.zeroToday = true; // C6: this Sol counts as one with empty supplies
   if (now.minute === 0) { st.samples += 1; st.hpSum += s.hp; st.moraleSum += s.res.morale; }
 }
 
 function onNewSol(s, emit, now) {
   s.stats.recycleStreak = s.recycleEta >= RECYCLER.ok ? s.stats.recycleStreak + 1 : 0;
+  // C6: the Sol that just ended. An Emergency still open costs Morale (ASTRA says why once per stretch); a Sol with
+  // Heat, Food or Oxygen at 0 is counted for the Mission Rating.
+  if (s.flags.zeroToday) { s.stats.zeroSols = (s.stats.zeroSols ?? 0) + 1; s.flags.zeroToday = false; }
+  if (Object.values(s.emergency).some(Boolean)) {
+    s.res.morale = clamp(s.res.morale - EMERGENCY_COST.moralePerSol, 0, CAP.morale);
+    if (!s.flags.emergencyWorry) { s.flags.emergencyWorry = true; emit({ type: 'astra', lineId: 'astra.res.emergency_worry', mood: 'alert' }); }
+  } else s.flags.emergencyWorry = false;
   for (const k of Object.keys(s.low)) if (s.res[k] > 40) s.low[k] = false;
   emit({ type: 'sol', sol: now.sol });
   onSol(s, emit, now, () => nextRandom(s));
