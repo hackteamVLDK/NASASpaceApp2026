@@ -1,982 +1,1178 @@
 {
  "astra.act1.battery_built": {
   "file": "astra.act1.battery_built.mp3",
-  "sec": 4.4,
-  "text": "Heating online! We reuse leftover machine heat, just like Perseverance."
+  "sec": 4.41,
+  "text": "Heating online! We reuse leftover machine heat, just like Perseverance.",
+  "filter": "robot-0.55"
  },
  "astra.act1.drone02_wake": {
   "file": "astra.act1.drone02_wake.mp3",
-  "sec": 3.27,
-  "text": "Drone two is awake! Now we can build two rooms together."
+  "sec": 3.28,
+  "text": "Drone two is awake! Now we can build two rooms together.",
+  "filter": "robot-0.55"
  },
  "astra.act1.end": {
   "file": "astra.act1.end.mp3",
-  "sec": 3.79,
-  "text": "Great teamwork this week! Next, let's grow food and explore."
+  "sec": 3.8,
+  "text": "Great teamwork this week! Next, let's grow food and explore.",
+  "filter": "robot-0.55"
  },
  "astra.act1.first_dusk": {
   "file": "astra.act1.first_dusk.mp3",
-  "sec": 4.68,
-  "text": "Outside can reach about minus eighty degrees Celsius tonight. Watch our Heat bar."
+  "sec": 4.69,
+  "text": "Outside can reach about minus eighty degrees Celsius tonight. Watch our Heat bar.",
+  "filter": "robot-0.55"
  },
  "astra.act1.first_sleep": {
   "file": "astra.act1.first_sleep.mp3",
-  "sec": 3.31,
-  "text": "Good morning! Bedroom rest restored twelve health points."
+  "sec": 3.32,
+  "text": "Good morning! Bedroom rest restored twelve health points.",
+  "filter": "robot-0.55"
  },
  "astra.act1.first_sunset": {
   "file": "astra.act1.first_sunset.mp3",
-  "sec": 3.64,
-  "text": "Look, a blue sunset! Fine Mars dust scatters the sunlight."
+  "sec": 3.65,
+  "text": "Look, a blue sunset! Fine Mars dust scatters the sunlight.",
+  "filter": "robot-0.55"
  },
  "astra.act1.heat_warning": {
   "file": "astra.act1.heat_warning.mp3",
-  "sec": 3.08,
-  "text": "Our base is losing heat. Let's reroute the warm pipes."
+  "sec": 3.09,
+  "text": "Our base is losing heat. Let's reroute the warm pipes.",
+  "filter": "robot-0.55"
  },
  "astra.act1.repair_kit_ready": {
   "file": "astra.act1.repair_kit_ready.mp3",
-  "sec": 3.42,
-  "text": "Repair Kit ready! Drag it onto drone two's dusty joints."
+  "sec": 3.43,
+  "text": "Repair Kit ready! Drag it onto drone two's dusty joints.",
+  "filter": "robot-0.55"
  },
  "astra.act1.storm_begin": {
   "file": "astra.act1.storm_begin.mp3",
-  "sec": 3.67,
-  "text": "The storm is here! Mars dust storms can cover the whole planet."
+  "sec": 3.68,
+  "text": "The storm is here! Mars dust storms can cover the whole planet.",
+  "filter": "robot-0.55"
  },
  "astra.act1.storm_end": {
   "file": "astra.act1.storm_end.mp3",
-  "sec": 3.04,
-  "text": "The storm is over! Let's clean that sticky Mars dust."
+  "sec": 3.05,
+  "text": "The storm is over! Let's clean that sticky Mars dust.",
+  "filter": "robot-0.55"
  },
  "astra.act1.storm_mid": {
   "file": "astra.act1.storm_mid.mp3",
-  "sec": 3.43,
-  "text": "Dust blocks most sunlight. Every bit of saved power helps."
+  "sec": 3.44,
+  "text": "Dust blocks most sunlight. Every bit of saved power helps.",
+  "filter": "robot-0.55"
  },
  "astra.act1.title": {
   "file": "astra.act1.title.mp3",
-  "sec": 1.05,
-  "text": "Act one. Wake up!"
+  "sec": 1.06,
+  "text": "Act one. Wake up!",
+  "filter": "robot-0.55"
  },
  "astra.act1.workshop_built": {
   "file": "astra.act1.workshop_built.mp3",
-  "sec": 3.15,
-  "text": "Workshop ready! Let's make a Repair Kit for drone two."
+  "sec": 3.16,
+  "text": "Workshop ready! Let's make a Repair Kit for drone two.",
+  "filter": "robot-0.55"
  },
  "astra.act1.workshop_start": {
   "file": "astra.act1.workshop_start.mp3",
-  "sec": 2.76,
-  "text": "Let's build the Workshop so we can make our own parts."
+  "sec": 2.77,
+  "text": "Let's build the Workshop so we can make our own parts.",
+  "filter": "robot-0.55"
  },
  "astra.act2.blackbox_home": {
   "file": "astra.act2.blackbox_home.mp3",
-  "sec": 3.12,
-  "text": "The black box is home! We need the Comms Lab to read it."
+  "sec": 3.13,
+  "text": "The black box is home! We need the Comms Lab to read it.",
+  "filter": "robot-0.55"
  },
  "astra.act2.drone03_wake": {
   "file": "astra.act2.drone03_wake.mp3",
-  "sec": 3.42,
-  "text": "Drone three is awake! All three builders are ready to help."
+  "sec": 3.43,
+  "text": "Drone three is awake! All three builders are ready to help.",
+  "filter": "robot-0.55"
  },
  "astra.act2.end": {
   "file": "astra.act2.end.mp3",
-  "sec": 4.97,
-  "text": "Wonderful teamwork! Next, let's build the Lab and unlock Pathfinder's mystery."
+  "sec": 4.98,
+  "text": "Wonderful teamwork! Next, let's build the Lab and unlock Pathfinder's mystery.",
+  "filter": "robot-0.55"
  },
  "astra.act2.first_harvest": {
   "file": "astra.act2.first_harvest.mp3",
-  "sec": 4.29,
-  "text": "Our first lettuce harvest! Fresh food now restores some energy each Sol."
+  "sec": 4.3,
+  "text": "Our first lettuce harvest! Fresh food now restores some energy each Sol.",
+  "filter": "robot-0.55"
  },
  "astra.act2.garage_built": {
   "file": "astra.act2.garage_built.mp3",
-  "sec": 4.93,
-  "text": "Rover ready! Drive carefully; sharp Mars rocks damaged Curiosity's wheels."
+  "sec": 4.94,
+  "text": "Rover ready! Drive carefully; sharp Mars rocks damaged Curiosity's wheels.",
+  "filter": "robot-0.55"
  },
  "astra.act2.garage_start": {
   "file": "astra.act2.garage_start.mp3",
-  "sec": 3.53,
-  "text": "Drone two is building our Garage and Airlock for Rover trips."
+  "sec": 3.54,
+  "text": "Drone two is building our Garage and Airlock for Rover trips.",
+  "filter": "robot-0.55"
  },
  "astra.act2.greenhouse_built": {
   "file": "astra.act2.greenhouse_built.mp3",
-  "sec": 5.24,
-  "text": "Greenhouse ready! We grow in nutrient water, avoiding harmful salts in Mars soil."
+  "sec": 5.25,
+  "text": "Greenhouse ready! We grow in nutrient water, avoiding harmful salts in Mars soil.",
+  "filter": "robot-0.55"
  },
  "astra.act2.greenhouse_start": {
   "file": "astra.act2.greenhouse_start.mp3",
-  "sec": 2.84,
-  "text": "Drone one is building our Greenhouse for fresh food."
+  "sec": 2.85,
+  "text": "Drone one is building our Greenhouse for fresh food.",
+  "filter": "robot-0.55"
  },
  "astra.act2.map_intro": {
   "file": "astra.act2.map_intro.mp3",
-  "sec": 2.87,
-  "text": "Tap a glowing map spot to send our Rover exploring."
+  "sec": 2.88,
+  "text": "Tap a glowing map spot to send our Rover exploring.",
+  "filter": "robot-0.55"
  },
  "astra.act2.pathfinder_found": {
   "file": "astra.act2.pathfinder_found.mp3",
-  "sec": 4.93,
-  "text": "We found Pathfinder! Its black box holds clues; its antenna could fix our Lab."
+  "sec": 4.94,
+  "text": "We found Pathfinder! Its black box holds clues; its antenna could fix our Lab.",
+  "filter": "robot-0.55"
  },
  "astra.act2.reboot_kit": {
   "file": "astra.act2.reboot_kit.mp3",
-  "sec": 3.65,
-  "text": "Reboot Kit ready! We reused the old weather probe's power core."
+  "sec": 3.66,
+  "text": "Reboot Kit ready! We reused the old weather probe's power core.",
+  "filter": "robot-0.55"
  },
  "astra.act2.surface_warning": {
   "file": "astra.act2.surface_warning.mp3",
-  "sec": 3.85,
-  "text": "Outside, radiation adds up over time. Let's keep trips short."
+  "sec": 3.86,
+  "text": "Outside, radiation adds up over time. Let's keep trips short.",
+  "filter": "robot-0.55"
  },
  "astra.act2.title": {
   "file": "astra.act2.title.mp3",
-  "sec": 1.28,
-  "text": "Act two. Reach out!"
+  "sec": 1.29,
+  "text": "Act two. Reach out!",
+  "filter": "robot-0.55"
  },
  "astra.act3.blackbox_decode_start": {
   "file": "astra.act3.blackbox_decode_start.mp3",
-  "sec": 2.86,
-  "text": "Code unlocked! Let's hear Pathfinder's last log."
+  "sec": 2.87,
+  "text": "Code unlocked! Let's hear Pathfinder's last log.",
+  "filter": "robot-0.55"
  },
  "astra.act3.blackbox_react1": {
   "file": "astra.act3.blackbox_react1.mp3",
-  "sec": 4.04,
-  "text": "A thump every thirty-seven minutes! Quakes don't usually keep a schedule."
+  "sec": 4.05,
+  "text": "A thump every thirty-seven minutes! Quakes don't usually keep a schedule.",
+  "filter": "robot-0.55"
  },
  "astra.act3.blackbox_react2": {
   "file": "astra.act3.blackbox_react2.mp3",
-  "sec": 6.04,
-  "text": "Curiosity detected methane too! It can come from life or reactions between water and rocks."
+  "sec": 6.05,
+  "text": "Curiosity detected methane too! It can come from life or reactions between water and rocks.",
+  "filter": "robot-0.55"
  },
  "astra.act3.deep_scan": {
   "file": "astra.act3.deep_scan.mp3",
-  "sec": 5.39,
-  "text": "Our scan suggests salty water below the canyon. Salt lowers water's freezing temperature."
+  "sec": 5.4,
+  "text": "Our scan suggests salty water below the canyon. Salt lowers water's freezing temperature.",
+  "filter": "robot-0.55"
  },
  "astra.act3.final_prep": {
   "file": "astra.act3.final_prep.mp3",
-  "sec": 3.43,
-  "text": "Our Rover and suit are ready! Let's find the Jezero Signal."
+  "sec": 3.44,
+  "text": "Our Rover and suit are ready! Let's find the Jezero Signal.",
+  "filter": "robot-0.55"
  },
  "astra.act3.lab_built": {
   "file": "astra.act3.lab_built.mp3",
-  "sec": 4.85,
-  "text": "Comms Lab ready! Light takes about three to twenty-two minutes between Mars and Earth."
+  "sec": 4.86,
+  "text": "Comms Lab ready! Light takes about three to twenty-two minutes between Mars and Earth.",
+  "filter": "robot-0.55"
  },
  "astra.act3.lab_start": {
   "file": "astra.act3.lab_start.mp3",
-  "sec": 4.74,
-  "text": "Pathfinder's antenna fits! Drone one is building our Research and Comms Lab."
+  "sec": 4.75,
+  "text": "Pathfinder's antenna fits! Drone one is building our Research and Comms Lab.",
+  "filter": "robot-0.55"
  },
  "astra.act3.ls_t2": {
   "file": "astra.act3.ls_t2.mp3",
-  "sec": 4.96,
-  "text": "Life Support upgraded! We extract oxygen from Mars air, like Moxie did."
+  "sec": 4.97,
+  "text": "Life Support upgraded! We extract oxygen from Mars air, like Moxie did.",
+  "filter": "robot-0.55"
  },
  "astra.act3.radiation_lesson": {
   "file": "astra.act3.radiation_lesson.mp3",
-  "sec": 5.31,
-  "text": "Soil shielding reduces radiation around our rooms and Rover, but some still gets through."
+  "sec": 5.32,
+  "text": "Soil shielding reduces radiation around our rooms and Rover, but some still gets through.",
+  "filter": "robot-0.55"
  },
  "astra.act3.rec_built": {
   "file": "astra.act3.rec_built.mp3",
-  "sec": 4.13,
-  "text": "Recreation room ready! Games and music help our crew feel at home."
+  "sec": 4.14,
+  "text": "Recreation room ready! Games and music help our crew feel at home.",
+  "filter": "robot-0.55"
  },
  "astra.act3.roof_built": {
   "file": "astra.act3.roof_built.mp3",
-  "sec": 4.49,
-  "text": "Roof finished! Thick soil blocks most radiation, but some still gets through."
+  "sec": 4.5,
+  "text": "Roof finished! Thick soil blocks most radiation, but some still gets through.",
+  "filter": "robot-0.55"
  },
  "astra.act3.title": {
   "file": "astra.act3.title.mp3",
-  "sec": 1.32,
-  "text": "Act three. The signal!"
+  "sec": 1.33,
+  "text": "Act three. The signal!",
+  "filter": "robot-0.55"
  },
  "astra.badge.first": {
   "file": "astra.badge.first.mp3",
-  "sec": 3.71,
-  "text": "Your first badge! It celebrates skills real astronauts use."
+  "sec": 3.72,
+  "text": "Your first badge! It celebrates skills real astronauts use.",
+  "filter": "robot-0.55"
  },
  "astra.branch.ready": {
   "file": "astra.branch.ready.mp3",
-  "sec": 5.17,
-  "text": "Good planning! Our equipment check is complete; the waiting route or upgrade has reopened."
+  "sec": 5.18,
+  "text": "Good planning! Our equipment check is complete; the waiting route or upgrade has reopened.",
+  "filter": "robot-0.55"
  },
  "astra.branch.repaired": {
   "file": "astra.branch.repaired.mp3",
-  "sec": 4.36,
-  "text": "Nice work! The Workshop repaired our setup, so its extra checks can stop."
+  "sec": 4.37,
+  "text": "Nice work! The Workshop repaired our setup, so its extra checks can stop.",
+  "filter": "robot-0.55"
  },
  "astra.branch.upkeep": {
   "file": "astra.branch.upkeep.mp3",
-  "sec": 4.56,
-  "text": "Our earlier choice needs another equipment check. Let's finish its repair task."
+  "sec": 4.57,
+  "text": "Our earlier choice needs another equipment check. Let's finish its repair task.",
+  "filter": "robot-0.55"
  },
  "astra.char.bumble": {
   "file": "astra.char.bumble.mp3",
-  "sec": 3.29,
-  "text": "Drone two checks everything carefully. Let's call it Bumble!"
+  "sec": 3.3,
+  "text": "Drone two checks everything carefully. Let's call it Bumble!",
+  "filter": "robot-0.55"
  },
  "astra.char.pip": {
   "file": "astra.char.pip.mp3",
-  "sec": 2.31,
-  "text": "Happy beeps! Let's call drone one Pip."
+  "sec": 2.32,
+  "text": "Happy beeps! Let's call drone one Pip.",
+  "filter": "robot-0.55"
  },
  "astra.char.zip": {
   "file": "astra.char.zip.mp3",
-  "sec": 2.13,
-  "text": "Drone three is quick! Let's call it Zip."
+  "sec": 2.14,
+  "text": "Drone three is quick! Let's call it Zip.",
+  "filter": "robot-0.55"
  },
  "astra.choice.d1a.callback": {
   "file": "astra.choice.d1a.callback.mp3",
-  "sec": 4.46,
-  "text": "Our Power Saver choice still saves power, but careful work makes fewer parts."
+  "sec": 4.47,
+  "text": "Our Power Saver choice still saves power, but careful work makes fewer parts.",
+  "filter": "robot-0.55"
  },
  "astra.choice.d1b.callback": {
   "file": "astra.choice.d1b.callback.mp3",
-  "sec": 4.46,
-  "text": "Tilting our panels helped save parts. Regular wipes keep that setup working."
+  "sec": 4.47,
+  "text": "Tilting our panels helped save parts. Regular wipes keep that setup working.",
+  "filter": "robot-0.55"
  },
  "astra.choice.d1c.callback": {
   "file": "astra.choice.d1c.callback.mp3",
-  "sec": 4.31,
-  "text": "Studying our drained batteries helped research, but leaves less workshop time."
+  "sec": 4.32,
+  "text": "Studying our drained batteries helped research, but leaves less workshop time.",
+  "filter": "robot-0.55"
  },
  "astra.choice.d2a.callback": {
   "file": "astra.choice.d2a.callback.mp3",
-  "sec": 4.86,
-  "text": "Our filter repairs saved water! Keeping spare filters ready takes workshop time."
+  "sec": 4.87,
+  "text": "Our filter repairs saved water! Keeping spare filters ready takes workshop time.",
+  "filter": "robot-0.55"
  },
  "astra.choice.d2b.callback": {
   "file": "astra.choice.d2b.callback.mp3",
-  "sec": 4.79,
-  "text": "Our Cargo Trailer brings more scrap, but cleaning its cargo uses extra water."
+  "sec": 4.8,
+  "text": "Our Cargo Trailer brings more scrap, but cleaning its cargo uses extra water.",
+  "filter": "robot-0.55"
  },
  "astra.choice.d2c.callback": {
   "file": "astra.choice.d2c.callback.mp3",
-  "sec": 3.37,
-  "text": "Our water rationing plan saved water, but grows less food."
+  "sec": 3.38,
+  "text": "Our water rationing plan saved water, but grows less food.",
+  "filter": "robot-0.55"
  },
  "astra.choice.d3a.callback": {
   "file": "astra.choice.d3a.callback.mp3",
-  "sec": 5.74,
-  "text": "Our potato tests helped research, but took growing space. Soil washing remains available."
+  "sec": 5.75,
+  "text": "Our potato tests helped research, but took growing space. Soil washing remains available.",
+  "filter": "robot-0.55"
  },
  "astra.choice.d3b.callback": {
   "file": "astra.choice.d3b.callback.mp3",
-  "sec": 4.88,
-  "text": "Our washed soil beds grew extra food, but keeping this trial going uses water."
+  "sec": 4.89,
+  "text": "Our washed soil beds grew extra food, but keeping this trial going uses water.",
+  "filter": "robot-0.55"
  },
  "astra.choice.d3c.callback": {
   "file": "astra.choice.d3c.callback.mp3",
-  "sec": 4.39,
-  "text": "Our extra hydroponic trays grew more food, but their lamps need more power."
+  "sec": 4.4,
+  "text": "Our extra hydroponic trays grew more food, but their lamps need more power.",
+  "filter": "robot-0.55"
  },
  "astra.choice.d4a.callback": {
   "file": "astra.choice.d4a.callback.mp3",
   "sec": 4.49,
-  "text": "Keeping our plants warm grew extra food, but leaves less power for research."
+  "text": "Keeping our plants warm grew extra food, but leaves less power for research.",
+  "filter": "robot-0.55"
  },
  "astra.choice.d4b.callback": {
   "file": "astra.choice.d4b.callback.mp3",
-  "sec": 5.21,
-  "text": "Earth's advice helped our research, but working with those messages uses extra power."
+  "sec": 5.22,
+  "text": "Earth's advice helped our research, but working with those messages uses extra power.",
+  "filter": "robot-0.55"
  },
  "astra.choice.d4c.callback": {
   "file": "astra.choice.d4c.callback.mp3",
-  "sec": 4.1,
-  "text": "Kitchen warmth saved power! Our drone keeps moving trays for this plan."
+  "sec": 4.11,
+  "text": "Kitchen warmth saved power! Our drone keeps moving trays for this plan.",
+  "filter": "robot-0.55"
  },
  "astra.choice.d5a.callback": {
   "file": "astra.choice.d5a.callback.mp3",
   "sec": 4.21,
-  "text": "Our lighter travel plan saved parts, but shorter trips bring less loose scrap."
+  "text": "Our lighter travel plan saved parts, but shorter trips bring less loose scrap.",
+  "filter": "robot-0.55"
  },
  "astra.choice.d5b.callback": {
   "file": "astra.choice.d5b.callback.mp3",
-  "sec": 5.68,
-  "text": "Our cliff shelter map helped research. Covered stops reduce exposure, but make trips longer."
+  "sec": 5.69,
+  "text": "Our cliff shelter map helped research. Covered stops reduce exposure, but make trips longer.",
+  "filter": "robot-0.55"
  },
  "astra.choice.d5c.callback": {
   "file": "astra.choice.d5c.callback.mp3",
-  "sec": 5.8,
-  "text": "Collecting longer behind Rover shielding brought extra parts, but also more radiation exposure."
+  "sec": 5.81,
+  "text": "Collecting longer behind Rover shielding brought extra parts, but also more radiation exposure.",
+  "filter": "robot-0.55"
  },
  "astra.choice.e1a.callback": {
   "file": "astra.choice.e1a.callback.mp3",
-  "sec": 5.11,
-  "text": "Practising our shelter plan saved supplies, but preparation leaves less workshop time."
+  "sec": 5.12,
+  "text": "Practising our shelter plan saved supplies, but preparation leaves less workshop time.",
+  "filter": "robot-0.55"
  },
  "astra.choice.e1b.callback": {
   "file": "astra.choice.e1b.callback.mp3",
-  "sec": 4.25,
-  "text": "Working through the flare made extra parts. Let's keep checking our suit seals."
+  "sec": 4.26,
+  "text": "Working through the flare made extra parts. Let's keep checking our suit seals.",
+  "filter": "robot-0.55"
  },
  "astra.choice.e1c.callback": {
   "file": "astra.choice.e1c.callback.mp3",
-  "sec": 4.68,
-  "text": "Our shelter forecast helped research! A drone keeps checking our warning equipment."
+  "sec": 4.69,
+  "text": "Our shelter forecast helped research! A drone keeps checking our warning equipment.",
+  "filter": "robot-0.55"
  },
  "astra.choice.e2a.callback": {
   "file": "astra.choice.e2a.callback.mp3",
-  "sec": 5.06,
-  "text": "Our dust devil maps revealed collecting spots with more scrap, but more effort outside."
+  "sec": 5.07,
+  "text": "Our dust devil maps revealed collecting spots with more scrap, but more effort outside.",
+  "filter": "robot-0.55"
  },
  "astra.choice.e2b.callback": {
   "file": "astra.choice.e2b.callback.mp3",
-  "sec": 4.73,
-  "text": "Stowing our panels saved repair power, but our sheltered setup collects less sunlight."
+  "sec": 4.74,
+  "text": "Stowing our panels saved repair power, but our sheltered setup collects less sunlight.",
+  "filter": "robot-0.55"
  },
  "astra.choice.e2c.callback": {
   "file": "astra.choice.e2c.callback.mp3",
-  "sec": 4.66,
-  "text": "Careful panel tilts brought extra power! Regular wipes keep that setup working."
+  "sec": 4.67,
+  "text": "Careful panel tilts brought extra power! Regular wipes keep that setup working.",
+  "filter": "robot-0.55"
  },
  "astra.choice.e3a.callback": {
   "file": "astra.choice.e3a.callback.mp3",
-  "sec": 3.69,
-  "text": "Fixing our leak saved air, but spare seals take workshop time."
+  "sec": 3.7,
+  "text": "Fixing our leak saved air, but spare seals take workshop time.",
+  "filter": "robot-0.55"
  },
  "astra.choice.e3b.callback": {
   "file": "astra.choice.e3b.callback.mp3",
-  "sec": 4.79,
-  "text": "Our tape patch saved time for collecting parts, but still needs regular valve checks."
+  "sec": 4.8,
+  "text": "Our tape patch saved time for collecting parts, but still needs regular valve checks.",
+  "filter": "robot-0.55"
  },
  "astra.choice.e3c.callback": {
   "file": "astra.choice.e3c.callback.mp3",
-  "sec": 4.16,
-  "text": "Our airlock checks saved water, but checking before each trip takes longer."
+  "sec": 4.17,
+  "text": "Our airlock checks saved water, but checking before each trip takes longer.",
+  "filter": "robot-0.55"
  },
  "astra.choice.exp2.60a.callback": {
   "file": "astra.choice.exp2.60a.callback.mp3",
   "sec": 5.16,
-  "text": "Our careful Pathfinder route helped research and reduces exposure, but takes longer."
+  "text": "Our careful Pathfinder route helped research and reduces exposure, but takes longer.",
+  "filter": "robot-0.55"
  },
  "astra.choice.exp2.60b.callback": {
   "file": "astra.choice.exp2.60b.callback.mp3",
-  "sec": 4.66,
-  "text": "Our direct Pathfinder route found collecting spots with more parts, but more exposure."
+  "sec": 4.67,
+  "text": "Our direct Pathfinder route found collecting spots with more parts, but more exposure.",
+  "filter": "robot-0.55"
  },
  "astra.choice.exp3.85a.callback": {
   "file": "astra.choice.exp3.85a.callback.mp3",
-  "sec": 4.78,
-  "text": "Our extra ice survey saved water, but processing those cores still uses power."
+  "sec": 4.79,
+  "text": "Our extra ice survey saved water, but processing those cores still uses power.",
+  "filter": "robot-0.55"
  },
  "astra.choice.exp3.85b.callback": {
   "file": "astra.choice.exp3.85b.callback.mp3",
-  "sec": 3.29,
-  "text": "Our lighter crater trips saved power, but bring less loose scrap."
+  "sec": 3.3,
+  "text": "Our lighter crater trips saved power, but bring less loose scrap.",
+  "filter": "robot-0.55"
  },
  "astra.coop.role_missing": {
   "file": "astra.coop.role_missing.mp3",
-  "sec": 3.55,
-  "text": "You can still do this without that specialist; it just takes longer."
+  "sec": 3.56,
+  "text": "You can still do this without that specialist; it just takes longer.",
+  "filter": "robot-0.55"
  },
  "astra.d1.a": {
   "file": "astra.d1.a.mp3",
-  "sec": 3,
-  "text": "Smart thinking! Saving power helped us through the storm."
+  "sec": 3.01,
+  "text": "Smart thinking! Saving power helped us through the storm.",
+  "filter": "robot-0.55"
  },
  "astra.d1.alert": {
   "file": "astra.d1.alert.mp3",
   "sec": 4.2,
-  "text": "A dust storm will block most sunlight for three Sols. How should we prepare?"
+  "text": "A dust storm will block most sunlight for three Sols. How should we prepare?",
+  "filter": "robot-0.55"
  },
  "astra.d1.b": {
   "file": "astra.d1.b.mp3",
   "sec": 4.71,
-  "text": "We charged our batteries before the storm, with some radiation exposure outside."
+  "text": "We charged our batteries before the storm, with some radiation exposure outside.",
+  "filter": "robot-0.55"
  },
  "astra.d1.c": {
   "file": "astra.d1.c.mp3",
   "sec": 4.29,
-  "text": "The storm drained our batteries. Next time, let's save power beforehand."
+  "text": "The storm drained our batteries. Next time, let's save power beforehand.",
+  "filter": "robot-0.55"
  },
  "astra.d2.a": {
   "file": "astra.d2.a.mp3",
-  "sec": 5.09,
-  "text": "Water first! Our recycler recovers ninety-eight percent again, like the space station."
+  "sec": 5.1,
+  "text": "Water first! Our recycler recovers ninety-eight percent again, like the space station.",
+  "filter": "robot-0.55"
  },
  "astra.d2.alert": {
   "file": "astra.d2.alert.mp3",
-  "sec": 4.43,
-  "text": "Our recycler filter cracked. We have parts for a filter or a Cargo Trailer."
+  "sec": 4.44,
+  "text": "Our recycler filter cracked. We have parts for a filter or a Cargo Trailer.",
+  "filter": "robot-0.55"
  },
  "astra.d2.b": {
   "file": "astra.d2.b.mp3",
-  "sec": 4.4,
-  "text": "Our trailer helps collect more parts, but the broken filter still wastes water."
+  "sec": 4.41,
+  "text": "Our trailer helps collect more parts, but the broken filter still wastes water.",
+  "filter": "robot-0.55"
  },
  "astra.d2.c": {
   "file": "astra.d2.c.mp3",
-  "sec": 6.27,
-  "text": "Using less water helped, though everyone felt tired. Space station astronauts take sponge baths too."
+  "sec": 6.28,
+  "text": "Using less water helped, though everyone felt tired. Space station astronauts take sponge baths too.",
+  "filter": "robot-0.55"
  },
  "astra.d3.a": {
   "file": "astra.d3.a.mp3",
-  "sec": 4.64,
-  "text": "Good experiment! The plants absorbed harmful salts, so we test before eating."
+  "sec": 4.65,
+  "text": "Good experiment! The plants absorbed harmful salts, so we test before eating.",
+  "filter": "robot-0.55"
  },
  "astra.d3.alert": {
   "file": "astra.d3.alert.mp3",
-  "sec": 3.18,
-  "text": "Could we grow potatoes in Mars soil? Let's think it through."
+  "sec": 3.19,
+  "text": "Could we grow potatoes in Mars soil? Let's think it through.",
+  "filter": "robot-0.55"
  },
  "astra.d3.b": {
   "file": "astra.d3.b.mp3",
-  "sec": 4.07,
-  "text": "Rinsing removes many harmful salts from soil, but some can remain."
+  "sec": 4.08,
+  "text": "Rinsing removes many harmful salts from soil, but some can remain.",
+  "filter": "robot-0.55"
  },
  "astra.d3.c": {
   "file": "astra.d3.c.mp3",
-  "sec": 3.67,
-  "text": "Careful thinking! Testing first is what real scientists do."
+  "sec": 3.68,
+  "text": "Careful thinking! Testing first is what real scientists do.",
+  "filter": "robot-0.55"
  },
  "astra.d4.a": {
   "file": "astra.d4.a.mp3",
-  "sec": 3.76,
-  "text": "Our plants stayed warm! Our next radio slot is in three Sols."
+  "sec": 3.77,
+  "text": "Our plants stayed warm! Our next radio slot is in three Sols.",
+  "filter": "robot-0.55"
  },
  "astra.d4.alert": {
   "file": "astra.d4.alert.mp3",
-  "sec": 4.85,
-  "text": "Tonight, we have power for Greenhouse heating or our Earth message. Which comes first?"
+  "sec": 4.86,
+  "text": "Tonight, we have power for Greenhouse heating or our Earth message. Which comes first?",
+  "filter": "robot-0.55"
  },
  "astra.d4.b": {
   "file": "astra.d4.b.mp3",
-  "sec": 4.38,
-  "text": "Earth's message cheered everyone up! Our chilly plants are growing more slowly."
+  "sec": 4.39,
+  "text": "Earth's message cheered everyone up! Our chilly plants are growing more slowly.",
+  "filter": "robot-0.55"
  },
  "astra.d4.c": {
   "file": "astra.d4.c.mp3",
-  "sec": 3.69,
-  "text": "Clever thinking! We kept plants warm using heat we already had."
+  "sec": 3.7,
+  "text": "Clever thinking! We kept plants warm using heat we already had.",
+  "filter": "robot-0.55"
  },
  "astra.d5.a": {
   "file": "astra.d5.a.mp3",
   "sec": 3.4,
-  "text": "We came home with fewer samples, but we can return for more."
+  "text": "We came home with fewer samples, but we can return for more.",
+  "filter": "robot-0.55"
  },
  "astra.d5.alert": {
   "file": "astra.d5.alert.mp3",
   "sec": 3.16,
-  "text": "A solar storm is coming! How should our Rover crew shelter?"
+  "text": "A solar storm is coming! How should our Rover crew shelter?",
+  "filter": "robot-0.55"
  },
  "astra.d5.b": {
   "file": "astra.d5.b.mp3",
   "sec": 3.66,
-  "text": "Thick rock reduces radiation, like the soil above our base."
+  "text": "Thick rock reduces radiation, like the soil above our base.",
+  "filter": "robot-0.55"
  },
  "astra.d5.c": {
   "file": "astra.d5.c.mp3",
-  "sec": 6.34,
-  "text": "Our shielding reduced radiation, but couldn't block everything. Let's rest after collecting those samples."
+  "sec": 6.35,
+  "text": "Our shielding reduced radiation, but couldn't block everything. Let's rest after collecting those samples.",
+  "filter": "robot-0.55"
  },
  "astra.e1.a": {
   "file": "astra.e1.a.mp3",
-  "sec": 4.6,
-  "text": "We're sheltered! A huge solar storm reached Mars in May, twenty twenty-four."
+  "sec": 4.61,
+  "text": "We're sheltered! A huge solar storm reached Mars in May, twenty twenty-four.",
+  "filter": "robot-0.55"
  },
  "astra.e1.alert": {
   "file": "astra.e1.alert.mp3",
-  "sec": 3.02,
-  "text": "Solar flare! How should we use our underground shielding?"
+  "sec": 3.03,
+  "text": "Solar flare! How should we use our underground shielding?",
+  "filter": "robot-0.55"
  },
  "astra.e1.b": {
   "file": "astra.e1.b.mp3",
-  "sec": 4.45,
-  "text": "Working meant more radiation exposure. Next time, let's shelter first."
+  "sec": 4.46,
+  "text": "Working meant more radiation exposure. Next time, let's shelter first.",
+  "filter": "robot-0.55"
  },
  "astra.e1.c": {
   "file": "astra.e1.c.mp3",
-  "sec": 5.46,
-  "text": "Good planning! Drones handle radiation better than people, but storms can disrupt them too."
+  "sec": 5.47,
+  "text": "Good planning! Drones handle radiation better than people, but storms can disrupt them too.",
+  "filter": "robot-0.55"
  },
  "astra.e1.watch": {
   "file": "astra.e1.watch.mp3",
-  "sec": 3.85,
-  "text": "The Sun has a stormy spot facing Mars. A flare could come soon."
+  "sec": 3.86,
+  "text": "The Sun has a stormy spot facing Mars. A flare could come soon.",
+  "filter": "robot-0.55"
  },
  "astra.e2.a.clean": {
   "file": "astra.e2.a.clean.mp3",
-  "sec": 4.54,
-  "text": "The dust devil cleaned our panels, as sometimes happened to Spirit and Opportunity."
+  "sec": 4.55,
+  "text": "The dust devil cleaned our panels, as sometimes happened to Spirit and Opportunity.",
+  "filter": "robot-0.55"
  },
  "astra.e2.a.dusty": {
   "file": "astra.e2.a.dusty.mp3",
-  "sec": 3.15,
-  "text": "The dust devil left more dust. Let's wipe our panels."
+  "sec": 3.16,
+  "text": "The dust devil left more dust. Let's wipe our panels.",
+  "filter": "robot-0.55"
  },
  "astra.e2.alert": {
   "file": "astra.e2.alert.mp3",
-  "sec": 3.63,
-  "text": "A dust devil is coming! It might clean our panels or add dust."
+  "sec": 3.64,
+  "text": "A dust devil is coming! It might clean our panels or add dust.",
+  "filter": "robot-0.55"
  },
  "astra.e2.b": {
   "file": "astra.e2.b.mp3",
-  "sec": 3.69,
-  "text": "Stowed panels are better protected from dust, but make less power."
+  "sec": 3.7,
+  "text": "Stowed panels are better protected from dust, but make less power.",
+  "filter": "robot-0.55"
  },
  "astra.e2.c": {
   "file": "astra.e2.c.mp3",
   "sec": 4.18,
-  "text": "Our cleaning worked! Keep trips short, since radiation adds up outside."
+  "text": "Our cleaning worked! Keep trips short, since radiation adds up outside.",
+  "filter": "robot-0.55"
  },
  "astra.e3.a": {
   "file": "astra.e3.a.mp3",
-  "sec": 4.11,
-  "text": "Found the leak! Space station crew once tracked one with a floating tea leaf."
+  "sec": 4.12,
+  "text": "Found the leak! Space station crew once tracked one with a floating tea leaf.",
+  "filter": "robot-0.55"
  },
  "astra.e3.alert": {
   "file": "astra.e3.alert.mp3",
-  "sec": 3.91,
-  "text": "Our airlock is leaking oxygen and water vapor. Let's find the leak."
+  "sec": 3.92,
+  "text": "Our airlock is leaking oxygen and water vapor. Let's find the leak.",
+  "filter": "robot-0.55"
  },
  "astra.e3.b": {
   "file": "astra.e3.b.mp3",
-  "sec": 3.16,
-  "text": "Tape helps for now, but we'll need a lasting repair soon."
+  "sec": 3.17,
+  "text": "Tape helps for now, but we'll need a lasting repair soon.",
+  "filter": "robot-0.55"
  },
  "astra.e3.c": {
   "file": "astra.e3.c.mp3",
-  "sec": 2.97,
-  "text": "Closing the airlock stops the leak while our drone works."
+  "sec": 2.98,
+  "text": "Closing the airlock stops the leak while our drone works.",
+  "filter": "robot-0.55"
  },
  "astra.e4.a": {
   "file": "astra.e4.a.mp3",
-  "sec": 4.18,
-  "text": "Nice care! Scott Kelly nursed space station flowers back to health too."
+  "sec": 4.19,
+  "text": "Nice care! Scott Kelly nursed space station flowers back to health too.",
+  "filter": "robot-0.55"
  },
  "astra.e4.alert": {
   "file": "astra.e4.alert.mp3",
-  "sec": 4.26,
-  "text": "Our plants need balanced nutrient water to grow food. Let's check the mix."
+  "sec": 4.27,
+  "text": "Our plants need balanced nutrient water to grow food. Let's check the mix.",
+  "filter": "robot-0.55"
  },
  "astra.e4.b": {
   "file": "astra.e4.b.mp3",
-  "sec": 3.18,
-  "text": "Fresh water helped! The plants should recover by tomorrow."
+  "sec": 3.19,
+  "text": "Fresh water helped! The plants should recover by tomorrow.",
+  "filter": "robot-0.55"
  },
  "astra.e4.c": {
   "file": "astra.e4.c.mp3",
   "sec": 4.01,
-  "text": "Our plants need help now; their water supplies the minerals their roots need."
+  "text": "Our plants need help now; their water supplies the minerals their roots need.",
+  "filter": "robot-0.55"
  },
  "astra.exp1.return": {
   "file": "astra.exp1.return.mp3",
-  "sec": 4.17,
-  "text": "The weather probe's power core still works! Let's use it to wake drone three."
+  "sec": 4.18,
+  "text": "The weather probe's power core still works! Let's use it to wake drone three.",
+  "filter": "robot-0.55"
  },
  "astra.exp3.return": {
   "file": "astra.exp3.return.mp3",
-  "sec": 4.53,
-  "text": "Our scan found buried ice! Each Ice Core gives us twenty-five water units."
+  "sec": 4.54,
+  "text": "Our scan found buried ice! Each Ice Core gives us twenty-five water units.",
+  "filter": "robot-0.55"
  },
  "astra.exp4.at20": {
   "file": "astra.exp4.at20.mp3",
-  "sec": 5.05,
-  "text": "That's Ingenuity! The first helicopter on another planet made seventy-two flights."
+  "sec": 5.06,
+  "text": "That's Ingenuity! The first helicopter on another planet made seventy-two flights.",
+  "filter": "robot-0.55"
  },
  "astra.exp4.at35": {
   "file": "astra.exp4.at35.mp3",
-  "sec": 4.27,
-  "text": "Jezero once held a lake. Its delta could hold clues to ancient life."
+  "sec": 4.28,
+  "text": "Jezero once held a lake. Its delta could hold clues to ancient life.",
+  "filter": "robot-0.55"
  },
  "astra.f1.alert": {
   "file": "astra.f1.alert.mp3",
-  "sec": 5.18,
-  "text": "Tilting helped charge our batteries, but dust reached the motor mount. Let's choose a solution."
+  "sec": 5.19,
+  "text": "Tilting helped charge our batteries, but dust reached the motor mount. Let's choose a solution.",
+  "filter": "robot-0.55"
  },
  "astra.f2.alert": {
   "file": "astra.f2.alert.mp3",
-  "sec": 4.38,
-  "text": "Our Cargo Trailer's extra scrap needs balancing before another Scrap Run."
+  "sec": 4.39,
+  "text": "Our Cargo Trailer's extra scrap needs balancing before another Scrap Run.",
+  "filter": "robot-0.55"
  },
  "astra.f3.alert": {
   "file": "astra.f3.alert.mp3",
-  "sec": 3.84,
-  "text": "Our untreated soil test needs its own tray before we expand."
+  "sec": 3.85,
+  "text": "Our untreated soil test needs its own tray before we expand.",
+  "filter": "robot-0.55"
  },
  "astra.f4.alert": {
   "file": "astra.f4.alert.mp3",
-  "sec": 4.38,
-  "text": "Our extra hydroponic lamps share a heat pipe. Let's choose how to adjust them."
+  "sec": 4.39,
+  "text": "Our extra hydroponic lamps share a heat pipe. Let's choose how to adjust them.",
+  "filter": "robot-0.55"
  },
  "astra.f5.alert": {
   "file": "astra.f5.alert.mp3",
-  "sec": 4.09,
-  "text": "Keeping plants warm delayed our call. Let's choose a canyon route plan."
+  "sec": 4.1,
+  "text": "Keeping plants warm delayed our call. Let's choose a canyon route plan.",
+  "filter": "robot-0.55"
  },
  "astra.f6.alert": {
   "file": "astra.f6.alert.mp3",
-  "sec": 3.34,
-  "text": "Earth sent a canyon map! Let's check it against our scans."
+  "sec": 3.35,
+  "text": "Earth sent a canyon map! Let's check it against our scans.",
+  "filter": "robot-0.55"
  },
  "astra.f7.alert": {
   "file": "astra.f7.alert.mp3",
-  "sec": 4.06,
-  "text": "Our shelter plan worked! Let's choose how to care for our forecast sensor."
+  "sec": 4.07,
+  "text": "Our shelter plan worked! Let's choose how to care for our forecast sensor.",
+  "filter": "robot-0.55"
  },
  "astra.f8.alert": {
   "file": "astra.f8.alert.mp3",
-  "sec": 3.94,
-  "text": "Our tape patch needs attention again. Let's choose our next repair step."
+  "sec": 3.95,
+  "text": "Our tape patch needs attention again. Let's choose our next repair step.",
+  "filter": "robot-0.55"
  },
  "astra.finale.closing": {
   "file": "astra.finale.closing.mp3",
-  "sec": 4.53,
-  "text": "Real scientists ask these questions too. Maybe you'll help answer them someday!"
+  "sec": 4.54,
+  "text": "Real scientists ask these questions too. Maybe you'll help answer them someday!",
+  "filter": "robot-0.55"
  },
  "astra.finale.home": {
   "file": "astra.finale.home.mp3",
-  "sec": 5.5,
-  "text": "Wonderful work, Commander! Our rebuilt base helped us discover possible clues to ancient life."
+  "sec": 5.51,
+  "text": "Wonderful work, Commander! Our rebuilt base helped us discover possible clues to ancient life.",
+  "filter": "robot-0.55"
  },
  "astra.finale.leopard": {
   "file": "astra.finale.leopard.mp3",
   "sec": 6.43,
-  "text": "Perseverance found similar spots at Cheyava Falls. They're clues to possible ancient life, not proof."
+  "text": "Perseverance found similar spots at Cheyava Falls. They're clues to possible ancient life, not proof.",
+  "filter": "robot-0.55"
  },
  "astra.finale.methane": {
   "file": "astra.finale.methane.mp3",
-  "sec": 4.97,
-  "text": "Methane might come from rock reactions or ancient microbes. We need more clues."
+  "sec": 4.98,
+  "text": "Methane might come from rock reactions or ancient microbes. We need more clues.",
+  "filter": "robot-0.55"
  },
  "astra.fit.critical": {
   "file": "astra.fit.critical.mp3",
-  "sec": 3.75,
-  "text": "Low fitness is affecting your health. Let's choose the Recover plan."
+  "sec": 3.76,
+  "text": "Low fitness is affecting your health. Let's choose the Recover plan.",
+  "filter": "robot-0.55"
  },
  "astra.fit.intro": {
   "file": "astra.fit.intro.mp3",
-  "sec": 6.76,
-  "text": "Exercise keeps bones and muscles strong. Space station astronauts exercise about two hours daily."
+  "sec": 6.77,
+  "text": "Exercise keeps bones and muscles strong. Space station astronauts exercise about two hours daily.",
+  "filter": "robot-0.55"
  },
  "astra.fit.low": {
   "file": "astra.fit.low.mp3",
-  "sec": 5.13,
-  "text": "Exercise helps make work and trips easier. Add an exercise hour to your Sol Plan."
+  "sec": 5.14,
+  "text": "Exercise helps make work and trips easier. Add an exercise hour to your Sol Plan.",
+  "filter": "robot-0.55"
  },
  "astra.fit.mars": {
   "file": "astra.fit.mars.mp3",
-  "sec": 5.11,
-  "text": "Mars gravity is thirty-eight percent of Earth's. We're still studying its effects on muscles."
+  "sec": 5.12,
+  "text": "Mars gravity is thirty-eight percent of Earth's. We're still studying its effects on muscles.",
+  "filter": "robot-0.55"
  },
  "astra.fit.rec_open": {
   "file": "astra.fit.rec_open.mp3",
-  "sec": 4.5,
-  "text": "Our Recreation room has exercise equipment! Your workouts count double now."
+  "sec": 4.51,
+  "text": "Our Recreation room has exercise equipment! Your workouts count double now.",
+  "filter": "robot-0.55"
  },
  "astra.hp.25": {
   "file": "astra.hp.25.mp3",
-  "sec": 3.71,
-  "text": "Your health is low. Rest and fresh food help restore energy."
+  "sec": 3.72,
+  "text": "Your health is low. Rest and fresh food help restore energy.",
+  "filter": "robot-0.55"
  },
  "astra.hp.50": {
   "file": "astra.hp.50.mp3",
-  "sec": 2.94,
-  "text": "Your health is at half. Let's plan some Bedroom rest."
+  "sec": 2.95,
+  "text": "Your health is at half. Let's plan some Bedroom rest.",
+  "filter": "robot-0.55"
  },
  "astra.hp.full": {
   "file": "astra.hp.full.mp3",
-  "sec": 3.33,
-  "text": "Your health is fully restored! Ready for our next adventure."
+  "sec": 3.34,
+  "text": "Your health is fully restored! Ready for our next adventure.",
+  "filter": "robot-0.55"
  },
  "astra.hp.medrest_end": {
   "file": "astra.hp.medrest_end.mp3",
   "sec": 3.88,
-  "text": "Your health is back to fifty. Fresh food helps restore more energy."
+  "text": "Your health is back to fifty. Fresh food helps restore more energy.",
+  "filter": "robot-0.55"
  },
  "astra.hp.surface_70": {
   "file": "astra.hp.surface_70.mp3",
-  "sec": 3.4,
-  "text": "Radiation adds up outside. Let's keep this trip short."
+  "sec": 3.41,
+  "text": "Radiation adds up outside. Let's keep this trip short.",
+  "filter": "robot-0.55"
  },
  "astra.hp.zero_base": {
   "file": "astra.hp.zero_base.mp3",
   "sec": 4.61,
-  "text": "Time for medical rest until tomorrow. Our drones and I will keep things running."
+  "text": "Time for medical rest until tomorrow. Our drones and I will keep things running.",
+  "filter": "robot-0.55"
  },
  "astra.hp.zero_expedition": {
   "file": "astra.hp.zero_expedition.mp3",
-  "sec": 3.39,
-  "text": "A rescue drone will bring you and some supplies home for rest."
+  "sec": 3.4,
+  "text": "A rescue drone will bring you and some supplies home for rest.",
+  "filter": "robot-0.55"
  },
  "astra.intro.landing": {
   "file": "astra.intro.landing.mp3",
-  "sec": 4.65,
-  "text": "Welcome to Ares One in Jezero Crater! I'm Astra, your station friend."
+  "sec": 4.66,
+  "text": "Welcome to Ares One in Jezero Crater! I'm Astra, your station friend.",
+  "filter": "robot-0.55"
  },
  "astra.intro.status": {
   "file": "astra.intro.status.mp3",
-  "sec": 4.29,
-  "text": "Our Bedroom, Kitchen and Life Support work. Our solar panels need cleaning."
+  "sec": 4.3,
+  "text": "Our Bedroom, Kitchen and Life Support work. Our solar panels need cleaning.",
+  "filter": "robot-0.55"
  },
  "astra.intro.why_underground": {
   "file": "astra.intro.why_underground.mp3",
-  "sec": 5.61,
-  "text": "Our underground base has thick soil shielding. It blocks most radiation, but some gets through."
+  "sec": 5.62,
+  "text": "Our underground base has thick soil shielding. It blocks most radiation, but some gets through.",
+  "filter": "robot-0.55"
  },
  "astra.jobs.intro": {
   "file": "astra.jobs.intro.mp3",
   "sec": 3.3,
-  "text": "While our drones build, open Jobs and choose a way to help!"
+  "text": "While our drones build, open Jobs and choose a way to help!",
+  "filter": "robot-0.55"
  },
  "astra.lives.danger_food": {
   "file": "astra.lives.danger_food.mp3",
-  "sec": 3.68,
-  "text": "Empty Food costs our Commander energy. Let's check the Greenhouse."
+  "sec": 3.69,
+  "text": "Empty Food costs our Commander energy. Let's check the Greenhouse.",
+  "filter": "robot-0.55"
  },
  "astra.lives.danger_heat": {
   "file": "astra.lives.danger_heat.mp3",
-  "sec": 3.5,
-  "text": "Empty Heat costs our Commander energy. Let's fix the heat pump."
+  "sec": 3.51,
+  "text": "Empty Heat costs our Commander energy. Let's fix the heat pump.",
+  "filter": "robot-0.55"
  },
  "astra.lives.danger_oxygen": {
   "file": "astra.lives.danger_oxygen.mp3",
   "sec": 4.13,
-  "text": "Empty Oxygen costs our Commander energy. Let's fix the air scrubber."
+  "text": "Empty Oxygen costs our Commander energy. Let's fix the air scrubber.",
+  "filter": "robot-0.55"
  },
  "astra.lives.danger_water": {
   "file": "astra.lives.danger_water.mp3",
-  "sec": 3.96,
-  "text": "Empty Water costs our Commander energy. Let's check our water supply."
+  "sec": 3.97,
+  "text": "Empty Water costs our Commander energy. Let's check our water supply.",
+  "filter": "robot-0.55"
  },
  "astra.lives.rewind": {
   "file": "astra.lives.rewind.mp3",
-  "sec": 4.5,
-  "text": "Good try! Let's revisit our last decision while the rescue team takes over."
+  "sec": 4.51,
+  "text": "Good try! Let's revisit our last decision while the rescue team takes over.",
+  "filter": "robot-0.55"
  },
  "astra.logbook.first": {
   "file": "astra.logbook.first.mp3",
-  "sec": 3.99,
-  "text": "Your first Science Logbook card! We collect real facts as we explore."
+  "sec": 4,
+  "text": "Your first Science Logbook card! We collect real facts as we explore.",
+  "filter": "robot-0.55"
  },
  "astra.mg.air_filter_scrub": {
   "file": "astra.mg.air_filter_scrub.mp3",
-  "sec": 4.63,
-  "text": "Spacesuits carry dust indoors. Clean filters help keep it out of our lungs."
+  "sec": 4.64,
+  "text": "Spacesuits carry dust indoors. Clean filters help keep it out of our lungs.",
+  "filter": "robot-0.55"
  },
  "astra.mg.dish_antenna_alignment": {
   "file": "astra.mg.dish_antenna_alignment.mp3",
-  "sec": 5.22,
-  "text": "Aim our dish carefully; radio messages need about three to twenty-two minutes to reach Earth."
+  "sec": 5.23,
+  "text": "Aim our dish carefully; radio messages need about three to twenty-two minutes to reach Earth.",
+  "filter": "robot-0.55"
  },
  "astra.mg.heat_pump_reroute": {
   "file": "astra.mg.heat_pump_reroute.mp3",
-  "sec": 3.85,
-  "text": "Let's send leftover machine heat through pipes, like Perseverance does."
+  "sec": 3.86,
+  "text": "Let's send leftover machine heat through pipes, like Perseverance does.",
+  "filter": "robot-0.55"
  },
  "astra.mg.nutrient_match": {
   "file": "astra.mg.nutrient_match.mp3",
-  "sec": 3.56,
-  "text": "Our plants grow without soil, so their water must supply minerals."
+  "sec": 3.57,
+  "text": "Our plants grow without soil, so their water must supply minerals.",
+  "filter": "robot-0.55"
  },
  "astra.mg.solar_wipe": {
   "file": "astra.mg.solar_wipe.mp3",
-  "sec": 3.54,
-  "text": "Static makes Mars dust cling to panels. Let's wipe it away."
+  "sec": 3.55,
+  "text": "Static makes Mars dust cling to panels. Let's wipe it away.",
+  "filter": "robot-0.55"
  },
  "astra.mg.suit_seal_check": {
   "file": "astra.mg.suit_seal_check.mp3",
-  "sec": 3.41,
-  "text": "Mars air is too thin to breathe. Let's check our suit seals."
+  "sec": 3.42,
+  "text": "Mars air is too thin to breathe. Let's check our suit seals.",
+  "filter": "robot-0.55"
  },
  "astra.mg.valve_balance": {
   "file": "astra.mg.valve_balance.mp3",
   "sec": 3.79,
-  "text": "Our scrubbers remove carbon dioxide, the gas we breathe out."
+  "text": "Our scrubbers remove carbon dioxide, the gas we breathe out.",
+  "filter": "robot-0.55"
  },
  "astra.mg.water_sort": {
   "file": "astra.mg.water_sort.mp3",
-  "sec": 5.53,
-  "text": "The space station recovers ninety-eight percent of used water. We still need replacement ice."
+  "sec": 5.54,
+  "text": "The space station recovers ninety-eight percent of used water. We still need replacement ice.",
+  "filter": "robot-0.55"
  },
  "astra.mg.wheel_pebble_vacuum": {
   "file": "astra.mg.wheel_pebble_vacuum.mp3",
-  "sec": 4.64,
-  "text": "Sharp Mars rocks damaged Curiosity's wheels. Let's clean and check ours."
+  "sec": 4.65,
+  "text": "Sharp Mars rocks damaged Curiosity's wheels. Let's clean and check ours.",
+  "filter": "robot-0.55"
  },
  "astra.plan.crunch": {
   "file": "astra.plan.crunch.mp3",
   "sec": 3.84,
-  "text": "Crunch builds faster, but tires our crew. Let's use it sparingly."
+  "text": "Crunch builds faster, but tires our crew. Let's use it sparingly.",
+  "filter": "robot-0.55"
  },
  "astra.plan.no_free": {
   "file": "astra.plan.no_free.mp3",
-  "sec": 3.96,
-  "text": "Everybody needs a break, even on Mars. Let's make some free time."
+  "sec": 3.97,
+  "text": "Everybody needs a break, even on Mars. Let's make some free time.",
+  "filter": "robot-0.55"
  },
  "astra.plan.short_sleep": {
   "file": "astra.plan.short_sleep.mp3",
-  "sec": 4.45,
-  "text": "Less sleep means more work time, but more tiredness. Let's protect our rest."
+  "sec": 4.46,
+  "text": "Less sleep means more work time, but more tiredness. Let's protect our rest.",
+  "filter": "robot-0.55"
  },
  "astra.plan.unlock": {
   "file": "astra.plan.unlock.mp3",
-  "sec": 3.67,
-  "text": "Astronauts plan their day. Tap your portrait to see your Sol Plan."
+  "sec": 3.68,
+  "text": "Astronauts plan their day. Tap your portrait to see your Sol Plan.",
+  "filter": "robot-0.55"
  },
  "astra.rad.partial_room": {
   "file": "astra.rad.partial_room.mp3",
-  "sec": 4.97,
-  "text": "This roof isn't finished. Some radiation gets through, so let's keep visits short."
+  "sec": 4.98,
+  "text": "This roof isn't finished. Some radiation gets through, so let's keep visits short.",
+  "filter": "robot-0.55"
  },
  "astra.rad.rover_shield": {
   "file": "astra.rad.rover_shield.mp3",
-  "sec": 3.92,
-  "text": "Our Rover's new soil bricks reduce radiation, but don't block it all."
+  "sec": 3.93,
+  "text": "Our Rover's new soil bricks reduce radiation, but don't block it all.",
+  "filter": "robot-0.55"
  },
  "astra.rad.suit_liner": {
   "file": "astra.rad.suit_liner.mp3",
-  "sec": 4.98,
-  "text": "Our new suit liner reduces radiation using materials rich in hydrogen."
+  "sec": 4.99,
+  "text": "Our new suit liner reduces radiation using materials rich in hydrogen.",
+  "filter": "robot-0.55"
  },
  "astra.report.intro": {
   "file": "astra.report.intro.mp3",
-  "sec": 3.6,
-  "text": "Here's our mission report, Commander. Every choice taught us something."
+  "sec": 3.61,
+  "text": "Here's our mission report, Commander. Every choice taught us something.",
+  "filter": "robot-0.55"
  },
  "astra.report.outro": {
   "file": "astra.report.outro.mp3",
-  "sec": 3.74,
-  "text": "Scientists write mission reports too. What shall we try next time?"
+  "sec": 3.75,
+  "text": "Scientists write mission reports too. What shall we try next time?",
+  "filter": "robot-0.55"
  },
  "astra.res.emergency_worry": {
   "file": "astra.res.emergency_worry.mp3",
-  "sec": 3.66,
-  "text": "Our crew is worried about the emergency. Let's work on repairs."
+  "sec": 3.67,
+  "text": "Our crew is worried about the emergency. Let's work on repairs.",
+  "filter": "robot-0.55"
  },
  "astra.res.food_low": {
   "file": "astra.res.food_low.mp3",
-  "sec": 3.15,
-  "text": "Food stores are low. Let's check our Greenhouse plants."
+  "sec": 3.16,
+  "text": "Food stores are low. Let's check our Greenhouse plants.",
+  "filter": "robot-0.55"
  },
  "astra.res.heat_zero": {
   "file": "astra.res.heat_zero.mp3",
-  "sec": 2.69,
-  "text": "Our pipes are freezing. Let's reroute the heat pump."
+  "sec": 2.7,
+  "text": "Our pipes are freezing. Let's reroute the heat pump.",
+  "filter": "robot-0.55"
  },
  "astra.res.morale_low": {
   "file": "astra.res.morale_low.mp3",
-  "sec": 4.33,
-  "text": "Our crew could use a boost. Recreation or a message from Earth would help."
+  "sec": 4.34,
+  "text": "Our crew could use a boost. Recreation or a message from Earth would help.",
+  "filter": "robot-0.55"
  },
  "astra.res.oxygen_low": {
   "file": "astra.res.oxygen_low.mp3",
-  "sec": 3.85,
-  "text": "Oxygen is low. Let's check our air scrubbers, which clean the air."
+  "sec": 3.86,
+  "text": "Oxygen is low. Let's check our air scrubbers, which clean the air.",
+  "filter": "robot-0.55"
  },
  "astra.res.oxygen_zero": {
   "file": "astra.res.oxygen_zero.mp3",
-  "sec": 3.24,
-  "text": "Let's move into the Bedroom; its backup air tanks will help."
+  "sec": 3.25,
+  "text": "Let's move into the Bedroom; its backup air tanks will help.",
+  "filter": "robot-0.55"
  },
  "astra.res.power_zero": {
   "file": "astra.res.power_zero.mp3",
-  "sec": 3.79,
-  "text": "Only life support has power now. Let's clean our solar panels."
+  "sec": 3.8,
+  "text": "Only life support has power now. Let's clean our solar panels.",
+  "filter": "robot-0.55"
  },
  "astra.res.storage_save": {
   "file": "astra.res.storage_save.mp3",
-  "sec": 3.5,
-  "text": "Our spare supplies helped! I've opened the emergency stores."
+  "sec": 3.51,
+  "text": "Our spare supplies helped! I've opened the emergency stores.",
+  "filter": "robot-0.55"
  },
  "astra.res.water_low": {
   "file": "astra.res.water_low.mp3",
-  "sec": 3.97,
-  "text": "Our recycler loses a little water each day. Let's plan an Ice Run."
+  "sec": 3.98,
+  "text": "Our recycler loses a little water each day. Let's plan an Ice Run.",
+  "filter": "robot-0.55"
  },
  "astra.sandbox.milestone_50": {
   "file": "astra.sandbox.milestone_50.mp3",
-  "sec": 3.58,
-  "text": "Fifty Sols on Mars! Your careful work keeps our base going."
+  "sec": 3.59,
+  "text": "Fifty Sols on Mars! Your careful work keeps our base going.",
+  "filter": "robot-0.55"
  },
  "astra.sandbox.random_tip": {
   "file": "astra.sandbox.random_tip.mp3",
-  "sec": 4.67,
-  "text": "Need water or parts? Ice Runs and Scrap Runs are always repeatable."
+  "sec": 4.68,
+  "text": "Need water or parts? Ice Runs and Scrap Runs are always repeatable.",
+  "filter": "robot-0.55"
  },
  "astra.sandbox.start": {
   "file": "astra.sandbox.start.mp3",
-  "sec": 3.49,
-  "text": "Free play is open! Keep building and exploring; I'll be here."
+  "sec": 3.5,
+  "text": "Free play is open! Keep building and exploring; I'll be here.",
+  "filter": "robot-0.55"
  },
  "astra.t2.battery": {
   "file": "astra.t2.battery.mp3",
-  "sec": 3.96,
-  "text": "Deep Cell Bank charged! More stored power helps us stay warm overnight."
+  "sec": 3.97,
+  "text": "Deep Cell Bank charged! More stored power helps us stay warm overnight.",
+  "filter": "robot-0.55"
  },
  "astra.t2.garage": {
   "file": "astra.t2.garage.mp3",
-  "sec": 4.24,
-  "text": "Our upgraded battery lets the Rover travel farther. More exploring ahead!"
+  "sec": 4.25,
+  "text": "Our upgraded battery lets the Rover travel farther. More exploring ahead!",
+  "filter": "robot-0.55"
  },
  "astra.t2.greenhouse": {
   "file": "astra.t2.greenhouse.mp3",
-  "sec": 4.09,
-  "text": "Our upgraded farm stacks growing trays for more food in the same room."
+  "sec": 4.1,
+  "text": "Our upgraded farm stacks growing trays for more food in the same room.",
+  "filter": "robot-0.55"
  },
  "astra.t2.lab": {
   "file": "astra.t2.lab.mp3",
-  "sec": 4.24,
-  "text": "Deep Space Array online! We can spot storms early and scan underground."
+  "sec": 4.25,
+  "text": "Deep Space Array online! We can spot storms early and scan underground.",
+  "filter": "robot-0.55"
  },
  "astra.t2.rec": {
   "file": "astra.t2.rec.mp3",
-  "sec": 3.88,
-  "text": "A Mars rock on display! Beautiful things help our crew feel at home."
+  "sec": 3.89,
+  "text": "A Mars rock on display! Beautiful things help our crew feel at home.",
+  "filter": "robot-0.55"
  },
  "astra.t2.solar": {
   "file": "astra.t2.solar.mp3",
-  "sec": 3.89,
-  "text": "Our new panels have brushes and a tilt motor to help manage dust."
+  "sec": 3.9,
+  "text": "Our new panels have brushes and a tilt motor to help manage dust.",
+  "filter": "robot-0.55"
  },
  "astra.t2.workshop": {
   "file": "astra.t2.workshop.mp3",
-  "sec": 3.51,
-  "text": "Precision Fabricator ready! Now we can make two things each Sol."
+  "sec": 3.52,
+  "text": "Precision Fabricator ready! Now we can make two things each Sol.",
+  "filter": "robot-0.55"
  },
  "astra.tut.build_prompt": {
   "file": "astra.tut.build_prompt.mp3",
-  "sec": 3.66,
-  "text": "Tap the Battery and Heating frame, then Build. Drone one will help."
+  "sec": 3.67,
+  "text": "Tap the Battery and Heating frame, then Build. Drone one will help.",
+  "filter": "robot-0.55"
  },
  "astra.tut.done": {
   "file": "astra.tut.done.mp3",
-  "sec": 4.83,
-  "text": "Great start! A Sol is a Mars day, about thirty-nine minutes longer than Earth's."
+  "sec": 4.84,
+  "text": "Great start! A Sol is a Mars day, about thirty-nine minutes longer than Earth's.",
+  "filter": "robot-0.55"
  },
  "astra.tut.drone01_click": {
   "file": "astra.tut.drone01_click.mp3",
-  "sec": 4.42,
-  "text": "Drone one's battery is empty. Let's clean our dusty solar panels first."
+  "sec": 4.43,
+  "text": "Drone one's battery is empty. Let's clean our dusty solar panels first.",
+  "filter": "robot-0.55"
  },
  "astra.tut.drone01_prompt": {
   "file": "astra.tut.drone01_prompt.mp3",
-  "sec": 4.5,
-  "text": "Drag the charged battery into drone one's back hatch, then snap the cable in."
+  "sec": 4.51,
+  "text": "Drag the charged battery into drone one's back hatch, then snap the cable in.",
+  "filter": "robot-0.55"
  },
  "astra.tut.drone01_wake": {
   "file": "astra.tut.drone01_wake.mp3",
-  "sec": 2.89,
-  "text": "Drone one is awake! Let's give our builder a job."
+  "sec": 2.9,
+  "text": "Drone one is awake! Let's give our builder a job.",
+  "filter": "robot-0.55"
  },
  "astra.tut.hp_intro": {
   "file": "astra.tut.hp_intro.mp3",
-  "sec": 4.37,
-  "text": "This bar shows health and energy. Sleep and fresh food restore energy."
+  "sec": 4.38,
+  "text": "This bar shows health and energy. Sleep and fresh food restore energy.",
+  "filter": "robot-0.55"
  },
  "astra.tut.solar_done": {
   "file": "astra.tut.solar_done.mp3",
-  "sec": 4.98,
-  "text": "Panels working! Mars gets less than half Earth's sunlight, so clean panels matter."
+  "sec": 4.99,
+  "text": "Panels working! Mars gets less than half Earth's sunlight, so clean panels matter.",
+  "filter": "robot-0.55"
  },
  "astra.tut.solar_prompt": {
   "file": "astra.tut.solar_prompt.mp3",
-  "sec": 3.84,
-  "text": "Let's wipe our solar panels clean; static makes Mars dust sticky."
+  "sec": 3.85,
+  "text": "Let's wipe our solar panels clean; static makes Mars dust sticky.",
+  "filter": "robot-0.55"
  }
 }

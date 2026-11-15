@@ -184,8 +184,17 @@ export function drawCampaign(ctx, atlas, S) {
         if (progress > 0) { g.globalAlpha = built ? 1 : 0.15 + progress * 0.8; atlas.cell(g, id, 1, r.x, r.y, r.w, r.h); g.globalAlpha = 1; }
       }
       if (m.status === 'building') {
-        g.fillStyle = 'rgba(0,0,0,0.55)'; g.fillRect(r.x + 20, r.y + r.h - 40, r.w - 40, 16);
-        g.fillStyle = '#FFB000'; g.fillRect(r.x + 20, r.y + r.h - 40, (r.w - 40) * m.progress, 16);
+        // Build progress: a framed bar with its percentage at the TOP of the room. It used to be a thin yellow strip on the
+        // floor, which looked like a streak left behind by the drone working there.
+        const bw = Math.min(260, r.w - 60), bx = r.x + (r.w - bw) / 2, by = r.y + 34;
+        g.fillStyle = 'rgba(11,20,32,0.85)'; g.fillRect(bx - 6, by - 6, bw + 12, 34);
+        g.strokeStyle = '#5FE3F0'; g.lineWidth = 3; g.strokeRect(bx - 6, by - 6, bw + 12, 34);
+        g.fillStyle = '#2a3442'; g.fillRect(bx, by, bw, 22);
+        g.fillStyle = '#FFB000'; g.fillRect(bx, by, bw * Math.min(1, m.progress), 22);
+        g.font = 'bold 18px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.lineWidth = 4; g.strokeStyle = '#1a0c10'; g.strokeText(`${Math.floor(m.progress * 100)}%`, bx + bw / 2, by + 12);
+        g.fillStyle = '#fff'; g.fillText(`${Math.floor(m.progress * 100)}%`, bx + bw / 2, by + 12);
+        g.textBaseline = 'alphabetic';
       }
       if (m.status === 'unbuilt') {
         // The outdoor garage has a transparent curved outline; keep the sky outside it clear.

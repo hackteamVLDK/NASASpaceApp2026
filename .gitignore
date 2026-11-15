@@ -28,3 +28,7 @@ auth.json
 
 # Rejected and superseded generations (kept locally for comparison)
 assets/incoming/_*/
+
+# clean (unfiltered) ASTRA recordings and filter trials: tools/voice/astra-voice.mjs renders them again
+tools/voice/raw/
+tools/voice/try/
