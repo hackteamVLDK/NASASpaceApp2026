@@ -283,9 +283,9 @@ function trackStats(s, dt, now) {
 function onNewSol(s, emit, now) {
   // the Sol Plan chosen yesterday starts now (3.10); the Strong Bones streak counts Sols at Fitness 70+ (8.3)
   if (s.planNext) { s.plan = s.planNext; s.planNext = null; }
-  s.stats.fitStreak = s.fitness >= FITNESS.goodAt ? (s.stats.fitStreak ?? 0) + 1 : 0;
+  s.stats.fitStreak = (s.stats.fitDayMin ?? s.fitness) >= FITNESS.goodAt ? (s.stats.fitStreak ?? 0) + 1 : 0;
+  s.stats.fitDayMin = null; // the new Sol's lowest Fitness starts from its first minute
   s.stats.fitBest = Math.max(s.stats.fitBest ?? 0, s.stats.fitStreak);
-  if (now.sol === 2) emit({ type: 'astra', lineId: 'astra.plan.unlock', mood: 'cheerful' });
   s.stats.recycleStreak = s.recycleEta >= RECYCLER.ok ? s.stats.recycleStreak + 1 : 0;
   for (const k of Object.keys(s.low)) if (s.res[k] > 40) s.low[k] = false;
   emit({ type: 'sol', sol: now.sol });
@@ -317,13 +317,15 @@ function stepFitness(s, emit, now, dt) {
   const exercising = !s.away && !s.medRest && blockAt(s, now.hour) === 'exercise' && s.where === exercisePlace(s);
   if (exercising) {
     f += fitnessPerHour(s) / 60;
-    if (now.minute === 1) {
+    if (now.minute === 1 && now.sol >= 2) {
       s.stats.exerciseHours = (s.stats.exerciseHours ?? 0) + 1;
       if (s.stats.exerciseHours === 1) emit({ type: 'astra', lineId: 'astra.fit.intro', mood: 'curious' });
       if (s.stats.exerciseHours === 2) emit({ type: 'astra', lineId: 'astra.fit.mars', mood: 'curious' });
     }
   }
   s.fitness = clamp(f, 0, 100);
+  // the lowest Fitness of this Sol (Strong Bones); the midnight minute closes the old Sol, so it is not counted
+  if (now.hour !== 0 || now.minute !== 0) s.stats.fitDayMin = Math.min(s.stats.fitDayMin ?? s.fitness, s.fitness);
   const warn = [['fitLow', FITNESS.lowAt, 'astra.fit.low'], ['fitCritical', FITNESS.criticalAt + 0.5, 'astra.fit.critical']];
   for (const [key, limit, line] of warn) {
     if (s.fitness < limit && !s.low[key]) { s.low[key] = true; emit({ type: 'astra', lineId: line, mood: 'alert' }); }

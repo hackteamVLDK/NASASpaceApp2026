@@ -31,6 +31,7 @@ export function storyMinute(s, emit, now) {
   if (now.minute === 0) scheduleBreakdown(s, emit, sol);
   once(s, 'sunset', () => sol === 1 && now.hourFloat >= 17.5, () => say(emit, 'astra.act1.first_sunset', 'curious'));
   once(s, 'dusk', () => sol === 1 && hour >= 18, () => say(emit, 'astra.act1.first_dusk', 'calm'));
+  once(s, 'planUnlock', () => sol >= 2 && hour >= 6, () => say(emit, 'astra.plan.unlock', 'cheerful')); // 3.10: Sol 2, dawn
   once(s, 'firstSleep', () => sol === 2 && hour >= 6, () => say(emit, 'astra.act1.first_sleep', 'cheerful'));
   once(s, 'heatPump', () => sol === 2 && hour >= 18, () => { say(emit, 'astra.act1.heat_warning', 'alert'); addTask(s, 'heat_pump', 'Reroute the heat before the cold night.'); });
 
