@@ -363,6 +363,7 @@ function onGameOver() {
   clearTimeout(saveTimer);
   try { localStorage.removeItem(SAVE_KEY); } catch { /* storage may be blocked */ }
   closeMini();
+  guide.current = null; guide.queue.length = 0; // ASTRA's waiting lines were about a game that is over (e.g. "let's go back to the last decision")
   document.querySelector('#speed [data-speed="0"]')?.click();
   audio.play('alert');
 }
@@ -372,6 +373,10 @@ function onRewind() {
   closeMini();
   rover.phase = s.away ? 'gone' : 'parked';
   rover.k = 0;
+  // warnings about the moment before the rewind (Low HP, an empty tank) no longer apply: clear them and let them fire again if still true
+  clearTimeout(toast.timer); $('toast').hidden = true; toastShowing = null; toastQueue.length = 0;
+  activeHazards.clear(); warned.clear();
+  guide.current = null; guide.queue.length = 0; // lines about the future that was undone; the rewind line comes right after this event
   ui.handleEvent({ type: 'rewind' });
   scheduleSave();
 }
