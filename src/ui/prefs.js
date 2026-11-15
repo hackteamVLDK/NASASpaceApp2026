@@ -4,16 +4,18 @@
  *   reduceMotion: no camera shake, no pulsing glows, no CSS animations. On by default when the
  *                 system asks for less motion (prefers-reduced-motion).
  *   largeText:    bigger text in the panels, cards and ASTRA's box.
+ *   voice:        ASTRA reads her lines aloud (recorded with a local text-to-speech model, src/ui/astra-voice.js).
  */
 const KEY = 'ares-kids.prefs.v1';
 
 const systemReduce = () => { try { return Boolean(globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches); } catch { return false; } };
 
-export const prefs = { reduceMotion: systemReduce(), largeText: false };
+export const prefs = { reduceMotion: systemReduce(), largeText: false, voice: true };
 try {
   const v = JSON.parse(globalThis.localStorage?.getItem(KEY) ?? 'null');
   if (v && typeof v.reduceMotion === 'boolean') prefs.reduceMotion = v.reduceMotion;
   if (v && typeof v.largeText === 'boolean') prefs.largeText = v.largeText;
+  if (v && typeof v.voice === 'boolean') prefs.voice = v.voice;
 } catch { /* defaults */ }
 
 /** Change one setting, save it, and update the page classes. */

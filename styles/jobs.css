@@ -10,3 +10,5 @@
 .job-card .job-start:focus-visible { outline: 3px solid var(--amber, #ffb000); outline-offset: 3px; }
 .job-card .job-start:disabled { opacity: 1; background: #162333; color: #afc0d0; border-color: #526478; cursor: default; }
 .jobs-empty { margin: 0; color: #bcd1e3; line-height: 1.4; }
+.job-card summary { min-height: 44px; cursor: pointer; color: var(--cyan, #00e5ff); }
+.job-card details p + p { margin-top: 8px; }

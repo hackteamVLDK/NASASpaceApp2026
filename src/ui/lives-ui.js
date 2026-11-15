@@ -1,4 +1,5 @@
 /** Lives presentation only. The campaign owns checkpoints, counters and restoration. */
+import { short } from '../flow/strings.js';
 export const STRINGS = Object.freeze({
   'ui.lives.label': 'Tries left: {left} of {max}',
   'ui.lives.title': 'Back to the last decision',
@@ -37,13 +38,14 @@ export function usedTriesText(s, read = fallbackText) {
 }
 
 export function createLivesUi({ s, read = fallbackText, onTryAgain }) {
+  const readShort = (id) => short(id) === id ? read(id) : short(id);
   const el = document.createElement('div');
   el.className = 'lives';
   el.setAttribute('role', 'img');
   let signature = '';
 
   function update() {
-    const view = livesView(s, read);
+    const view = livesView(s, readShort);
     el.hidden = !view.visible;
     el.title = view.label;
     el.setAttribute('aria-label', view.label);
@@ -77,20 +79,28 @@ export function createLivesUi({ s, read = fallbackText, onTryAgain }) {
     card.className = 'card life-lost';
     const title = document.createElement('h2');
     title.id = 'lifeLostTitle';
-    title.textContent = read('ui.lives.title');
+    title.textContent = readShort('ui.lives.title');
     const text = document.createElement('p');
     text.id = 'lifeLostText';
-    text.textContent = lifeLostText(event, read);
+    text.textContent = lifeLostText(event, readShort);
+    const more = document.createElement('details');
+    const summary = document.createElement('summary');
+    summary.textContent = 'More';
+    const full = document.createElement('p');
+    full.textContent = lifeLostText(event, read);
+    more.append(summary, full);
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'choice';
-    button.textContent = read('ui.lives.again');
+    button.textContent = readShort('ui.lives.again');
     button.addEventListener('click', onTryAgain);
-    // This card has one action. Keep keyboard focus there until the player continues.
+    // Keep keyboard focus on More and Try again until the player continues.
     card.addEventListener('keydown', (e) => {
-      if (e.key === 'Tab') { e.preventDefault(); button.focus(); }
+      if (e.key !== 'Tab') return;
+      if (e.shiftKey && e.target === summary) { e.preventDefault(); button.focus(); }
+      else if (!e.shiftKey && e.target === button) { e.preventDefault(); summary.focus(); }
     });
-    card.append(title, text, button);
+    card.append(title, text, more, button);
     return card;
   }
 

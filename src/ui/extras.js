@@ -9,7 +9,7 @@ import { contributions, rates } from '../campaign/engine.js';
 import { missions, tracker } from '../campaign/missions.js';
 import { howTo } from './mission-hints.js';
 import { hazards, meterReport, METER_HELP } from '../campaign/hazards.js';
-import { t, hasString } from '../flow/strings.js';
+import { t, short, hasString } from '../flow/strings.js';
 import { play } from './audio.js';
 
 const $ = (id) => document.getElementById(id);
@@ -17,6 +17,9 @@ const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls)
 const fmt = (n) => `${n > 0 ? '+' : ''}${Math.abs(n) < 10 ? n.toFixed(1) : Math.round(n)}`;
 const METER_NAME = { power: 'Power', heat: 'Heat', water: 'Water', oxygen: 'Oxygen', food: 'Food', morale: 'Morale', sp: 'Spare Parts', hp: 'HP' };
 const ICONS = { alarm: '\u{1F6A8}', warn: '⚠️', info: 'ℹ️' };
+const shortTitle = (id, fallback) => short(id) === id ? fallback : short(id);
+const missionTitle = (m) => shortTitle(`mission.${m.id}.title`, m.title);
+const TRACKER_OTHER_LIMIT = 3; // gameplay: keep the tracker small and calm.
 
 export function createExtras({ s, ui, openMap }) {
   // ---------------------------------------------------------------- tracker
@@ -38,18 +41,26 @@ export function createExtras({ s, ui, openMap }) {
   };
 
   function renderTracker() {
-    const list = tracker(s).map((m) => ({ ...m, how: howTo(s, m) }));
+    const tracked = tracker(s);
+    const list = [...tracked.filter((m) => m.state === 'current'), ...tracked.filter((m) => m.state !== 'current').slice(0, TRACKER_OTHER_LIMIT)]
+      .map((m) => ({ ...m, how: howTo(s, m) }));
     const sig = JSON.stringify(list.map((m) => [m.id, m.progress, m.state, m.how]));
     if (sig === trSig) return;
     trSig = sig;
     tr.innerHTML = '<div class="trhead">MISSIONS</div>';
     for (const m of list) {
-      const row = el('div', `tr ${m.state}`);
-      row.innerHTML = `<b>${m.title}</b>${m.progress ? `<i style="width:${(m.progress[0] / m.progress[1]) * 100}%"></i>` : ''}${m.state === 'current' ? `<small>${m.why}</small>${m.how ? `<small class="how">${m.how}</small>` : ''}` : ''}`;
-      row.addEventListener('click', () => { play('click'); focusOn(m.focus); });
+      const row = el('button', `tr ${m.state}`);
+      row.type = 'button';
+      row.textContent = missionTitle(m);
+      row.addEventListener('click', () => {
+        play('click');
+        ui.openModal(`<div class="card"><div class="hd">Mission</div><h2>${missionTitle(m)}</h2><p>${m.why}</p>${m.how ? `<p>${m.how}</p>` : ''}${m.focus ? '<button class="choice" id="missionFocus">Show me</button>' : ''}<button class="choice" id="missionClose">Close</button></div>`, `mission:${m.id}`);
+        $('missionFocus')?.addEventListener('click', () => focusOn(m.focus));
+        $('missionClose').addEventListener('click', ui.closeModal);
+      });
       tr.append(row);
     }
-    if (!list.length) tr.append(el('div', 'tr done', '<b>All story missions done!</b><small>Free-Play: keep the base thriving.</small>'));
+    if (!list.length) tr.append(el('div', 'tr done', '<b>All missions done!</b>'));
     const more = el('button', '', 'All missions');
     more.id = 'allMissions';
     more.addEventListener('click', () => { play('click'); showMissions(); });
@@ -114,7 +125,7 @@ export function createExtras({ s, ui, openMap }) {
     thSig = sig;
     bar.innerHTML = '';
     for (const h of list) {
-      const chip = el('button', `chip ${h.severity}`, `${ICONS[h.severity]} ${h.title}`);
+      const chip = el('button', `chip ${h.severity}`, `${ICONS[h.severity]} ${shortTitle(`hazard.${h.id}.title`, h.title)}`);
       chip.title = h.detail;
       chip.addEventListener('click', () => { play('click'); showHazard(h); });
       bar.append(chip);

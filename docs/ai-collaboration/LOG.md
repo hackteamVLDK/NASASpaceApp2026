@@ -19,3 +19,6 @@ One row per delegated task, newest last. Written by `tools/codex/delegate.mjs`.
 | 2026-11-15 10:26 | [Lives, checkpoints, rewind and danger](records/20261115-112622-lives-checkpoints.md) | simulation | write | 0 | 8 |
 | 2026-11-15 10:26 | [Decisions that change the game](records/20261115-112631-decision-consequences.md) | simulation | write | 0 | 5 |
 | 2026-11-15 10:52 | [Structural decision branches](records/20261115-115248-decision-branches.md) | simulation | write | 0 | 6 |
+| 2026-11-15 11:27 | [Short-text table (max 4 words)](records/20261115-122724-short-text.md) | proposal | write | 0 | 2 |
+| 2026-11-15 11:34 | [Spoken lines for ASTRA's voice](records/20261115-123443-spoken-text.md) | proposal | write | 0 | 2 |
+| 2026-11-15 11:27 | [Calm interface with short text](records/20261115-122735-calm-ui.md) | proposal | write | 0 | 12 |

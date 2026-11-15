@@ -28,9 +28,42 @@ export const ASTRA = Object.freeze({
 
 // ---------------------------------------------------------------- guide state (a small queue)
 
+// gameplay: presentation pacing, not simulation time or a Mars measurement.
+export const PLAY_HOLD_MS = 12_000;
+export const ASTRA_POPUP_INTERVAL_MS = 20_000;
+export const TOAST_INTERVAL_MS = 6_000;
+export const isUrgentLine = (line) => line.mood === 'alert'
+  || /^(astra\.(lives\.|res\.|flare|hp\.|tut\.)|astra\.intro\.status$)/.test(line.lineId ?? line.id ?? '');
+export const isLowValueLine = (line) => !isUrgentLine(line) && (
+  /^astra\..*\.fact[^.]*|^astra\.(char\.|logbook\.|badge\.)|^astra\.act\d+\.title$/.test(line.lineId ?? line.id ?? '')
+  || /(?:fact.*(?:science )?logbook|(?:science )?logbook.*fact)/i.test(line.message ?? ''));
+
+/** Raw compatibility messages keep their first sentence, including decimal numbers. */
+export const firstSentence = (message) => message.match(/^.*?[.!?](?=\s|$)/s)?.[0] ?? message;
+export const canShowToast = (nowMs, lastMs) => nowMs - lastMs >= TOAST_INTERVAL_MS;
+
+/** Promote only into an empty panel. Undismissed play lines stay as long as needed. */
+export function advanceGuide(guide, nowMs = guide.nowMs) {
+  guide.nowMs = nowMs;
+  if (guide.current || !guide.queue.length) return guide;
+  const next = guide.queue[0];
+  if (!guide.auto && !isUrgentLine(next)
+      && nowMs - guide.lastShownAt < Math.max(PLAY_HOLD_MS, ASTRA_POPUP_INTERVAL_MS)) return guide;
+  guide.current = guide.queue.shift();
+  guide.lastShownAt = nowMs;
+  return guide;
+}
+
 /** A fresh guide: closed, nothing queued. */
 export function createGuide() {
-  return { current: null, queue: [], said: [] };
+  return { current: null, queue: [], said: [], history: [], nowMs: 0, lastShownAt: -Infinity, auto: false };
+}
+
+/** Archive card/radio text without scheduling another popup. */
+export function rememberLine(guide, lineId) {
+  if (!guide.history.some((entry) => entry.id === lineId)) {
+    guide.history.push({ id: lineId, lineId, message: t(lineId), mood: 'calm' });
+  }
 }
 
 /**
@@ -46,19 +79,24 @@ export function say(guide, line) {
   const message = line.lineId ? t(line.lineId) : line.message;
   if (!id || typeof message !== 'string' || !message) return guide;
   if (line.once && guide.said.includes(id)) return guide;
+  if (guide.current?.id === id || guide.queue.some((entry) => entry.id === id)) return guide;
   const mood = ASTRA.moods.includes(line.mood) ? line.mood : 'calm';
   const entry = { id, lineId: line.lineId ?? null, message, mood, button: line.button || ASTRA.buttons.done };
   if (line.fact) entry.fact = line.fact;
   if (!guide.said.includes(id)) guide.said.push(id);
-  if (guide.current) guide.queue.push(entry);
-  else guide.current = entry;
-  return guide;
+  if (!guide.history.some((item) => item.id === id)) guide.history.push(entry);
+  if ((guide.current || guide.queue.length || guide.nowMs - guide.lastShownAt < ASTRA_POPUP_INTERVAL_MS) && isLowValueLine(entry)) return guide;
+  if (isUrgentLine(entry)) {
+    const before = guide.queue.findIndex((item) => !isUrgentLine(item));
+    guide.queue.splice(before < 0 ? guide.queue.length : before, 0, entry);
+  } else guide.queue.push(entry);
+  return advanceGuide(guide);
 }
 
 /** The player dismissed the panel: show the next queued line, or slide out. */
 export function dismiss(guide) {
-  guide.current = guide.queue.shift() ?? null;
-  return guide;
+  guide.current = null;
+  return advanceGuide(guide);
 }
 
 /** Props for <AstraGuidePanel>, exactly as named in the scenario: { isOpen, lineId, mood, onClose }. */

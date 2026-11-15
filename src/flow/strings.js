@@ -8,6 +8,29 @@ let table = {};
 let vars = {};
 let base = {}; // from SCENARIO.md (content/data/strings.en.json)
 let extra = {};
+let shortTable = {};
+
+/** Presentation overrides only; the complete scenario strings are never replaced. */
+export function setShortStrings(obj) {
+  shortTable = { ...shortTable, ...obj };
+}
+
+export function short(id, extra) {
+  if (!Object.hasOwn(shortTable, id)) return t(id, extra);
+  const values = { ...vars, ...extra };
+  return shortTable[id].replace(/\{(\w+)\}/g, (match, key) => Object.hasOwn(values, key) ? String(values[key]) : match);
+}
+
+let spokenTable = {};
+/** ASTRA's spoken versions (src/ui/spoken-text.js): one or two short sentences, what her voice says and what More shows. */
+export function setSpokenStrings(obj) {
+  spokenTable = { ...spokenTable, ...obj };
+}
+export function spoken(id, extra) {
+  if (!Object.hasOwn(spokenTable, id)) return t(id, extra);
+  const values = { ...vars, ...extra };
+  return spokenTable[id].replace(/\{(\w+)\}/g, (match, key) => Object.hasOwn(values, key) ? String(values[key]) : match);
+}
 
 export function setStrings(obj) {
   base = obj;

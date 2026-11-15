@@ -4,7 +4,7 @@
  * as SCENARIO.md describes. The campaign simulation (src/campaign) runs only while playing;
  * the screen reads its state and sends commands, it never edits it.
  */
-import { loadStrings, setStringVars, t, addStrings } from './flow/strings.js';
+import { loadStrings, setStringVars, t, short, addStrings, setShortStrings, setSpokenStrings } from './flow/strings.js';
 import { earthMarsLinkForSol, formatDelay } from './data/nasa/lightTime.js';
 import { loadAtlas } from './render/atlas.js';
 import { drawCampaign, buildSoil, createWalker, SCREEN } from './render/campaign-world.js';
@@ -13,10 +13,10 @@ import { garageSpots, entryGeometry } from './render/geometry.js';
 import { createCampaign, step, command, clockAt, droneFixBlock } from './campaign/engine.js';
 import { prefs, setPref, applyPrefs } from './ui/prefs.js';
 import { restoreSave } from './campaign/save-migrate.js';
-import { SECONDS_PER_SOL, SOL, RECIPES, MODULES } from './campaign/data.js';
+import { SECONDS_PER_SOL, SOL, MODULES } from './campaign/data.js';
 import { openingFrameAt, cuesBetween, skipTarget, T, GAMEPLAY_VIEW, flowStateAt, astronautPathAt, entryDoorsAt, storyAt, nextPanelAt, storyCuesBetween, BRIEFING_AT } from './flow/intro.js';
 import { drawStory } from './render/intro-story.js';
-import { createGuide, say } from './flow/astra.js';
+import { createGuide, say, rememberLine, canShowToast, firstSentence } from './flow/astra.js';
 import { createAstraPanel } from './ui/astra-panel.js';
 import { createUi, miniTitle } from './ui/campaign-ui.js';
 import { unlockFor, checkBadges } from './campaign/logbook.js';
@@ -29,6 +29,9 @@ import { createJobsPanel, STRINGS as JOB_PANEL_STRINGS } from './ui/jobs-panel.j
 import { STRINGS as LIVES_UI_STRINGS } from './ui/lives-ui.js';
 import { jobBoard, STRINGS as JOB_STRINGS } from './campaign/jobs.js';
 import { STRINGS as LIVES_STRINGS } from './campaign/lives.js';
+import { SHORT } from './ui/short-text.js';
+import { SPOKEN } from './ui/spoken-text.js';
+import { loadVoice, setVoiceVolume, stop as stopVoice } from './ui/astra-voice.js';
 import { choicePreview, STRINGS as CHOICE_STRINGS } from './campaign/choices-data.js';
 import * as audio from './ui/audio.js';
 
@@ -114,7 +117,7 @@ window.addEventListener('pointerdown', () => audio.unlock(), { capture: true });
 window.addEventListener('keydown', () => audio.unlock(), { capture: true });
 /** Sound off is remembered between visits: say so once at the start, so silence is not mistaken for a bug. */
 function remindIfMuted() {
-  if (audio.director.settings.muted) toast('Sound is off. Tap the speaker button (top right) to turn it on.', 4500);
+  if (audio.director.settings.muted) toast('Sound is off', 4500);
 }
 if (muteBtn) showMute();
 
@@ -132,13 +135,15 @@ function openSettings() {
     <label class="setrow"><span>Effects volume</span><input type="range" id="setSfx" min="0" max="100" value="${pct(st.sfxVolume)}" aria-label="Sound effects volume"><b id="setSfxV">${pct(st.sfxVolume)}%</b></label>
     <label class="setrow check"><input type="checkbox" id="setMotion" ${prefs.reduceMotion ? 'checked' : ''}><span>Reduce motion <small>(no screen shake, no pulsing)</small></span></label>
     <label class="setrow check"><input type="checkbox" id="setLarge" ${prefs.largeText ? 'checked' : ''}><span>Large text</span></label>
+    <label class="setrow check"><input type="checkbox" id="setVoice" ${prefs.voice ? 'checked' : ''}><span>ASTRA voice <small>(she reads her lines aloud)</small></span></label>
     <button class="choice" id="setOk">Done</button></div>`, 'settings');
   const bind = (id, fn) => $(id).addEventListener('input', (e) => { const v = Number(e.target.value) / 100; fn(v); $(`${id}V`).textContent = `${e.target.value}%`; });
-  bind('setMaster', (v) => { audio.unlock(); audio.director.setMasterVolume(v); });
+  bind('setMaster', (v) => { audio.unlock(); audio.director.setMasterVolume(v); setVoiceVolume(v); });
   bind('setMusic', (v) => { audio.unlock(); audio.director.setMusicVolume(v); });
   bind('setSfx', (v) => { audio.unlock(); audio.director.setSfxVolume(v); audio.play('click'); }); // C15: the effects have their own slider; a click lets the player hear the level
   $('setMotion').addEventListener('change', (e) => setPref('reduceMotion', e.target.checked));
   $('setLarge').addEventListener('change', (e) => setPref('largeText', e.target.checked));
+  $('setVoice').addEventListener('change', (e) => { setPref('voice', e.target.checked); if (!e.target.checked) stopVoice(); });
   $('setOk').addEventListener('click', () => ui.closeModal());
   $('setMaster').focus();
 }
@@ -158,39 +163,41 @@ function updateLightTime() {
 }
 
 let toastShowing = null; // { prio, until } of the message on the screen
-const toastQueue = []; // lower-priority messages that arrived while a warning was showing
-/** A short message. A warning (prio 2) is never covered by a cheerful one: those wait their turn. */
+let lastToastAt = -Infinity;
+/** gameplay: at most one toast per six seconds; missed toasts are never queued. */
 function toast(text, ms = 2600, prio = 0) {
-  if (toastShowing && performance.now() < toastShowing.until && toastShowing.prio > prio) { if (toastQueue.length < 3) toastQueue.push({ text, ms, prio }); return; }
+  if (!canShowToast(performance.now(), lastToastAt)) return false;
+  if (toastShowing && performance.now() < toastShowing.until) return false;
   showToast(text, ms, prio);
+  return true;
 }
 function showToast(text, ms, prio) {
   const el = $('toast');
-  el.textContent = text;
+  // Compatibility events and rejected commands can still arrive as raw English.
+  el.textContent = firstSentence(text).trim().split(/\s+/).slice(0, 4).join(' ');
   el.hidden = false;
   el.classList.toggle('alert', prio > 0);
   toastShowing = { prio, until: performance.now() + ms };
+  lastToastAt = performance.now();
   clearTimeout(toast.timer);
   toast.timer = setTimeout(() => {
     el.hidden = true;
     toastShowing = null;
-    const next = toastQueue.shift();
-    if (next) showToast(next.text, next.ms, next.prio);
   }, ms);
 }
 
 /** Unlock Logbook cards for a trigger key and announce them (SCENARIO 8.1). */
 function trigger(key) {
   const fresh = unlockFor(s, key);
-  for (const id of fresh) {
-    toast(`${t('ui.logbook.new_card')} ${t(`card.${id}.title`)}`, 3200);
+  for (const _id of fresh) {
+    ui?.notifyLogbook(1);
     if (s.logbook.length === 1) say(guide, { lineId: 'astra.logbook.first', mood: 'cheerful' });
   }
 }
 function sayLine(lineId, mood) { say(guide, { lineId, mood }); trigger(lineId); }
 function checkAllBadges() {
-  for (const id of checkBadges(s)) {
-    toast(`${t('ui.badge.earned')} ${t(`badge.${id}.name`)}`, 3500);
+  for (const _id of checkBadges(s)) {
+    ui?.notifyLogbook(1);
     audio.play('win');
     if (s.badges.length === 1) say(guide, { lineId: 'astra.badge.first', mood: 'cheerful' });
   }
@@ -210,15 +217,15 @@ function handleEvents(events) {
       case 'log': say(guide, { lineId: e.lineId, mood: 'calm' }); break;
       case 'launched': rover.phase = 'boarding'; rover.boardAt = worldMs; break;
       case 'returned': rover.phase = 'in'; rover.t0 = worldMs; ui.showLoot(e); break;
-      case 'queued': toast(`${NICK[e.drone] ?? 'The drone'} will do that next.`); break;
-      case 'drone-fix': toast(e.deferred ? `${NICK[e.drone] ?? 'A drone'} is on it. It takes a Sol.` : `${NICK[e.drone] ?? 'A drone'} does the checks for you and is busy for a Sol.`, 3600, 2); break; // B2: the answer to what the player just chose: it is not covered by a standing warning
+      case 'queued': toast('Drone job queued'); break;
+      case 'drone-fix': toast('Drone busy: one Sol', 3600, 2); break;
       case 'drone-fixed': toast(`${NICK[e.drone] ?? 'A drone'} fixed it!`, 3200); break;
       case 'ordered': break;
       case 'finale': checkAllBadges(); ui.showFinale(); break;
       case 'gameover': onGameOver(); break;
       case 'life-lost': ui.handleEvent(e); break;
       case 'rewind': onRewind(e); break;
-      case 'job-done': if (e.win) toast(e.reward ? `Job done! ${e.reward}` : 'Job done!', 3200); break;
+      case 'job-done': if (e.win) toast('Job done!', 3200); break;
       case 'toast': toast(e.text); break;
       case 'emergency': toast(`Emergency: ${e.kind}!`, 4000); break;
       case 'built': toast('Room finished!'); break;
@@ -262,14 +269,14 @@ function openMini(game, { onDone = null, job = null } = {}) {
     done: () => { closeMini(); onDone?.(true); },
   } : undefined;
   const win = () => { closeMini(); finish(true); onDone?.(true); };
-  if (game === 'solar_wipe') mini = startSolarWipe({ ...common, help, title: t('ui.mg.solar_wipe.title'), hint: 'Swipe across the panels to wipe the dust. Sparkly sticky spots need a few extra wipes.', onWin: () => { closeMini(); onSolarWin(); onDone?.(true); } });
-  else if (game === 'battery') mini = startBatteryStep({ ...common, title: 'Wake up Drone #01', hint: 'Drag the charged battery into the hatch, then plug in the cable.', onDone: () => { closeMini(); onBatteryDone(); } });
+  if (game === 'solar_wipe') mini = startSolarWipe({ ...common, help, title: short('ui.mg.solar_wipe.title'), hint: 'Wipe the panels!', onWin: () => { closeMini(); onSolarWin(); onDone?.(true); } });
+  else if (game === 'battery') mini = startBatteryStep({ ...common, title: 'Wake Drone #01', hint: 'Battery, then cable', onDone: () => { closeMini(); onBatteryDone(); } });
   else if (hasJobMini(game)) { // the job games end after each round: a lost round starts again at once (free retry, SCENARIO section 4)
-    const round = () => { mini = startJobMini(game, { ...common, title: t(`ui.mg.${game}.title`), hint: t(`ui.mg.${game}.hint`), onWin: win, onFail: () => { if (mini && !$('mgWrap').hidden) round(); } }); };
+    const round = () => { mini = startJobMini(game, { ...common, title: short(`ui.mg.${game}.title`), hint: short(`ui.mg.${game}.hint`), onWin: win, onFail: () => { if (mini && !$('mgWrap').hidden) round(); } }); };
     round();
   }
   else if (hasMini2(game)) mini = startMini2(game, { ...common, help, delaySeconds, liner: Boolean(s.upgrades?.suit_liner) /* Suit Seal Check: one more thing to drag (SCENARIO 4.8) */, dishBent: Boolean(s.flags.dishBent) /* Dish Antenna: step 1 after a storm (SCENARIO 4.9) */, title: miniTitle(game), hint: '' /* the game's own line at the top says what to do; a second generic line only adds reading */, onWin: win, onFail: () => finish(false) });
-  else { toast('That job is not ready yet.'); $('mgWrap').hidden = true; }
+  else { toast('Job not ready'); $('mgWrap').hidden = true; }
 }
 function closeMini() {
   mini?.destroy();
@@ -359,7 +366,7 @@ function save() {
   if (s.status === 'over') return; // a finished mission is not saved
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(s)); } catch {
     // B3: say it once instead of failing silently (private windows and some school computers block storage)
-    if (!saveWarned) { saveWarned = true; toast('Your progress cannot be saved in this browser (storage is blocked). Keep this tab open to keep playing.', 6000, 1); }
+    if (!saveWarned) { saveWarned = true; toast('Keep this tab open', 6000, 1); }
   }
 }
 
@@ -379,7 +386,7 @@ function onRewind() {
   rover.phase = s.away ? 'gone' : 'parked';
   rover.k = 0;
   // warnings about the moment before the rewind (Low HP, an empty tank) no longer apply: clear them and let them fire again if still true
-  clearTimeout(toast.timer); $('toast').hidden = true; toastShowing = null; toastQueue.length = 0;
+  clearTimeout(toast.timer); $('toast').hidden = true; toastShowing = null;
   activeHazards.clear(); warned.clear();
   guide.current = null; guide.queue.length = 0; // lines about the future that was undone; the rewind line comes right after this event
   ui.handleEvent({ type: 'rewind' });
@@ -460,17 +467,16 @@ function pickInWorld(id) {
     ui.setTab('base');
     ui.revealSelected();
     if (!m || !MODULES[mod]) return;
-    const nm = t(MODULES[mod].nameId);
-    const msg = m.status === 'unbuilt' ? `${nm}: not built yet. Tap Build in the Base list, or tap an awake drone and then this frame.`
-      : m.status === 'building' ? `${nm}: building, ${Math.round(m.progress * 100)}% done.`
-        : `${nm}: ${m.tier === 2 ? 'Tier 2, working' : 'working'}.`;
+    const msg = m.status === 'unbuilt' ? 'Tap Build'
+      : m.status === 'building' ? `Building: ${Math.round(m.progress * 100)}%`
+        : 'Room working';
     toast(msg, 3200);
   } else if (id.startsWith('drone:')) {
     ui.setTab('drones');
     ui.revealSelected();
-    toast(`${NICK[id.slice(6)] ?? 'Drone'} is ready. Now tap a room frame to send it there.`, 3200);
+    toast('Tap a room frame', 3200);
   } else if (id === 'crew:cmdr') {
-    toast('Commander selected. Tap a room, or the ground outside, to walk there.', 3200);
+    toast('Tap somewhere to walk', 3200);
   }
 }
 
@@ -479,7 +485,7 @@ const KIT = { 'drone-02': 'repair_kit', 'drone-03': 'reboot_kit' };
 function wakeDrone(d) {
   const kit = KIT[d.id];
   if (kit && (s.kits[kit] ?? 0) > 0) { send({ type: 'useKit', kit, drone: d.id }); return; }
-  toast(kit ? `${NICK[d.id]} is asleep. Craft a ${t(RECIPES[kit].nameId)} in the Workshop, then tap ${NICK[d.id]} again.` : `${NICK[d.id]} is asleep.`, 4200);
+  toast(kit ? 'Craft a drone kit' : 'Drone is asleep', 4200);
   if (kit) ui.setTab('workshop');
 }
 
@@ -558,12 +564,14 @@ function warnNewHazards(nowMs) {
   let shown = false;
   for (const h of [...list].sort((a, b) => (b.severity === 'alarm') - (a.severity === 'alarm'))) {
     if (activeHazards.has(h.id)) continue;
-    activeHazards.add(h.id);
-    if (h.severity === 'info' || shown || nowMs - (warned.get(h.id) ?? -1e9) < 45000) continue; // one toast at a time, and not again within 45 s
-    warned.set(h.id, nowMs);
-    shown = true;
-    toast(`${h.severity === 'alarm' ? '\u{1F6A8}' : '⚠️'} ${h.title}: ${h.detail}`, 6000, 2);
-    audio.play('alert');
+    if (h.severity === 'info' || nowMs - (warned.get(h.id) ?? -1e9) < 45000) { activeHazards.add(h.id); continue; }
+    if (shown) continue;
+    if (toast(short(`hazard.${h.id}.title`) === `hazard.${h.id}.title` ? h.title : short(`hazard.${h.id}.title`), 6000, 2)) {
+      activeHazards.add(h.id); // retry a still-active warning after cooldown; never queue stale warnings
+      warned.set(h.id, nowMs);
+      shown = true;
+      audio.play('alert');
+    }
   }
   for (const id of [...activeHazards]) if (!present.has(id)) activeHazards.delete(id);
 }
@@ -638,7 +646,7 @@ function loop(now) {
     render(now);
   } catch (err) {
     console.error(err);
-    toast(`Error: ${err.message}`, 8000);
+    toast('Please reload the game', 8000);
   }
   requestAnimationFrame(loop);
 }
@@ -648,6 +656,10 @@ function loop(now) {
 async function boot() {
   const bar = document.querySelector('#loadbar i');
   await loadStrings();
+  setShortStrings(SHORT); // what the screen shows: max 4 words (src/ui/short-text.js)
+  setSpokenStrings(SPOKEN); // what ASTRA's voice says and More shows (src/ui/spoken-text.js)
+  await loadVoice();
+  setVoiceVolume(audio.director.settings?.muted ? 0 : audio.director.settings?.masterVolume ?? 1);
   addStrings({ ...LIVES_STRINGS, ...CHOICE_STRINGS, ...JOB_STRINGS, ...LIVES_UI_STRINGS, ...JOB_PANEL_STRINGS, ...JOB_MG_STRINGS }); // lines that are not in SCENARIO.md yet
   atlas = await loadAtlas((f) => { bar.style.width = `${f * 100}%`; });
   soil = buildSoil(atlas);
@@ -655,7 +667,7 @@ async function boot() {
   guide = createGuide();
   astra = createAstraPanel(guide, atlas);
   const mountJobs = (host) => { const panel = createJobsPanel({ s, send, openMini, jobBoard }); host.append(panel.el); panel.update(); mountJobs.count = panel.count; return panel; };
-  ui = createUi({ atlas, s, send, openMini, mountJobs, choicePreview });
+  ui = createUi({ atlas, s, send, openMini, mountJobs, choicePreview, astraLog: () => guide.history, rememberLine: (id) => rememberLine(guide, id) });
   ui.launch = launchWithPrep;
   extras = createExtras({ s, ui, openMap: () => ui.showMap(launchWithPrep) });
   void savedSol;
@@ -663,7 +675,7 @@ async function boot() {
   const restored = raw && raw.status !== 'over' ? restoreSave(raw) : null; // B4: check and upgrade before loading
   const saved = restored?.ok ? restored.state : null;
   if (restored && !restored.ok) {
-    toast(`Your saved mission could not be loaded (${restored.reason}). Start a new mission!`, 6000);
+    toast('Please start a mission', 6000);
     if (!restored.newer) { // B4: keep a copy of the damaged save, and do not complain again on every visit; a save from a newer build stays where it is
       try { localStorage.setItem(`${SAVE_KEY}-damaged`, localStorage.getItem(SAVE_KEY)); localStorage.removeItem(SAVE_KEY); } catch { /* storage may be blocked */ }
     }

@@ -227,6 +227,19 @@ html.reduce-motion .choice.shake { animation: none; }
 .choice-option > .choice { display: block; width: 100%; min-height: 44px; }
 .card .choice-preview { margin: 10px 0 0; padding-left: 22px; font-size: 17px; line-height: 1.4; color: #c9e5f5; }
 .choice-preview li { margin: 4px 0; overflow-wrap: anywhere; }
+
+/* gameplay: short summaries first; the full scenario stays one tap away. */
+#astraText { font-size: 26px; font-weight: 700; min-height: 64px; }
+#astra #astraMore { margin: 0 12px 8px; font-size: 15px; min-height: 44px; }
+#astraDetail { margin: 0 12px 12px; max-height: 240px; overflow: auto; font-size: 17px; line-height: 1.45; }
+#astraDetail[hidden] { display: none; }
+#astraBtn, summary { min-height: 44px; }
+summary { cursor: pointer; padding: 10px 0; color: var(--cyan); }
+summary:focus-visible, .tr:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+#tracker .tr { display: block; width: 100%; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 44px; }
+.logbook-badge { display: inline-block; margin-left: 5px; padding: 1px 5px; border-radius: 10px; background: var(--amber); color: #04121c; font-size: 13px; }
+.module-more { width: 100%; }
+.decision-more { margin-bottom: 14px; }
 #tabBar button { min-height: 44px; }
 .jobs-badge { display: inline-block; margin-left: 5px; padding: 1px 5px; background: var(--amber); color: #05121c; border-radius: 3px; font-size: 12px; }
 @media (prefers-reduced-motion: reduce) { .life-heart.lost, .life-heart.lost path { animation: none; } }

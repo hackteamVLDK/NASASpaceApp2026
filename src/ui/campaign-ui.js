@@ -7,7 +7,7 @@
 import { MODULES, RECIPES, UPGRADES, LAYOUT, RULES } from '../campaign/data.js';
 import { moduleInfo, clockAt, online, recipeCost, soilWashBlock } from '../campaign/engine.js';
 import { EXPEDITIONS, hpCost, durationMinutes, awayProgress, expectedLoot } from '../campaign/expeditions.js';
-import { t, hasString } from '../flow/strings.js';
+import { t, short, hasString } from '../flow/strings.js';
 import { ICON } from '../render/atlas.js';
 import { play, director } from './audio.js';
 import { CARDS, STORY_CARDS, BADGES, buildReport, cardParagraphs } from '../campaign/logbook.js';
@@ -18,7 +18,7 @@ import { createLivesUi, usedTriesText, STRINGS } from './lives-ui.js';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
-const name = (id) => (hasString(id) ? t(id) : id);
+const name = (id) => short(id);
 const itemName = (it) => (hasString(`ui.item.${it}.name`) ? t(`ui.item.${it}.name`) : it.split('_').map((w) => w[0].toUpperCase() + w.slice(1)).join(' '));
 const costText = (c = {}) => [c.sp ? `${c.sp} SP` : null, c.water ? `${c.water} Water` : null, ...Object.entries(c.items ?? {}).map(([i, n]) => `${n}× ${itemName(i)}`)].filter(Boolean).join(', ');
 const MINI_NAME = { solar_wipe: 'ui.mg.solar_wipe.title', heat_pump: 'ui.mg.heat_pump_reroute.title', valve_balance: 'ui.mg.valve_balance.title', water_sort: 'ui.mg.water_sort.title', nutrient_match: 'ui.mg.nutrient_match.title', air_filter: 'ui.mg.air_filter_scrub.title', antenna: 'ui.mg.dish_antenna_alignment.title', wheel_vacuum: 'ui.mg.wheel_pebble_vacuum.title', suit_seal: 'ui.mg.suit_seal_check.title' };
@@ -36,9 +36,9 @@ const CARD_TOPICS = [
   [/message|contact|weather|tea/, 'alert'], [/quake|methane|leopard|bio|sample|scientist|pages/, 'research'],
 ];
 const cardIcon = (id) => ICON[CARD_TOPICS.find(([re]) => re.test(id))?.[1] ?? 'star'];
-export const miniTitle = (g) => (hasString(MINI_NAME[g]) ? t(MINI_NAME[g]) : g.replaceAll('_', ' '));
+export const miniTitle = (g) => (hasString(MINI_NAME[g]) ? short(MINI_NAME[g]) : g.replaceAll('_', ' '));
 
-export function createUi({ atlas, s, send, openMini, closeModalHook = () => {}, choicePreview = () => [], mountJobs = null }) {
+export function createUi({ atlas, s, send, openMini, closeModalHook = () => {}, choicePreview = () => [], mountJobs = null, astraLog = () => [], rememberLine = () => {} }) {
   const uiText = (id) => hasString(id) ? t(id) : STRINGS[id];
   const icon = (i, px = 28) => { const c = el('canvas'); c.width = c.height = 32; c.style.width = c.style.height = `${px}px`; atlas.cell(c.getContext('2d'), 'icons', i, 0, 0, 32, 32); return c; };
 
@@ -81,11 +81,16 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {}, 
   const side = $('side');
   side.innerHTML = `<section id="tabsBox"><div id="tabBar"></div><div id="tabBody"></div></section><section id="radioBox" hidden><h3>Rover radio</h3><div id="radioBar"><i></i></div><div id="radioLines"></div></section><section><button id="mapBtn" disabled>Crater map</button> <button id="reportBtn">Mission report</button></section>`;
   let tab = 'base';
+  let unreadLogbook = 0;
+  const logbookSeen = () => {
+    unreadLogbook = 0;
+    tabBar.querySelector('[data-tab="logbook"]')?.querySelector('.logbook-badge')?.remove();
+  };
   const tabBar = $('tabBar');
   for (const id of tabs) {
     const b = el('button', '', { base: 'Base', workshop: 'Workshop', drones: 'Drones', tasks: 'Tasks', logbook: 'Logbook', jobs: uiText('ui.jobs.tab') }[id]);
     b.dataset.tab = id;
-    b.addEventListener('click', () => { tab = id; sig = ''; play('uiTabSwitch'); });
+    b.addEventListener('click', () => { tab = id; if (id === 'logbook') logbookSeen(); sig = ''; play('uiTabSwitch'); });
     tabBar.append(b);
   }
   let sig = '';
@@ -138,13 +143,19 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {}, 
         row.append(b);
       }
       row.prepend(actions);
-      row.addEventListener('click', (e) => { if (e.target.tagName !== 'BUTTON') { selected = `module:${id}`; sig = ''; } });
+      const notes = [...row.children].filter((child) => child.classList.contains('why'));
+      if (notes.length) {
+        const more = el('details', 'module-more');
+        more.append(el('summary', '', 'More'), ...notes);
+        row.append(more);
+      }
+      row.addEventListener('click', (e) => { if (!e.target.closest('button, details')) { selected = `module:${id}`; sig = ''; } });
       body.append(row);
     }
   }
 
   function renderWorkshop(body) {
-    if (!online(s, 'workshop')) { body.append(el('p', 'why', 'Build the Workshop to craft parts.')); return; }
+    if (!online(s, 'workshop')) { body.append(el('p', 'why', 'Build the Workshop')); return; }
     if (s.crafting) body.append(el('div', 'craft', `Crafting: <b>${name(RECIPES[s.crafting.recipe].nameId)}</b> ${Math.round(s.crafting.progress * 100)}%`));
     for (const [id, r] of Object.entries(RECIPES)) {
       if (r.kind !== 'kit' && s.upgrades[id]) { body.append(el('div', 'mod done', `<div><b>${name(r.nameId)}</b><br><small>Crafted</small></div>`)); continue; }
@@ -171,7 +182,7 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {}, 
 
   function renderDrones(body) {
     const nick = { 'drone-01': 'Pip', 'drone-02': 'Bumble', 'drone-03': 'Zip' };
-    body.append(el('p', 'why', 'Tap a drone, then tap a room frame in the base to send it there. Each drone can keep 2 jobs waiting.'));
+    body.append(el('p', 'why', 'Drone, then room'));
     for (const d of s.drones) {
       const row = el('div', `mod ${selected === `drone:${d.id}` ? 'sel' : ''}`);
       const CHORES = { wash: 'Wash the soil', trays: 'Move the trays to the Kitchen', leak: 'Fix the airlock leak' };
@@ -194,10 +205,10 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {}, 
   }
 
   function renderTasks(body) {
-    if (!s.tasks.length) body.append(el('p', 'why', 'No jobs right now. Nice!'));
+    if (!s.tasks.length) body.append(el('p', 'why', 'All clear'));
     for (const task of s.tasks) {
       const row = el('div', 'mod');
-      row.innerHTML = `<div><b>${miniTitle(task.game)}</b><br><small>${task.why}</small></div>`;
+      row.innerHTML = `<div><b>${miniTitle(task.game)}</b><details><summary>More</summary><small>${task.why}</small></details></div>`;
       const b = el('button', '', 'Play');
       b.dataset.task = task.game;
       b.addEventListener('click', () => openMini(task.game));
@@ -207,6 +218,7 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {}, 
   }
 
   function renderLogbook(body) {
+    logbookSeen();
     body.append(el('h4', '', t('ui.logbook.title')));
     body.append(el('div', 'why', t('ui.logbook.count').replace('{unlocked}', s.logbook.length).replace('{total}', CARDS.length)));
     const grid = el('div', 'cards');
@@ -230,6 +242,18 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {}, 
     body.append(el('h4', '', 'Badges'));
     const earned = BADGES.filter((x) => s.badges.includes(x.id));
     body.append(el('div', 'inv', earned.length ? earned.map((x) => `<span title="${t(`badge.${x.id}.text`)}">\u{1F3C5} ${t(`badge.${x.id}.name`)}</span>`).join('') : '<small>Earn badges by doing real-world good practice.</small>'));
+    const history = el('details', 'astra-log');
+    history.append(el('summary', '', 'ASTRA notes'));
+    for (const line of astraLog()) {
+      const entry = el('details');
+      const label = el('summary');
+      label.textContent = line.lineId ? short(line.lineId) : 'ASTRA';
+      const full = el('p');
+      full.textContent = line.lineId ? t(line.lineId) : line.message;
+      entry.append(label, full);
+      history.append(entry);
+    }
+    body.append(history);
   }
 
   function showCard(c) {
@@ -309,19 +333,26 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {}, 
     const prefix = radio ? `ui.${id}` : `ui.${id}`;
     const warm = id.startsWith('e') && id !== 'e4';
     const urgent = id === 'd5' || id === 'e1';
-    const head = radio ? 'ASTRA 6.7 // RADIO DECISION' : t(`ui.${id}.header`);
-    const body = radio ? t(`radio.${id}`) : t(`astra.${id}.alert`);
+    const head = radio ? 'Radio decision' : short(`ui.${id}.header`);
+    const bodyId = radio ? `radio.${id}` : `astra.${id}.alert`;
+    rememberLine(bodyId);
     const choices = radio ? ['a', 'b'] : ['a', 'b', 'c'];
     const card = el('div', `card ${urgent ? 'urgent' : 'warn'}`);
-    card.innerHTML = `<div class="hd">${head}</div>${radio ? '' : `<h2>${t(`ui.${id}.title`)}</h2>`}<p>${body}</p><div class="choices"></div>`;
+    card.innerHTML = `<div class="hd">${head}</div>${radio ? '' : `<h2>${short(`ui.${id}.title`)}</h2>`}<p>${short(bodyId)}</p><details class="decision-more"><summary>More</summary><p>${t(bodyId)}</p></details><div class="choices"></div>`;
+    const detail = card.querySelector('.decision-more');
     const box = card.querySelector('.choices');
     for (const c of choices) {
       if (id === 'e1' && c === 'c' && !s.flags.flareWarned) continue;
       const labelId = radio ? `${prefix}.${c}.label` : `ui.${id}.${c}.label`;
+      rememberLine(labelId);
       // D-T1 / A22: a choice the engine would refuse (not enough Spare Parts or Water, no Garage yet) is greyed out and says why.
       // The sim is stopped while the card is open, so what is true now stays true until the player answers.
       const why = !radio && s.pending?.id === id ? choiceBlock(s, s.pending, c) : null;
-      const b = el('button', `choice${why ? ' blocked' : ''}`, `<span class="k">${c.toUpperCase()}</span><span class="lbl">${t(labelId)}</span>${why ? `<small class="why">${why}</small>` : ''}`);
+      const b = el('button', `choice${why ? ' blocked' : ''}`, `<span class="k">${c.toUpperCase()}</span><span class="lbl">${short(labelId)}</span>${why ? '<small class="why">Not ready</small>' : ''}`);
+      const fullLabel = el('p');
+      fullLabel.textContent = `${c.toUpperCase()}: ${t(labelId)}${why ? ` — ${why}` : ''}`;
+      detail.append(fullLabel);
+      if (why) { b.title = why; b.addEventListener('click', () => { detail.open = true; }); }
       b.dataset.choice = c;
       if (why) b.setAttribute('aria-disabled', 'true'); // not `disabled`: it stays focusable and a tap still explains itself
       b.addEventListener('click', () => {
@@ -354,9 +385,8 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {}, 
   }
 
   function showActCard(lineId) {
-    const card = el('div', 'actcard', `<div>${t(lineId)}</div>`);
-    $('stage').append(card);
-    setTimeout(() => card.remove(), 3600);
+    // Act titles are available in the Logbook; avoid a second transient popup.
+    send({ type: 'say', lineId });
   }
 
   function showLoot(ev) {
@@ -402,6 +432,7 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {}, 
     lastRes = {};
     for (const e of Object.values(G)) delete e.g.dataset.trend;
     radioLines.length = 0;
+    radioSignature = '';
     $('radioLines').replaceChildren();
     $('radioBar').firstElementChild.style.width = '0%';
     $('stage').querySelectorAll('.actcard').forEach((card) => card.remove());
@@ -469,6 +500,7 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {}, 
 
   // ---------------------------------------------------------------- radio log
   const radioLines = [];
+  let radioSignature = '';
   const ui = {
     launch: () => {},
     gauges: G,
@@ -478,7 +510,16 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {}, 
     revealSelected() { revealPending = true; },
     get selected() { return selected; },
     highlight(id) { for (const e of Object.values(G)) e.g.classList.toggle('pulse', e.d.id === id); },
-    pushRadio(id) { radioLines.push(hasString(id) ? t(id) : id); if (radioLines.length > 6) radioLines.shift(); sig = ''; },
+    pushRadio(id) { rememberLine(id); radioLines.push(id); if (radioLines.length > 6) radioLines.shift(); sig = ''; },
+    notifyLogbook(count = 1) {
+      if (tab === 'logbook') { sig = ''; return; }
+      unreadLogbook += count;
+      const button = tabBar.querySelector('[data-tab="logbook"]');
+      button.querySelector('.logbook-badge')?.remove();
+      const badge = el('span', 'logbook-badge');
+      badge.textContent = unreadLogbook;
+      button.append(badge);
+    },
     // main.js routes both new engine events here from its existing handleEvents dispatcher.
     handleEvent(event) {
       if (event.type === 'life-lost') showLifeLost(event);
@@ -514,17 +555,19 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {}, 
       $('radioBox').hidden = !a;
       if (a) {
         $('radioBar').firstElementChild.style.width = `${awayProgress(a, s.minute) * 100}%`;
-        const html = radioLines.map((l) => `<p>${l}</p>`).join('');
-        if ($('radioLines').innerHTML !== html) $('radioLines').innerHTML = html;
-      } else radioLines.length = 0;
+        const html = radioLines.map((id) => `<details><summary>${short(id)}</summary><p>${t(id)}</p></details>`).join('');
+        if (radioSignature !== html) { $('radioLines').innerHTML = html; radioSignature = html; }
+      } else { radioLines.length = 0; radioSignature = ''; }
       $('mapBtn').disabled = !online(s, 'garage');
-      const next = tab === 'jobs' ? tab : `${tab}|${selected}|${JSON.stringify([s.drones.map((d) => (d.queue ?? []).length), s.logbook.length, s.badges.length, s.res.sp | 0, s.items, s.kits, s.upgrades, s.tasks.length, s.crafting?.recipe, s.away?.id, s.drones.map((d) => d.status + (d.task?.module ?? '')), Object.values(s.modules).map((m) => m.status + m.tier + (m.upgrading ? `u${Math.floor(m.upgrading.progress * 20)}` : '') + (m.status === 'building' ? Math.floor(m.progress * 50) : Math.floor(m.progress * 10))), s.crafting ? Math.floor(s.crafting.progress * 20) : -1])}`;
+      const next = tab === 'jobs' ? tab : `${tab}|${selected}|${JSON.stringify([astraLog().length, s.drones.map((d) => (d.queue ?? []).length), s.logbook.length, s.badges.length, s.res.sp | 0, s.items, s.kits, s.upgrades, s.tasks.length, s.crafting?.recipe, s.away?.id, s.drones.map((d) => d.status + (d.task?.module ?? '')), Object.values(s.modules).map((m) => m.status + m.tier + (m.upgrading ? `u${Math.floor(m.upgrading.progress * 20)}` : '') + (m.status === 'building' ? Math.floor(m.progress * 50) : Math.floor(m.progress * 10))), s.crafting ? Math.floor(s.crafting.progress * 20) : -1])}`;
       if (next !== sig) {
         sig = next;
         const body = $('tabBody');
         const keepScroll = tab === shownTab ? body.scrollTop : 0; // a redraw (a build ticking on) must not throw the list back to the top
+        const openDetails = tab === shownTab ? [...body.querySelectorAll('details')].map((detail) => detail.open) : [];
         body.innerHTML = '';
         ({ base: renderBase, workshop: renderWorkshop, drones: renderDrones, tasks: renderTasks, logbook: renderLogbook, jobs: renderJobs })[tab](body);
+        [...body.querySelectorAll('details')].forEach((detail, i) => { detail.open = Boolean(openDetails[i]); });
         shownTab = tab;
         body.scrollTop = keepScroll;
         for (const b of tabBar.children) b.classList.toggle('on', b.dataset.tab === tab);
