@@ -90,7 +90,8 @@ export const BADGES = [
   ['under_the_blanket', (s) => s.modules.roof.status === 'online', 'soil_blanket'],
   ['panel_sweeper', (s) => s.stats.wipes >= 5, 'sticky_dust'],
   ['ice_miner', (s) => s.stats.melted >= 5, 'hidden_ice'],
-  ['well_rested', (s) => s.minute >= 7 * 1440 && s.stats.medRests === 0, 'sleep_missions'],
+  // 8.3: "Sleep 8 hours or more every Sol from Sol 1 to Sol 6" (a full night in the Bedroom is 22:00-06:00 = 480 minutes)
+  ['well_rested', (s) => Array.isArray(s.stats.sleepNights) && s.stats.sleepNights.length === 6 && s.stats.sleepNights.every((m) => m >= 8 * 60), 'sleep_missions'],
   ['first_contact', (s) => Boolean(s.flags.earthContact), 'slow_messages'],
   ['space_gardener', (s) => s.stats.harvest >= 50, 'green_air'],
   ['look_dont_touch', (s) => Boolean(s.flags.passedIngenuity), 'ingenuity'],

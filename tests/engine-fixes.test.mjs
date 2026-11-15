@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { createCampaign, step, command, rates } from '../src/campaign/engine.js';
 import { whereToFind, itemsWithoutSource } from '../src/campaign/sources.js';
 import { DEEP_SCAN_RESEARCH, MINERAL_SCAN_RESEARCH } from '../src/campaign/data.js';
+import { BADGES } from '../src/campaign/logbook.js';
 import { EXPEDITIONS, durationMinutes, expectedLoot, finaleBlock } from '../src/campaign/expeditions.js';
 import { play } from '../tools/balance/strategy-lab.mjs';
 import { readFileSync } from 'node:fs';
@@ -232,6 +233,25 @@ test('every part has a place where it can be found', () => {
   assert.deepEqual(itemsWithoutSource(), []);
   assert.match(whereToFind('solar_cell'), /Pathfinder-X wreck \(Expedition 2\) x3/);
   assert.equal(whereToFind('unobtainium'), '');
+});
+
+test('B16: Well Rested needs a full night in the Bedroom on each of the first six nights', () => {
+  const rested = createCampaign({ seed: 1 });
+  command(rested, { type: 'wakeDrone', drone: 'drone-01' });
+  while (rested.minute < 7 * 1440 + 7 * 60) { if (rested.pending) command(rested, { type: 'choose', choice: 'a' }); step(rested, 60); }
+  assert.deepEqual(rested.stats.sleepNights, [480, 480, 480, 480, 480, 480]);
+  assert.ok(BADGES.find((b) => b.id === 'well_rested').test(rested));
+
+  const late = createCampaign({ seed: 1 });
+  command(late, { type: 'wakeDrone', drone: 'drone-01' });
+  while (late.minute < 7 * 1440 + 7 * 60) {
+    if (late.pending) command(late, { type: 'choose', choice: 'a' });
+    const c = Math.floor(late.minute / 60) % 24;
+    if (Math.floor(late.minute / 1440) === 2 && c === 22) command(late, { type: 'order', place: 'kitchen' }); // a late snack on night 3
+    step(late, 60);
+  }
+  assert.ok(late.stats.sleepNights[2] < 480, `night 3 was short (${late.stats.sleepNights[2]} min)`);
+  assert.equal(BADGES.find((b) => b.id === 'well_rested').test(late), false);
 });
 
 test('play-test: the all-A path is no longer a dead end', () => {

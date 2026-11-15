@@ -249,6 +249,14 @@ function tick(s, emit) {
 
 function trackStats(s, dt, now) {
   const st = s.stats;
+  // Sleep per night for the Well Rested badge (8.3). Night N runs from 22:00 on Sol N to 06:00 on Sol N + 1.
+  if (s.where === 'bedroom' && !s.away && isNight(now.hourFloat)) {
+    const night = now.hourFloat >= 12 ? now.sol : now.sol - 1;
+    if (night >= 1 && night <= 6) {
+      if (!Array.isArray(st.sleepNights)) st.sleepNights = [0, 0, 0, 0, 0, 0];
+      st.sleepNights[night - 1] += 1;
+    }
+  }
   if (s.where === 'outside' || s.where === 'away') st.outsideMin += 1;
   if (greenhouseWorking(s)) st.harvest += MODULES.greenhouse[s.modules.greenhouse.tier === 2 ? 't2' : 't1'].food * s.mult.food * dt;
   st.lowestHp = Math.min(st.lowestHp, s.hp);
