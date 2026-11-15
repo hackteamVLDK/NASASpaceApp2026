@@ -14,8 +14,8 @@ import { createCampaign, step, command, clockAt, droneFixBlock } from './campaig
 import { prefs, setPref, applyPrefs } from './ui/prefs.js';
 import { restoreSave } from './campaign/save-migrate.js';
 import { SECONDS_PER_SOL, SOL, MODULES } from './campaign/data.js';
-import { openingFrameAt, cuesBetween, skipTarget, T, GAMEPLAY_VIEW, flowStateAt, astronautPathAt, entryDoorsAt, storyAt, nextPanelAt, storyCuesBetween, BRIEFING_AT } from './flow/intro.js';
-import { drawStory } from './render/intro-story.js';
+import { openingFrameAt, cuesBetween, skipTarget, T, CUTSCENE, GAMEPLAY_VIEW, flowStateAt, astronautPathAt, entryDoorsAt, storyAt, nextPanelAt, storyCuesBetween, BRIEFING_AT } from './flow/intro.js';
+import { drawStory, drawIntroSurface } from './render/intro-story.js';
 import { createGuide, say, rememberLine, canShowToast, firstSentence } from './flow/astra.js';
 import { createAstraPanel } from './ui/astra-panel.js';
 import { createUi, miniTitle } from './ui/campaign-ui.js';
@@ -510,6 +510,8 @@ window.addEventListener('keydown', (e) => {
 });
 $('introStart').addEventListener('click', () => { // START MISSION: on to the landing cutscene
   flowT = T.introEnd; prevFlowT = flowT; $('introStart').hidden = true; audio.play('click');
+  // The loop uses (previous, current]; play the sounds exactly at the origin on this click.
+  for (const cue of cuesBetween(0, T.introEnd)) if (cue.type === 'sfx') audio.director.flowCue(cue);
 });
 window.addEventListener('keydown', (e) => { if (e.code === 'Space' && mode === 'play') { e.preventDefault(); document.querySelector(speed ? '#speed [data-speed="0"]' : '#speed [data-speed="1"]').click(); } });
 
@@ -530,15 +532,27 @@ function stepRover(nowMs) {
   if (!s.away && (rover.phase === 'gone' || rover.phase === 'boarding')) { rover.phase = 'parked'; rover.k = 0; } // a loaded game, or a trip that was cancelled
 }
 
+/** The briefing cards sit over the actual, still campaign world. */
+function drawBriefingWorld() {
+  drawCampaign(ctx, atlas, {
+    s, cx: GAMEPLAY_VIEW.centerX, cy: GAMEPLAY_VIEW.centerY, zoom: GAMEPLAY_VIEW.zoom,
+    nowMs: 0, worldMs: 0, dtMs: 0, soil, walker, droneMovers, rover,
+    cut: { showCrew: false, showMound: true, buried: true },
+  });
+}
+
 function render(nowMs) {
-  if (mode === 'loading') return;
-  if (inStory()) { drawStory(ctx, storyAt(storyT), { atlas, nowMs, reduceMotion: prefs.reduceMotion, t, soil }); hits = []; return; }
+  if (mode === 'loading') { drawIntroSurface(ctx, { atlas, soil }); return; }
+  if (inStory()) {
+    drawStory(ctx, storyAt(storyT), { atlas, nowMs, reduceMotion: prefs.reduceMotion, t, soil, drawBackdrop: drawBriefingWorld });
+    hits = []; return;
+  }
   let S;
   if (mode === 'intro') {
     const f = openingFrameAt(flowT);
     S = {
       s, cx: f.cameraX, cy: f.cameraY, zoom: f.zoom, shake: prefs.reduceMotion ? null : f.shake, nowMs, worldMs, soil, walker, droneMovers, rover, dtMs: worldDtMs,
-      cut: { lander: f.lander, landed: f.lander.landed, dust: f.dustBurst ? { age: flowT - 25 } : null, astronaut: { pose: astronautPathAt(flowT, entryGeometry()) }, airlockOpen: entryDoorsAt(flowT).airlockOpen, droneLedOn: f.droneLedOn, showMound: flowT < 31.0, buried: flowT < 31.0, parachuteDrift: Math.min(1, Math.max(0, (flowT - 22.2) / 3)) },
+      cut: { lander: f.lander, landed: f.lander.landed, dust: f.dustBurst ? { age: flowT - CUTSCENE.dustBurstAt } : null, astronaut: { pose: astronautPathAt(flowT, entryGeometry()) }, airlockOpen: entryDoorsAt(flowT).airlockOpen, droneLedOn: f.droneLedOn, showMound: flowT < CUTSCENE.drone.blinkFrom, buried: flowT < CUTSCENE.drone.blinkFrom, parachuteDrift: Math.min(1, Math.max(0, (flowT - CUTSCENE.lander.parachuteDetachAt) / CUTSCENE.proposals.parachuteGoneAfter)) },
     };
   } else {
     S = {
@@ -661,7 +675,7 @@ async function boot() {
   await loadVoice();
   setVoiceVolume(audio.director.settings?.muted ? 0 : audio.director.settings?.masterVolume ?? 1);
   addStrings({ ...LIVES_STRINGS, ...CHOICE_STRINGS, ...JOB_STRINGS, ...LIVES_UI_STRINGS, ...JOB_PANEL_STRINGS, ...JOB_MG_STRINGS }); // lines that are not in SCENARIO.md yet
-  atlas = await loadAtlas((f) => { bar.style.width = `${f * 100}%`; });
+  atlas = await loadAtlas((f) => { bar.style.width = `${f * 100}%`; $('loadbar').setAttribute('aria-valuenow', String(Math.round(f * 100))); });
   soil = buildSoil(atlas);
   s = createCampaign({ seed: 1 });
   guide = createGuide();

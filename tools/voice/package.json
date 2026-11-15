@@ -1,0 +1,7 @@
+{
+  "name": "astra-voice",
+  "private": true,
+  "type": "module",
+  "description": "Renders ASTRA 6.7's spoken lines locally with Kokoro-82M (Apache-2.0). Not needed to run the game.",
+  "dependencies": { "kokoro-js": "1.2.1" }
+}

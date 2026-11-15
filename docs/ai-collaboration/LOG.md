@@ -22,3 +22,4 @@ One row per delegated task, newest last. Written by `tools/codex/delegate.mjs`.
 | 2026-11-15 11:27 | [Short-text table (max 4 words)](records/20261115-122724-short-text.md) | proposal | write | 0 | 2 |
 | 2026-11-15 11:34 | [Spoken lines for ASTRA's voice](records/20261115-123443-spoken-text.md) | proposal | write | 0 | 2 |
 | 2026-11-15 11:27 | [Calm interface with short text](records/20261115-122735-calm-ui.md) | proposal | write | 0 | 12 |
+| 2026-11-15 11:46 | [One design and a slower opening](records/20261115-124658-intro-design.md) | proposal | write | 0 | 11 |

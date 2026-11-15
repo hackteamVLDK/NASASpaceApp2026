@@ -8,13 +8,21 @@
   <title>ARES-KIDS: The Jezero Signal</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="styles/game.css">
+  <link rel="stylesheet" href="styles/intro.css">
   <link rel="stylesheet" href="styles/jobs.css">
 </head>
 <body>
   <div id="stage">
     <canvas id="game" width="1920" height="1080" role="img" aria-label="The Mars base: tap rooms, drones and the Rover"></canvas>
 
-    <div id="loading"><div class="logo">ARES-KIDS</div><div class="sub">The Jezero Signal</div><div id="loadbar"><i></i></div><button id="startBtn" hidden>Start mission</button></div>
+    <div id="loading">
+      <section class="title-panel" aria-label="ARES-KIDS mission">
+        <h1 class="logo">ARES-KIDS</h1>
+        <div class="sub">The Jezero Signal</div>
+        <div id="loadbar" role="progressbar" aria-label="Loading mission" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div>
+        <button id="startBtn" hidden>Start mission</button>
+      </section>
+    </div>
     <button id="skipBtn" hidden>Skip &gt;&gt;</button>
     <button id="introStart" hidden>START MISSION</button>
 

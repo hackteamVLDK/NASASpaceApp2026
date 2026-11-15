@@ -19,10 +19,18 @@ export const FLOW_STATES = Object.freeze([
   'TUT_HP', 'TUT_DRONE_CLICK', 'TUT_SOLAR_WIPE', 'TUT_BATTERY', 'TUT_BUILD', 'PLAY',
 ]);
 
-/** Phase boundaries in seconds. */
-export const T = Object.freeze({ introEnd: 19.0, descentEnd: 23.0, touchdownEnd: 26.5, panEnd: 33.0 });
+/** Opening durations in seconds; provenance: gameplay (reading pace, not Mars measurements). */
+export const OPENING_TIMING = Object.freeze({
+  title: 3.5, signal: 5, storm: 5, drones: 6, droneLine: 3,
+  fade: 0.4, descent: 6, touchdown: 5, pan: 9,
+  parachuteDrift: 4.5, dustBurst: 1, shake: 0.3,
+});
+const INTRO_END = 19; // legacy clock origin; the storyboard has its own clock
+const DESCENT_END = INTRO_END + OPENING_TIMING.descent;
+const TOUCHDOWN_END = DESCENT_END + OPENING_TIMING.touchdown;
+export const T = Object.freeze({ introEnd: INTRO_END, descentEnd: DESCENT_END, touchdownEnd: TOUCHDOWN_END, panEnd: TOUCHDOWN_END + OPENING_TIMING.pan });
 
-/** The timed part of the flow. Tutorial steps after 33.0 s advance on player actions, not on time. */
+/** The timed part of the flow. Tutorial steps after T.panEnd advance on player actions, not on time. */
 export function flowStateAt(sec) {
   if (sec < T.introEnd) return 'INTRO_TEXT';
   if (sec < T.descentEnd) return 'DESCENT';
@@ -41,15 +49,15 @@ export function flowStateAt(sec) {
 export const STORYBOARD = Object.freeze({
   background: '#05070A',
   keyColor: '#FF6B35', // Martian Orange for the key word
-  fadeSec: 0.4,
+  fadeSec: OPENING_TIMING.fade,
   minFontPx: 64, // the big panel lines at 1920 x 1080
   skipLabel: 'Skip >>',
   skipPosition: 'top-right',
   panels: Object.freeze([
-    Object.freeze({ id: 'title', label: 'gameplay', dur: 1.5, lines: Object.freeze([Object.freeze({ id: 'intro.00', key: 'Mars' })]), badge: 'intro.badge' }),
-    Object.freeze({ id: 'signal', label: 'fiction', dur: 3, lines: Object.freeze([Object.freeze({ id: 'intro.01', key: 'strange' })]), rings: Object.freeze([0.4, 1.3, 2.2]) }),
-    Object.freeze({ id: 'storm', label: 'fiction', dur: 3, lines: Object.freeze([Object.freeze({ id: 'intro.02', key: 'silent' })]), barsDropAt: Object.freeze([0.6, 1.1, 1.6, 2.1]) }),
-    Object.freeze({ id: 'drones', label: 'fiction', dur: 4, lines: Object.freeze([Object.freeze({ id: 'intro.03', key: 'Robots', until: 2 }), Object.freeze({ id: 'intro.04', key: 'storm', from: 2 })]), sandFrom: 2 }),
+    Object.freeze({ id: 'title', label: 'gameplay', dur: OPENING_TIMING.title, lines: Object.freeze([Object.freeze({ id: 'intro.00', key: 'Mars' })]), badge: 'intro.badge' }),
+    Object.freeze({ id: 'signal', label: 'fiction', dur: OPENING_TIMING.signal, lines: Object.freeze([Object.freeze({ id: 'intro.01', key: 'strange' })]), rings: Object.freeze([0.7, 2.2, 3.7]) }),
+    Object.freeze({ id: 'storm', label: 'fiction', dur: OPENING_TIMING.storm, lines: Object.freeze([Object.freeze({ id: 'intro.02', key: 'silent' })]), barsDropAt: Object.freeze([1, 1.8, 2.6, 3.4]) }),
+    Object.freeze({ id: 'drones', label: 'fiction', dur: OPENING_TIMING.drones, lines: Object.freeze([Object.freeze({ id: 'intro.03', key: 'Robots', until: OPENING_TIMING.droneLine }), Object.freeze({ id: 'intro.04', key: 'storm', from: OPENING_TIMING.droneLine })]), sandFrom: OPENING_TIMING.droneLine }),
     Object.freeze({ id: 'briefing', label: 'gameplay', dur: Infinity, title: 'intro.05',
       tiles: Object.freeze([
         Object.freeze({ goal: 'intro.goal1', learn: 'intro.learn1', icon: 'drone' }),
@@ -98,46 +106,46 @@ export function storyCuesBetween(t0, t1) {
   return cues.sort((x, y) => x.at - y.at);
 }
 
-// ---------------------------------------------------------------- landing cutscene (19.0 s - 33.0 s)
+// ---------------------------------------------------------------- landing cutscene (19.0 s - 39.0 s)
 
 export const CUTSCENE = Object.freeze({
   from: T.introEnd,
   to: T.panEnd,
   phases: Object.freeze([
-    Object.freeze({ state: 'DESCENT', name: 'Atmospheric descent', from: 19.0, to: 23.0 }),
-    Object.freeze({ state: 'TOUCHDOWN', name: 'Retro-rocket touchdown', from: 23.0, to: 26.5 }),
-    Object.freeze({ state: 'UNDERGROUND_PAN', name: 'Underground X-ray pan', from: 26.5, to: 33.0 }),
+    Object.freeze({ state: 'DESCENT', name: 'Atmospheric descent', from: T.introEnd, to: T.descentEnd }),
+    Object.freeze({ state: 'TOUCHDOWN', name: 'Retro-rocket touchdown', from: T.descentEnd, to: T.touchdownEnd }),
+    Object.freeze({ state: 'UNDERGROUND_PAN', name: 'Underground X-ray pan', from: T.touchdownEnd, to: T.panEnd }),
   ]),
-  camera: Object.freeze({ skyY: 400, surfaceY: 850, panFrom: 26.5, gameplaySettleAt: 31.0, panEasing: 'ease-in-out' }),
+  camera: Object.freeze({ skyY: 400, surfaceY: 850, panFrom: T.touchdownEnd, gameplaySettleAt: 36.3, panEasing: 'ease-in-out' }),
   lander: Object.freeze({
     startY: -150,
     parachuteY: 650,
     touchdownY: 1050,
     parachute: 'red-and-white',
-    parachuteDetachAt: 22.2,
+    parachuteDetachAt: 23.8,
     parachuteDrift: 'left',
     thrusters: 4,
-    thrustersAt: 23.0,
-    touchdownAt: 25.0,
+    thrustersAt: T.descentEnd,
+    touchdownAt: 28.0,
   }),
-  shake: Object.freeze({ at: 25.0, amplitudePx: 4, duration: 0.3 }),
-  dustBurstAt: 25.0,
-  /** ASTRA slides in at touchdown (first appearance, chime) and later during the pan. */
-  astra: Object.freeze({ landingAt: 25.0, landingLine: 'astra.intro.landing', whyUndergroundAt: 26.5, whyUndergroundLine: 'astra.intro.why_underground' }),
-  astronaut: Object.freeze({ exitsShaftAt: 29.0, into: 'left wing', removesHelmet: true }),
-  drone: Object.freeze({ id: 'drone-01', label: 'Drone #01', blinkFrom: 31.0, blinkHz: 1, ledColor: 'red' }),
+  shake: Object.freeze({ at: 28.0, amplitudePx: 4, duration: OPENING_TIMING.shake }),
+  dustBurstAt: 28.0,
+  /** First ASTRA line waits for the gameplay camera to settle. */
+  astra: Object.freeze({ landingAt: 36.3, landingLine: 'astra.intro.landing', whyUndergroundAt: 38.0, whyUndergroundLine: 'astra.intro.why_underground' }),
+  astronaut: Object.freeze({ exitsShaftAt: 33.5, into: 'left wing', removesHelmet: true }),
+  drone: Object.freeze({ id: 'drone-01', label: 'Drone #01', blinkFrom: 36.3, blinkHz: 1, ledColor: 'red' }),
   // PROPOSALS: timings inside a phase that the scenario does not pin down.
-  proposals: Object.freeze({ helmetOffAt: 30.0, airlockHissAt: 25.8, parachuteGoneAfter: 3.0, cameraTracksUntil: 25.0 }),
+  proposals: Object.freeze({ helmetOffAt: 35.0, airlockHissAt: 29.2, parachuteGoneAfter: OPENING_TIMING.parachuteDrift, cameraTracksUntil: 28.0 }),
 });
 
 /** Sound cues. `proposal: true` marks a time chosen inside a phase where only the order is given. */
 export const SFX_CUES = Object.freeze([
-  Object.freeze({ at: 19.0, id: 'wind-hum', loop: true, what: 'Martian wind hum' }),
-  Object.freeze({ at: 19.0, id: 'parachute-deploy', what: 'Parachute deploy' }),
-  Object.freeze({ at: 23.0, id: 'retro-rocket-roar', what: 'Retro-rocket roar' }),
-  Object.freeze({ at: 25.0, id: 'landing-thud', what: 'Metallic landing thud' }),
+  Object.freeze({ at: T.introEnd, id: 'wind-hum', loop: true, what: 'Martian wind hum' }),
+  Object.freeze({ at: T.introEnd, id: 'parachute-deploy', what: 'Parachute deploy' }),
+  Object.freeze({ at: CUTSCENE.lander.thrustersAt, id: 'retro-rocket-roar', what: 'Retro-rocket roar' }),
+  Object.freeze({ at: CUTSCENE.lander.touchdownAt, id: 'landing-thud', what: 'Metallic landing thud' }),
   Object.freeze({ at: CUTSCENE.proposals.airlockHissAt, id: 'airlock-hiss', what: 'Airlock hiss', proposal: true }),
-  Object.freeze({ at: 25.0, id: 'astra-chime', what: 'Energetic chime as ASTRA slides in for the first time' }),
+  Object.freeze({ at: CUTSCENE.astra.landingAt, id: 'astra-chime', what: 'Energetic chime as ASTRA slides in for the first time' }),
 ]);
 
 const lerp = (a, b, u) => a + (b - a) * u;
@@ -158,7 +166,7 @@ export const GAMEPLAY_VIEW = Object.freeze({ zoom: 0.5, centerX: 1260, centerY: 
 export function cameraYAt(sec) {
   const c = CUTSCENE.camera;
   if (sec < CUTSCENE.lander.thrustersAt) return c.skyY;
-  if (sec < c.panFrom) return lerp(c.skyY, c.surfaceY, unit(sec, CUTSCENE.lander.thrustersAt, CUTSCENE.proposals.cameraTracksUntil));
+  if (sec < c.panFrom) return lerp(c.skyY, c.surfaceY, easeInOut(unit(sec, CUTSCENE.lander.thrustersAt, CUTSCENE.proposals.cameraTracksUntil)));
   if (sec < c.gameplaySettleAt) return lerp(c.surfaceY, GAMEPLAY_VIEW.centerY, easeInOut(unit(sec, c.panFrom, c.gameplaySettleAt)));
   return GAMEPLAY_VIEW.centerY;
 }
@@ -206,25 +214,25 @@ export function astronautAt(sec) {
   return { visible: sec >= CUTSCENE.astronaut.exitsShaftAt, helmetOn: sec < CUTSCENE.proposals.helmetOffAt };
 }
 
-// ---------------------------------------------------------------- the astronaut comes in (25.0 s - 31.2 s)
+// ---------------------------------------------------------------- the astronaut comes in (28.0 s - 36.8 s)
 
 /**
- * How the astronaut gets into the base. The scenario fixes only: touchdown 25.0 s, the airlock hiss (25.8 s here),
- * "29.0 s: the astronaut exits the crew airlock shaft into the left wing", helmet off (30.0 s here). Everything
+ * How the astronaut gets into the base. The scenario fixes only: touchdown 28.0 s, the airlock hiss (29.2 s here),
+ * "33.5 s: the astronaut exits the crew airlock shaft into the left wing", helmet off (35.0 s here). Everything
  * between is PROPOSAL, chosen so the walking speed stays under 480 units/s and the climb under 320 units/s.
  */
 export const ENTRY = Object.freeze({
-  leavesLanderAt: 25.1, // steps out of the lander hatch
-  walksToDomeAt: 25.3, // then crosses the ground to the dome
-  atDomeAt: 26.7, // stops at the hatch of the dome
-  hatchClosesAt: 27.1, // the hatch is open from the hiss (25.8) to here
-  insideUntil: 27.3, // the airlock cycles, the astronaut is not seen
-  shaftBottomAt: 28.96, // down the ladder in the shaft (the camera is panning), then out of the shaft...
-  exitsShaftAt: CUTSCENE.astronaut.exitsShaftAt, // ...into the left wing at 29.0 s
-  atBedroomAt: 29.98, // stands in the Bedroom
+  leavesLanderAt: 28.15, // steps out after touchdown
+  walksToDomeAt: 28.45,
+  atDomeAt: 30.55,
+  hatchClosesAt: 31.15,
+  insideUntil: 31.45,
+  shaftBottomAt: 33.44,
+  exitsShaftAt: CUTSCENE.astronaut.exitsShaftAt, // ...into the left wing at 33.5 s
+  atBedroomAt: 34.97, // stands in the Bedroom
   helmetOffAt: CUTSCENE.proposals.helmetOffAt, // lifts the helmet off
-  helmetHeldAt: 30.6, // holds it under the arm
-  standsAt: 31.2, // then stands about
+  helmetHeldAt: 35.9, // holds it under the arm
+  standsAt: 36.8, // then stands about
   walkFps: 6.25, // walking and climbing frames per second
   gripEaseS: 0.2, // at the bottom of the shaft he lets go of the ladder over this long (the renderer slides him off its rail)
 });
@@ -259,7 +267,7 @@ export function astronautPathAt(sec, geo) {
   return { ...at, sheet: 'crewIndoor', frame: Math.floor(sec * 1.4) % 2, phase: 'stands' };
 }
 
-/** Is Drone #01's red LED lit right now? (1 Hz from 31.0 s.) */
+/** Is Drone #01's red LED lit right now? (1 Hz from 36.3 s.) */
 export function droneLedOn(sec) {
   const d = CUTSCENE.drone;
   if (sec < d.blinkFrom) return false;
@@ -276,7 +284,7 @@ export function openingFrameAt(sec) {
     zoom: cameraZoomAt(sec),
     lander: landerAt(sec),
     shake: shakeAt(sec),
-    dustBurst: sec >= CUTSCENE.dustBurstAt && sec < CUTSCENE.dustBurstAt + 1,
+    dustBurst: sec >= CUTSCENE.dustBurstAt && sec < CUTSCENE.dustBurstAt + OPENING_TIMING.dustBurst,
     astronaut: astronautAt(sec),
     droneLedOn: droneLedOn(sec),
   };
@@ -309,7 +317,7 @@ export function skipTarget(sec) {
   return sec;
 }
 
-// ---------------------------------------------------------------- tutorial (33.0 s+)
+// ---------------------------------------------------------------- tutorial (39.0 s+)
 
 /**
  * The tutorial steps, in order. Each step lists the ASTRA lines it plays (line IDs) and what

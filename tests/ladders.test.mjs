@@ -97,9 +97,9 @@ test('the entry scene: he hangs on the ladder all the way down and lets go over 
   const g1 = at(ENTRY.shaftBottomAt - ENTRY.gripEaseS / 2).grip;
   assert.ok(g1 > 0.4 && g1 < 0.6, `half way off: ${g1}`);
   assert.ok(at(ENTRY.shaftBottomAt - 0.001).grip < 0.01);
-  for (const t of [25.5, 26.5, 27.0, 29.2, 30.5, 33]) assert.equal(at(t).grip, undefined, `no grip at ${t} s`);
+  for (const t of [28.5, 29.5, 31.0, 34.0, 35.5, 39]) assert.equal(at(t).grip, undefined, `no grip at ${t} s`);
   // nothing else about the path changed: he still climbs straight down the middle of the shaft
-  assert.equal(at(28).x, SHAFT_X);
+  assert.equal(at((ENTRY.insideUntil + ENTRY.shaftBottomAt) / 2).x, SHAFT_X);
 });
 
 test('the ladder constants sit inside the shaft', () => {

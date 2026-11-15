@@ -128,12 +128,12 @@ New lines that break a rule above are rewritten before they go into this file.
 
 State `INTRO_TEXT` (the storyboard). It replaced the 8-line text crawl on 2026-11-15: nobody read 8 typed lines.
 Goals: (a) hook a 7–12-year-old with a mystery, (b) tell a jury in seconds that the game teaches real NASA science.
-About 15 s, picture first. The old crawl story is kept word for word in the Logbook card `mission_file` (Section 8.1).
+About 20 s, picture first. The old crawl story is kept word for word in the Logbook card `mission_file` (Section 8.1).
 
 - **Panels 1–3** are drawn full screen on the canvas with the game's own sprites (Rover/Pathfinder-X, drones,
   base, sky, dust). Each has ONE big line: at most 8 words, bold, 64 px or more at 1920 x 1080, white, with one key word
   in Martian Orange `#FF6B35`.
-- **Timing:** panel 0 shows for 1.5 s, panels 1 and 2 for 3 s each, panel 3 for 4 s (2 s per line); then the briefing
+- **Timing:** panel 0 shows for 3.5 s, panels 1 and 2 for 5 s each, panel 3 for 6 s (3 s per line); then the briefing
   waits for the player. Gentle fades (0.4 s) between panels.
 - **Input:** tap, click, Space or Enter goes to the next panel. `Skip >>` (top-right) jumps to the briefing, never past
   it, so everyone sees the goals. Progress dots at the bottom (one per panel).
@@ -145,7 +145,7 @@ About 15 s, picture first. The old crawl story is kept word for word in the Logb
 
 | Panel | Label | What the player sees | Lines |
 |---|---|---|---|
-| 0 | gameplay | Dark screen, a badge and one line; auto-advance after 1.5 s | `intro.badge`, `intro.00` |
+| 0 | gameplay | Dark screen, a badge and one line; auto-advance after 3.5 s | `intro.badge`, `intro.00` |
 | 1 | fiction | Pathfinder-X in a canyon at dusk; slow seismic rings pulse out of the ground under it | `intro.01` (key word "strange") |
 | 2 | fiction | Dust sweeps across; the Rover's signal bars drop one by one, then radio static | `intro.02` (key word "silent") |
 | 3 | fiction | Drones dig a cutaway base; then sand pours over them (the line changes halfway) | `intro.03` (key word "Robots"), `intro.04` (key word "storm") |
@@ -185,23 +185,23 @@ The three "Learn:" lines match what the game teaches: solar power and dust (Sola
 
 #### Cutscene timeline
 
-- **Phase 1: Atmospheric descent (`19.0s – 23.0s`, state `DESCENT`, silent: no ASTRA)**
+- **Phase 1: Atmospheric descent (`19.0s – 25.0s`, state `DESCENT`, silent: no ASTRA)**
   - Camera locked on the upper Martian sky (`Y: 400`).
-  - The Mars Lander descends on a red-and-white parachute (`Y: -150 -> Y: 650`). At `22.2s`, the parachute detaches and drifts left.
+  - The Mars Lander descends on a red-and-white parachute (`Y: -150 -> Y: 650`). At `23.8s`, the parachute detaches and drifts left.
   - **SFX:** Martian wind hum + parachute deploy.
-- **Phase 2: Retro-rocket touchdown (`23.0s – 26.5s`, state `TOUCHDOWN`)**
+- **Phase 2: Retro-rocket touchdown (`25.0s – 30.0s`, state `TOUCHDOWN`)**
   - Camera tracks the Lander down to the surface (`Y: 850`).
-  - `23.0s`: 4 bottom thrusters ignite (animated flame sprites), slowing the descent.
-  - `25.0s`: touchdown at `Y: 1050` next to the airlock dome. Subtle camera shake (`±4px`, `0.3s`) + red dust particle burst.
-  - `25.0s`: the ASTRA panel slides in for the first time (chime) and plays `astra.intro.landing`.
+  - `25.0s`: 4 bottom thrusters ignite (animated flame sprites), slowing the descent.
+  - `28.0s`: touchdown at `Y: 1050` next to the airlock dome. Subtle camera shake (`±4px`, `0.3s`) + red dust particle burst.
+  - `36.3s`: the ASTRA panel slides in for the first time (chime) and plays `astra.intro.landing`.
   - **SFX:** retro-rocket roar -> metallic landing thud -> airlock hiss.
-- **Phase 3: Underground X-ray pan (`26.5s – 33.0s`, state `UNDERGROUND_PAN`)**
+- **Phase 3: Underground X-ray pan (`30.0s – 39.0s`, state `UNDERGROUND_PAN`)**
   - Camera pans smoothly downward (ease-in-out) from `Y: 850`, slicing through the red Martian soil layers into the underground base cutaway. ASTRA plays `astra.intro.why_underground`.
-  - `29.0s`: the astronaut exits the crew airlock shaft into the left wing and removes the helmet.
-  - `31.0s`: the camera settles on the gameplay framing: a thin strip of surface (about the top 15% of the screen, with the ground line and surface structures) stays visible above the underground base. Framing rule: fit the whole base width and keep a visible surface strip at the top; the zoom is decided in the layout work. **Drone #01** blinks red (`1Hz`) in the unfinished right wing.
+  - `33.5s`: the astronaut exits the crew airlock shaft into the left wing and removes the helmet.
+  - `36.3s`: the camera settles on the gameplay framing: a thin strip of surface (about the top 15% of the screen, with the ground line and surface structures) stays visible above the underground base. Framing rule: fit the whole base width and keep a visible surface strip at the top; the zoom is decided in the layout work. **Drone #01** blinks red (`1Hz`) in the unfinished right wing.
   - Off-screen, Drone #01 has already dragged Drones #02 and #03 in from the surface: from here on they sit dormant in the Garage & Airlock frame. (fiction)
 
-#### Tutorial flow (`33.0s+`)
+#### Tutorial flow (`39.0s+`)
 
 | State | What happens | Player action | Advances when |
 |---|---|---|---|

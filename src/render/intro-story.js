@@ -1,7 +1,7 @@
 /**
  * Draws the intro picture storyboard (SCENARIO "Intro: picture storyboard") on the 1920 x 1080 canvas with the game's
  * own sprites. Reads the storyboard state from src/flow/intro.js (storyAt), never changes anything.
- * Reduce motion: fades only; rings, dust, sand, puffs and the planet are drawn still.
+ * Reduce motion: fades only; rings, dust, sand, puffs are drawn still.
  */
 import { STORYBOARD } from '../flow/intro.js';
 import { ICON } from './atlas.js';
@@ -29,17 +29,6 @@ function bigLine(ctx, text, key, y, px = 72) {
   }
 }
 
-function stars(ctx, nowMs, still) {
-  ctx.fillStyle = '#fff';
-  for (let i = 0; i < 140; i++) {
-    const z = 0.3 + hash(i, 3) * 0.7;
-    const x = (hash(i, 1) * W - (still ? 0 : nowMs * 0.01 * z) + W * 50) % W;
-    ctx.globalAlpha = 0.2 + 0.5 * z;
-    ctx.fillRect(Math.round(x), Math.round(hash(i, 2) * H), 2 + Math.round(z * 2), 2 + Math.round(z * 2));
-  }
-  ctx.globalAlpha = 1;
-}
-
 /** Soil colours for the intro, sampled from the game's soil canvas (layers, rust, ochre), with fixed fallbacks. */
 const palettes = new WeakMap();
 function soilPalette(soil) {
@@ -60,54 +49,55 @@ function soilPalette(soil) {
 }
 const rgb = (c, f = 1) => `rgb(${c.map((v) => Math.max(0, Math.min(255, Math.round(v * f)))).join(',')})`;
 
-/** A dusk sky with a small pale sun off to the right, below the title (Mars sunsets are small and bluish-white). */
-function duskSky(ctx, h, sx = 1650, sy = 300) {
-  const g = ctx.createLinearGradient(0, 0, 0, h);
-  g.addColorStop(0, '#2c1a3a'); g.addColorStop(0.55, '#7a3c4e'); g.addColorStop(1, '#d08458');
-  ctx.fillStyle = g; ctx.fillRect(0, 0, W, h);
-  const glow = ctx.createRadialGradient(sx, sy, 6, sx, sy, 120);
-  glow.addColorStop(0, 'rgba(200,225,255,0.55)'); glow.addColorStop(1, 'rgba(200,225,255,0)');
-  ctx.fillStyle = glow; ctx.fillRect(sx - 120, sy - 120, 240, 240);
-  ctx.fillStyle = '#eef6ff'; ctx.fillRect(sx - 14, sy - 14, 28, 28); ctx.fillRect(sx - 18, sy - 8, 36, 16); ctx.fillRect(sx - 8, sy - 18, 16, 36);
+/** Shared sky atlas and soil cache: exactly the textures used by the playable world. */
+function sky(ctx, atlas, height) {
+  if (atlas.has('sky')) atlas.cell(ctx, 'sky', 0, 0, 0, W, height);
+  else { ctx.fillStyle = '#7a3c4e'; ctx.fillRect(0, 0, W, height); }
 }
 
-/** Layered cliff walls (stripes like lake sediments) on both sides; cached per soil canvas. */
+/** A clipped soil cross-section, with irregular whole-pixel edges instead of smooth terraces. */
 const canyons = new WeakMap();
 function canyonWalls(soil) {
   const key = soil ?? canyons;
   if (canyons.has(key)) return canyons.get(key);
   const c = document.createElement('canvas'); c.width = W; c.height = H;
   const g = c.getContext('2d');
-  const pal = soilPalette(soil);
-  const floor = 800;
-  const layer = []; // y -> band (negative: a dark line)
-  for (let y = 0, n = 0; y < H; n++) { const t = 18 + Math.floor(hash(n, 41) * 22); for (let i = 0; i < t && y < H; i++, y++) layer[y] = i < 3 ? -1 : n; }
+  g.imageSmoothingEnabled = false;
+  const floor = 800, pixel = 8;
   for (const side of [0, 1]) {
-    for (let y = 230; y < floor + 4; y++) {
-      // stepped ledges: each band ends at its own width, with a lit top edge
-      const band = Math.floor((y - 230) / 46);
-      const edge = Math.round(380 + band * 34 + hash(band, side + 7) * 70 + (y - 230) * 0.12);
-      const L = layer[y];
-      const base = L < 0 ? pal.line : L % 2 ? pal.dark : pal.light;
-      const f = side ? 0.9 : 1; // the right wall is a bit darker
-      g.fillStyle = rgb(base, f);
-      g.fillRect(side ? W - edge : 0, y, edge, 1);
-      g.fillStyle = rgb(pal.light, 1.25); // the lit lip of each ledge
-      if ((y - 230) % 46 === 0) g.fillRect(side ? W - edge : 0, y, edge, 3);
+    g.save(); g.beginPath();
+    g.moveTo(side ? W : 0, 280);
+    for (let y = 280; y <= floor; y += pixel) {
+      const edge = Math.round((260 + (y - 280) * 0.65 + hash(Math.floor(y / 40), side + 7) * 64) / pixel) * pixel;
+      const x = side ? W - edge : edge;
+      g.lineTo(x, y); g.lineTo(x, y + pixel);
     }
+    g.lineTo(side ? W : 0, floor + pixel); g.closePath(); g.clip();
+    if (soil) g.drawImage(soil, 0, 0, 960, 400, 0, 280, W, 800);
+    else { g.fillStyle = '#844424'; g.fillRect(0, 280, W, 800); }
+    g.restore();
   }
-  g.fillStyle = rgb(pal.dark, 0.9); g.fillRect(0, floor, W, H - floor);
-  g.fillStyle = rgb(pal.light, 0.95);
-  for (let i = 0; i < 70; i++) g.fillRect(Math.round(hash(i, 9) * W / 4) * 4, floor + 8 + Math.round(hash(i, 8) * 60) * 4, 8 + Math.round(hash(i, 7) * 4) * 4, 4);
+  if (soil) g.drawImage(soil, 0, 0, 960, 140, 0, floor, W, 280);
+  else { g.fillStyle = '#844424'; g.fillRect(0, floor, W, H - floor); }
   canyons.set(key, c);
   return c;
 }
 
-/** A canyon at dusk: sky, sun, layered cliffs, floor. Returns the floor's y. */
 function canyon(ctx, atlas, soil) {
-  duskSky(ctx, 820, 1180, 290); // the sun in the canyon gap, below the title
+  sky(ctx, atlas, 820);
   ctx.drawImage(canyonWalls(soil), 0, 0);
   return 800;
+}
+
+/** A still surface view shared by the title screen and first story panel. */
+export function drawIntroSurface(ctx, { atlas, soil }) {
+  ctx.save(); ctx.imageSmoothingEnabled = false;
+  const ground = 820;
+  sky(ctx, atlas, ground + 4);
+  if (soil) ctx.drawImage(soil, 0, 0, 960, 140, 0, ground, W, 280);
+  if (atlas.has('airlock')) atlas.sprite(ctx, 'airlock', 0, 960, ground + 6, { w: 420 });
+  if (atlas.has('solar')) atlas.sprite(ctx, 'solar', 0, 430, ground + 6, { w: 350 });
+  ctx.restore();
 }
 
 function rover(ctx, atlas, x, floor) {
@@ -170,7 +160,7 @@ function panelDrones(ctx, atlas, st, nowMs, still, soil) {
   const sandK = local < P.sandFrom ? 0 : still ? 1 : Math.min(1, (local - P.sandFrom) / 1.6);
   const G = XS.ground;
   // sky and surface (the dome stands on the ground; nothing floats)
-  duskSky(ctx, G + 4);
+  sky(ctx, atlas, G + 4);
   if (soil) ctx.drawImage(soil, 300, 0, W, H - G + 20, 0, G - 20, W, H - G + 20);
   else { ctx.fillStyle = rgb(pal.dark); ctx.fillRect(0, G, W, H - G); }
   ctx.fillStyle = rgb(pal.light, 1.1); ctx.fillRect(0, G - 2, W, 6); // the surface line
@@ -237,50 +227,14 @@ function panelDrones(ctx, atlas, st, nowMs, still, soil) {
   }
 }
 
-/** A small pixel-art Mars that turns slowly (Reduce motion: it stands still). Drawn at 72 px, scaled up crisp. */
-let planetCanvas = null;
-function planet(ctx, cx, cy, size, rot) {
-  const N = 72;
-  if (!planetCanvas) { planetCanvas = document.createElement('canvas'); planetCanvas.width = N; planetCanvas.height = N; }
-  const g = planetCanvas.getContext('2d');
-  const img = g.createImageData(N, N);
-  const noise = (u, v) => { // smooth value noise, wrapping in longitude (period 8)
-    const x0 = Math.floor(u), y0 = Math.floor(v), fx = u - x0, fy = v - y0;
-    const at = (x, y) => hash(((x % 8) + 8) % 8, y + 40);
-    const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
-    return (at(x0, y0) * (1 - sx) + at(x0 + 1, y0) * sx) * (1 - sy) + (at(x0, y0 + 1) * (1 - sx) + at(x0 + 1, y0 + 1) * sx) * sy;
-  };
-  const L = [-0.55, -0.45, 0.7];
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    const nx = (x + 0.5) / N * 2 - 1, ny = (y + 0.5) / N * 2 - 1, r2 = nx * nx + ny * ny;
-    if (r2 > 1) continue;
-    const nz = Math.sqrt(1 - r2), lat = Math.asin(ny), lon = Math.atan2(nx, nz) + rot;
-    const u = (lon / (Math.PI * 2)) * 8, v = (lat + 1.6) * 2.2;
-    const n = 0.65 * noise(u, v) + 0.35 * noise(u * 2.3, v * 2.3);
-    let c = n < 0.38 ? [118, 50, 36] : n < 0.62 ? [188, 84, 50] : [222, 132, 82]; // dark plains, rust, light dust
-    if (Math.abs(lat) > 1.2) c = [238, 232, 226]; // polar caps
-    const lum = Math.max(0, nx * L[0] + ny * L[1] + nz * L[2]);
-    const f = lum > 0.6 ? 1.05 : lum > 0.3 ? 0.8 : lum > 0.1 ? 0.55 : 0.35; // banded shading, pixel-art style
-    const k = (y * N + x) * 4;
-    img.data[k] = Math.min(255, c[0] * f); img.data[k + 1] = Math.min(255, c[1] * f); img.data[k + 2] = Math.min(255, c[2] * f); img.data[k + 3] = 255;
-  }
-  g.putImageData(img, 0, 0);
-  const glow = ctx.createRadialGradient(cx, cy, size * 0.45, cx, cy, size * 0.62);
-  glow.addColorStop(0, 'rgba(255,120,60,0.35)'); glow.addColorStop(1, 'rgba(255,120,60,0)');
-  ctx.fillStyle = glow; ctx.fillRect(cx - size, cy - size, size * 2, size * 2);
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(planetCanvas, Math.round(cx - size / 2), Math.round(cy - size / 2), size, size);
-}
-
-function panelTitle(ctx, nowMs, still, t, st) {
-  stars(ctx, nowMs, still);
-  planet(ctx, W / 2, 790, 380, still ? 0.6 : 0.6 + nowMs * 0.00025); // Mars turns slowly under the badge and the line
+function panelTitle(ctx, atlas, t, st, soil) {
+  drawIntroSurface(ctx, { atlas, soil });
   ctx.font = `800 40px ${FONT}`;
   const label = t(st.panel.badge);
   const bw = ctx.measureText(label).width + 80;
-  ctx.fillStyle = 'rgba(0,229,255,0.12)'; ctx.strokeStyle = '#00E5FF'; ctx.lineWidth = 4;
-  ctx.beginPath(); ctx.roundRect((W - bw) / 2, 330, bw, 84, 42); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = '#00E5FF'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(label, W / 2, 373);
+  ctx.fillStyle = 'rgba(8,12,24,0.88)'; ctx.strokeStyle = 'rgba(0,229,255,0.55)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.roundRect((W - bw) / 2, 300, bw, 84, 14); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#00E5FF'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(label, W / 2, 342);
 }
 
 function wrap(ctx, text, maxW) {
@@ -290,16 +244,17 @@ function wrap(ctx, text, maxW) {
   return out;
 }
 
-function panelBriefing(ctx, atlas, nowMs, still, t, st) {
-  stars(ctx, nowMs, still);
+function panelBriefing(ctx, atlas, t, st, drawBackdrop) {
+  drawBackdrop?.();
+  ctx.fillStyle = 'rgba(5,7,10,0.6)'; ctx.fillRect(0, 0, W, H);
   const p = st.panel;
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.font = `900 84px ${FONT}`; ctx.fillStyle = STORYBOARD.keyColor; ctx.fillText(t(p.title), W / 2, 150);
   const icons = { drone: ICON.droneAwake, crew: ICON.shelter, rover: ICON.explore };
   p.tiles.forEach((tile, i) => {
     const x = W / 2 + (i - 1) * 580 - 260, y = 240, w = 520, h = 450;
-    ctx.fillStyle = 'rgba(8,12,24,0.92)'; ctx.strokeStyle = 'rgba(0,229,255,0.7)'; ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 22); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'rgba(8,12,24,0.88)'; ctx.strokeStyle = 'rgba(0,229,255,0.55)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 14); ctx.fill(); ctx.stroke();
     if (atlas.has('icons')) atlas.cell(ctx, 'icons', icons[tile.icon], x + w / 2 - 80, y + 30, 160, 160);
     ctx.fillStyle = '#ffffff'; ctx.font = `900 52px ${FONT}`; ctx.fillText(t(tile.goal), x + w / 2, y + 250);
     ctx.fillStyle = '#00E5FF'; ctx.font = `700 34px ${FONT}`;
@@ -313,17 +268,17 @@ function panelBriefing(ctx, atlas, nowMs, still, t, st) {
  * @param {object} st  storyAt(storyTime)
  * @param {object} o   { atlas, nowMs, reduceMotion, t (strings), soil }
  */
-export function drawStory(ctx, st, { atlas, nowMs, reduceMotion = false, t, soil = null }) {
+export function drawStory(ctx, st, { atlas, nowMs, reduceMotion = false, t, soil = null, drawBackdrop = null }) {
   const still = Boolean(reduceMotion);
   ctx.save();
   ctx.fillStyle = STORYBOARD.background; ctx.fillRect(0, 0, W, H);
   ctx.imageSmoothingEnabled = false;
   const id = st.panel.id;
-  if (id === 'title') panelTitle(ctx, nowMs, still, t, st, soil);
+  if (id === 'title') panelTitle(ctx, atlas, t, st, soil);
   else if (id === 'signal') panelSignal(ctx, atlas, st, nowMs, still, soil);
   else if (id === 'storm') panelStorm(ctx, atlas, st, nowMs, still, soil);
   else if (id === 'drones') panelDrones(ctx, atlas, st, nowMs, still, soil);
-  else panelBriefing(ctx, atlas, nowMs, still, t, st);
+  else panelBriefing(ctx, atlas, t, st, drawBackdrop);
   if (st.line) { // a line change inside a panel (panel 3) fades the caption only
     ctx.globalAlpha = Math.min(1, (st.local - (st.line.from ?? 0)) / STORYBOARD.fadeSec);
     bigLine(ctx, t(st.line.id), st.line.key, id === 'title' ? 520 : 150, 76);
