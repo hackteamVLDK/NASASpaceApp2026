@@ -6,8 +6,8 @@
  */
 import { t } from '../flow/strings.js';
 import { play, director } from './audio.js';
-import { ICON } from '../render/atlas.js';
 import { offerButtonAt, drawOffer } from './drone-offer.js';
+import { drawBatteryScene, BATTERY } from './mg-scenes.js';
 
 const W = 1100;
 const H = 620;
@@ -202,10 +202,8 @@ export function startBatteryStep({ canvas, atlas, title, hint, onDone, onTitle =
   ctx.imageSmoothingEnabled = false;
   onTitle(title);
   onHint(hint);
-  const slot = { x: 330, y: 190, w: 250, h: 130 };
-  const socket = { x: 700, y: 255 };
-  const plugHome = { x: 760, y: 470 };
-  let battery = { x: 90, y: 400, w: 190, h: 100, seated: false };
+  const { slot, socket, plugHome, home } = BATTERY; // the same numbers as the picture (mg-scenes.js)
+  let battery = { ...home, seated: false };
   let plug = { ...plugHome }, drag = null, done = false, raf = 0, flash = 0;
 
   const over = (pt, r) => pt.x > r.x && pt.x < r.x + r.w && pt.y > r.y && pt.y < r.y + r.h;
@@ -229,14 +227,14 @@ export function startBatteryStep({ canvas, atlas, title, hint, onDone, onTitle =
         director.minigame('battery', 'insert');
         onHint('Now drag the orange plug into the round socket.'); // step 2 gets its own instruction
       }
-      else battery = { x: 90, y: 400, w: 190, h: 100, seated: false };
+      else battery = { ...home, seated: false };
     } else if (Math.hypot(plug.x - socket.x, plug.y - socket.y) < 70) { plug = { ...socket }; done = true; flash = performance.now(); director.minigame('battery', 'cable'); play('win'); setTimeout(() => { destroy(); onDone(); }, 800); }
     else plug = { ...plugHome };
     drag = null;
   };
   const cancel = () => { // a lost touch puts the dragged part back instead of leaving it stuck in the air
     if (!drag || done) { drag = null; return; }
-    if (drag.what === 'battery') battery = { x: 90, y: 400, w: 190, h: 100, seated: false }; else plug = { ...plugHome };
+    if (drag.what === 'battery') battery = { ...home, seated: false }; else plug = { ...plugHome };
     drag = null;
   };
   canvas.addEventListener('pointerdown', down);
@@ -245,28 +243,7 @@ export function startBatteryStep({ canvas, atlas, title, hint, onDone, onTitle =
   canvas.addEventListener('pointercancel', cancel);
 
   function frame(now) {
-    ctx.fillStyle = '#0b1522'; ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = '#e6d8c0'; ctx.strokeStyle = '#3a2a20'; ctx.lineWidth = 6;
-    ctx.beginPath(); ctx.roundRect(250, 120, 620, 420, 40); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#1a1214'; ctx.beginPath(); ctx.roundRect(290, 160, 540, 260, 24); ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.font = 'bold 24px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('Drone #01 – back hatch', 560, 100);
-    ctx.setLineDash([12, 8]); ctx.strokeStyle = battery.seated ? '#43e060' : '#00E5FF'; ctx.lineWidth = 4; ctx.strokeRect(slot.x, slot.y, slot.w, slot.h); ctx.setLineDash([]);
-    ctx.fillStyle = '#9aa'; ctx.beginPath(); ctx.arc(socket.x, socket.y, 28, 0, Math.PI * 2); ctx.fill();
-    // the socket lights up only when it is the next thing to use, so the first step has one clear target
-    ctx.fillStyle = done ? '#43e060' : battery.seated ? '#ff8a2a' : '#4a5560'; ctx.beginPath(); ctx.arc(socket.x, socket.y, 18, 0, Math.PI * 2); ctx.fill();
-    if (battery.seated && !done) { ctx.strokeStyle = `rgba(255,138,42,${0.4 + Math.sin(now / 200) * 0.35})`; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(socket.x, socket.y, 38, 0, Math.PI * 2); ctx.stroke(); }
-    // cable
-    if (battery.seated) {
-      ctx.strokeStyle = '#ff8a2a'; ctx.lineWidth = 12; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(plugHome.x + 60, plugHome.y + 90); ctx.bezierCurveTo(plugHome.x, plugHome.y + 60, plug.x + 30, plug.y + 90, plug.x, plug.y); ctx.stroke();
-      ctx.fillStyle = '#ffb870'; ctx.beginPath(); ctx.roundRect(plug.x - 26, plug.y - 18, 52, 36, 8); ctx.fill();
-      if (!done) { ctx.strokeStyle = `rgba(255,214,0,${0.5 + Math.sin(now / 200) * 0.4})`; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(plug.x, plug.y, 42, 0, Math.PI * 2); ctx.stroke(); }
-    }
-    // battery
-    ctx.fillStyle = '#2f6f3f'; ctx.strokeStyle = '#d7ffe0'; ctx.lineWidth = 5; ctx.beginPath(); ctx.roundRect(battery.x, battery.y, battery.w, battery.h, 14); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#d7ffe0'; ctx.fillRect(battery.x + battery.w, battery.y + 32, 14, 36);
-    atlas.cell(ctx, 'icons', ICON.battery, battery.x + 10, battery.y + 6, 88, 88);
-    ctx.fillStyle = '#fff'; ctx.font = 'bold 17px sans-serif'; ctx.textAlign = 'left'; ctx.fillText('CHARGED', battery.x + 98, battery.y + 56); // fits inside the battery body
+    drawBatteryScene(ctx, { battery, plug, done, drag, now, atlas }); // the picture (mg-scenes.js)
     // an animated hand shows the next move: battery -> hatch, then plug -> socket
     if (!drag && !done) {
       const k = Math.min(1, ((now / 1500) % 2));

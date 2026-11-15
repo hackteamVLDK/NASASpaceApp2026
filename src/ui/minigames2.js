@@ -7,12 +7,14 @@
  * Solar Wipe (4.1) and the tutorial battery step are in minigames.js.
  */
 import { play, director } from './audio.js';
-import { LAYOUTS, scramble, reach, tap, canTurn, ROWS, COLS, N, E, S, W as WEST } from './pipes.js';
+import { LAYOUTS, scramble, reach, tap, canTurn, ROWS, W as WEST } from './pipes.js';
 import { createSuit, pointerDown, pointerMove, pointerUp, pressureAt, steps, complete, nextStep, STAGE, PRESSURE } from './suit-seal.js';
 import { t } from '../flow/strings.js';
 import { formatDelay } from '../data/nasa/lightTime.js';
 import { wave } from './prefs.js';
 import { offerButtonAt, drawOffer } from './drone-offer.js';
+import { meter } from './mg-kit.js';
+import { drawRoverScene, drawRoverMeters, drawFilterScene, drawNutrientScene, drawAntennaScene, drawHeatScene, drawWaterScene, drawValveScene, HEAT_GRID, VALVE, TAP_RECT } from './mg-scenes.js';
 
 const W = 1100;
 const H = 620;
@@ -109,10 +111,10 @@ function tapHand(c, x, y, t) {
   c.restore();
 }
 
-function heatPump() {
+function heatPump({ atlas } = {}) {
   const { tiles, hint } = scramble(LAYOUTS[Math.floor(Math.random() * LAYOUTS.length)], Math.random);
   let first = true; // the hand shows until the first tap
-  const X = 150, Y = 150, T = 150, RH = T * 0.95;
+  const { X, Y, T, RH } = HEAT_GRID;
   const at = (r, c) => ({ x: X + c * T + T / 2, y: Y + r * RH + RH / 2 });
   return {
     down(p) {
@@ -121,20 +123,9 @@ function heatPump() {
     },
     draw(c, now) {
       const { seen, rooms } = reach(tiles);
+      const inlet = Boolean((tiles[1][0] & WEST) && seen.has('1,0')); // the pipe from the Heating Core is warm once the heat gets into the grid
+      drawHeatScene(c, { tiles, seen, rooms, canTurn, inlet, now, atlas }); // the picture (mg-scenes.js)
       label(c, 'Tap a pipe to turn it. Connect the Heating Core to all 3 rooms', W / 2, 60, 27, '#ffb000');
-      c.fillStyle = '#ff8a2a'; rr(c, 40, Y + RH + 20, 90, 90); c.fill(); label(c, 'CORE', 85, Y + RH + 76, 20, '#fff');
-      ['Bedroom', 'Kitchen', 'Greenhouse'].forEach((n, i) => { c.fillStyle = rooms.has(i) ? '#43e060' : '#3a4a5a'; rr(c, X + COLS * T + 20, Y + i * RH + 20, 150, 90); c.fill(); label(c, n, X + COLS * T + 95, Y + i * RH + 74, 22); });
-      for (let r = 0; r < ROWS; r++) for (let col = 0; col < COLS; col++) {
-        const m = tiles[r][col];
-        const x = X + col * T, y = Y + r * RH, cx = x + T / 2, cy = y + RH / 2;
-        c.fillStyle = canTurn(m) ? '#16293c' : '#101d2b'; rr(c, x + 4, y + 4, T - 8, RH - 8, 14); c.fill();
-        c.strokeStyle = seen.has(`${r},${col}`) ? `rgba(255,${Math.round(110 + 60 * wave(now, 150))},40,1)` : '#7b8a99'; c.lineWidth = 18; c.lineCap = 'round';
-        const arm = (dx, dy) => { c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + dx * T / 2, cy + dy * RH / 2); c.stroke(); };
-        if (m & N) arm(0, -1); if (m & E) arm(1, 0); if (m & S) arm(0, 1); if (m & WEST) arm(-1, 0);
-        if (m && !canTurn(m)) { c.fillStyle = '#394b5d'; c.beginPath(); c.arc(cx, cy, 12, 0, Math.PI * 2); c.fill(); } // a fixed junction: it does not turn
-      }
-      const inlet = (tiles[1][0] & WEST) && seen.has('1,0');
-      c.strokeStyle = inlet ? '#ff8a2a' : '#7b8a99'; c.lineWidth = 18; c.lineCap = 'round'; c.beginPath(); c.moveTo(130, Y + RH * 1.5); c.lineTo(X, Y + RH * 1.5); c.stroke();
       if (first) { const h = at(hint[0], hint[1]); tapHand(c, h.x, h.y, now); }
       this._rooms = rooms.size;
     },
@@ -143,7 +134,7 @@ function heatPump() {
 }
 
 // ------------------------------------------------------------------ 4.3 Valve Balance
-function valveBalance() {
+function valveBalance({ atlas } = {}) {
   // Reworked (docs/ERRORS.md): two clear sliders instead of three round knobs (A, B, C) that had to be turned in
   // circles. Each slider belongs to one gauge and sits right under it, in its colour: drag it, and its needle follows
   // (with a little lag). The air keeps changing a bit, so the needles wobble: keep both in SAFE for 2 seconds.
@@ -151,9 +142,8 @@ function valveBalance() {
     { id: 'co2', name: 'CO\u2082 scrubber', hint: 'Too much CO\u2082 makes people sleepy: keep it low.', x: 70, col: '#b8c4cc', band: [0.15, 0.38], v: 0.85, target: 0.85, phase: 0 },
     { id: 'o2', name: 'O\u2082 maker', hint: 'Enough oxygen to breathe easy.', x: 590, col: '#4db8ff', band: [0.55, 0.78], v: 0.15, target: 0.15, phase: 2.1 },
   ];
-  const GW = 440; // gauge and slider width
+  const { GW, SLIDER_Y: sliderY } = VALVE; // gauge and slider width, and the lever's height (shared with the picture)
   let drag = null, greenSince = null, touched = false;
-  const sliderY = 430;
   const shown = (g, now) => Math.max(0, Math.min(1, g.v + 0.035 * Math.sin(now / 650 + g.phase))); // the wobble
   const setTarget = (g, p) => { g.target = Math.max(0, Math.min(1, (p.x - g.x) / GW)); };
   return {
@@ -164,43 +154,12 @@ function valveBalance() {
     move(p) { if (drag) setTarget(drag, p); },
     up() { drag = null; },
     draw(c, now) {
+      const vals = gauges.map((g) => { g.v += (g.target - g.v) * 0.08; return shown(g, now); }); // the needle follows the lever with a little lag, like a real valve
+      const ok = gauges.every((g, i) => vals[i] >= g.band[0] && vals[i] <= g.band[1]);
+      if (ok) greenSince ??= now; else greenSince = null;
+      drawValveScene(c, { gauges, vals, drag, holdK: ok ? Math.min(1, (now - greenSince) / 2000) : null, now, atlas }); // the picture (mg-scenes.js)
       label(c, 'Slide each lever until its needle is in SAFE, then hold for 2 seconds', W / 2, 52, 26, '#ffb000');
-      let ok = true;
-      for (const g of gauges) {
-        g.v += (g.target - g.v) * 0.08; // the needle follows the lever with a little lag, like a real valve
-        const val = shown(g, now);
-        const inBand = val >= g.band[0] && val <= g.band[1];
-        ok &&= inBand;
-        // gauge
-        c.fillStyle = '#16293c'; rr(c, g.x - 20, 90, GW + 40, 230, 16); c.fill();
-        label(c, g.name, g.x + GW / 2, 128, 26, g.col);
-        c.fillStyle = '#0c1624'; c.fillRect(g.x, 160, GW, 70);
-        c.fillStyle = inBand ? 'rgba(67,224,96,.55)' : 'rgba(67,224,96,.3)'; c.fillRect(g.x + g.band[0] * GW, 160, (g.band[1] - g.band[0]) * GW, 70);
-        label(c, 'SAFE', g.x + ((g.band[0] + g.band[1]) / 2) * GW, 202, 20, '#d7ffe0');
-        c.strokeStyle = '#38546e'; c.lineWidth = 3; c.strokeRect(g.x, 160, GW, 70);
-        c.fillStyle = inBand ? '#43e060' : '#ff8a80'; c.fillRect(g.x + val * GW - 4, 150, 8, 90); // the needle
-        label(c, g.hint, g.x + GW / 2, 280, 18, '#bcd');
-        // slider (lever) right under its gauge, in its colour
-        c.fillStyle = '#22384d'; rr(c, g.x, sliderY - 10, GW, 20, 10); c.fill();
-        const hx = g.x + g.target * GW;
-        c.fillStyle = g.col; c.beginPath(); c.arc(hx, sliderY, 34, 0, Math.PI * 2); c.fill();
-        c.strokeStyle = drag === g ? '#fff' : '#0b1522'; c.lineWidth = 4; c.stroke();
-        label(c, '\u2194', hx, sliderY + 9, 28, '#0b1522');
-        // which way to go: a pulsing arrow until the needle is safe
-        if (!inBand) {
-          const dir = val > g.band[1] ? -1 : 1, a = wave(now, 180);
-          c.fillStyle = `rgba(255,214,0,${a})`; c.beginPath();
-          const ax = hx + dir * 62;
-          c.moveTo(ax + dir * 22, sliderY); c.lineTo(ax, sliderY - 18); c.lineTo(ax, sliderY + 18); c.closePath(); c.fill();
-        }
-      }
       if (!touched) tapHand(c, gauges[0].x + gauges[0].target * GW - ((now / 1600) % 1) * 200, sliderY, now); // shows the drag: lever to the left
-      if (ok) {
-        greenSince ??= now;
-        const k = Math.min(1, (now - greenSince) / 2000);
-        c.fillStyle = '#0c1624'; c.fillRect(150, 520, 800, 26); c.fillStyle = '#43e060'; c.fillRect(150, 520, 800 * k, 26);
-        label(c, 'Hold steady...', W / 2, 512, 22, '#9affb0');
-      } else greenSince = null;
       this._since = greenSince;
       this._now = now;
     },
@@ -224,24 +183,17 @@ function dragHand(c, x0, y0, x1, y1, now) {
 }
 
 /** A short line in a dark box near the bottom: what went wrong, or what is next. */
-function sayBox(c, said, now) {
+function sayBox(c, said, now, y = H - 96) {
   if (!said || said.until < now) return;
   c.font = 'bold 24px sans-serif';
   const w = Math.min(W - 80, c.measureText(said.text).width + 48);
-  c.fillStyle = 'rgba(0,0,0,.65)'; rr(c, W / 2 - w / 2, H - 96, w, 46, 12); c.fill();
-  label(c, said.text, W / 2, H - 64, 24, said.color);
+  c.fillStyle = 'rgba(0,0,0,.65)'; rr(c, W / 2 - w / 2, y, w, 46, 12); c.fill();
+  label(c, said.text, W / 2, y + 32, 24, said.color);
 }
 const saying = (text, color = '#ffd600', ms = 1900) => ({ text, color, until: performance.now() + ms });
 
-/** "3 / 6" style progress with a small bar. */
-function progress(c, text, frac, x, y) {
-  label(c, text, x, y, 20, '#cfe');
-  c.fillStyle = '#16293c'; rr(c, x - 90, y + 10, 180, 12, 6); c.fill();
-  c.fillStyle = '#43e060'; rr(c, x - 90, y + 10, Math.max(12, 180 * frac), 12, 6); c.fill();
-}
-
 // ------------------------------------------------------------------ 4.4 Closed-Loop Water Sort
-function waterSort() {
+function waterSort({ atlas } = {}) {
   const tray = [{ id: 'Filter', col: '#9bb', x: 200, why: 'catches the dirt' }, { id: 'Boiler', col: '#ff8a2a', x: 500, why: 'kills the germs' }, { id: 'Purifier', col: '#b36bff', x: 800, why: 'makes it sparkle' }].sort(() => Math.random() - 0.5);
   const order = ['Filter', 'Boiler', 'Purifier'];
   const slots = [null, null, null];
@@ -252,7 +204,7 @@ function waterSort() {
   const full = () => slots.every(Boolean);
   return {
     down(p) {
-      if (inR(p, 30, 150, 150, 70)) { // the tap (left of the pipe; it used to cover the droplet)
+      if (inR(p, TAP_RECT.x, TAP_RECT.y, TAP_RECT.w, TAP_RECT.h)) { // the tap (left of the pipe; it used to cover the droplet)
         director.minigame('water_sort', 'tap');
         if (!full()) { said = saying('First put all 3 machines into the boxes.'); return; }
         const ok = slots.every((s, i) => s === order[i]);
@@ -277,31 +229,18 @@ function waterSort() {
     },
     draw(c, now) {
       const next = slots.findIndex((s) => s === null);
-      label(c, flowing ? 'Watch the droplet get clean!' : full() ? 'Now tap the yellow TAP!' : `Drag a machine into box ${next + 1}. Order: Filter, Boiler, Purifier`, W / 2, 60, 26, '#ffb000');
-      // the pipe the water runs through: tap -> three machines -> clean water
-      c.fillStyle = '#22384d'; c.fillRect(100, 296, 960, 18);
       const ready = full() && !flowing;
-      if (ready) { c.shadowColor = '#ffd600'; c.shadowBlur = 10 + 16 * wave(now, 200); }
-      c.fillStyle = '#ffb000'; rr(c, 30, 150, 150, 70); c.fill(); c.shadowBlur = 0; label(c, 'TAP', 105, 196, 30, '#000');
       // the droplet: murky at the start, it runs along the pipe and turns clear blue after the last machine
       const k = flowing ? Math.min(1, (now - flowing) / 900) : 0;
       const back = wobble && now - wobble.at < 600 ? Math.sin(((now - wobble.at) / 600) * Math.PI) * 60 : 0; // bounced back
       const dx = 105 + k * 920 + back;
       const clean = Math.min(1, Math.max(0, (dx - 250) / 700));
-      c.fillStyle = `rgb(${Math.round(107 + (77 - 107) * clean)},${Math.round(74 + (184 - 74) * clean)},${Math.round(42 + (255 - 42) * clean)})`;
-      c.beginPath(); c.arc(dx, 305, 28, 0, Math.PI * 2); c.fill();
-      c.fillStyle = '#fff'; c.beginPath(); c.arc(dx - 8, 299, 5, 0, Math.PI * 2); c.arc(dx + 8, 299, 5, 0, Math.PI * 2); c.fill(); // eyes
-      for (let i = 0; i < 3; i++) {
-        const r = slotRect(i); const bad = wobble?.i === i && now - wobble.at < 600;
-        c.strokeStyle = bad ? '#ff5252' : i === next && !drag ? `rgba(0,229,255,${0.2 + 0.8 * wave(now, 200)})` : '#4db8ff';
-        c.setLineDash([10, 8]); c.lineWidth = 4; c.strokeRect(r.x + (bad ? Math.sin(now / 30) * 6 : 0), r.y, r.w, r.h); c.setLineDash([]);
-        if (!slots[i]) label(c, String(i + 1), r.x + r.w / 2, r.y + 72, 44, 'rgba(77,184,255,.45)');
-      }
-      pos.forEach((m) => { c.fillStyle = m.col; rr(c, m.x - 85, m.y - 45, 170, 90, 12); c.fill(); label(c, m.id, m.x, m.y + 8, 26, '#000'); });
-      progress(c, `Machines in: ${slots.filter(Boolean).length} / 3`, slots.filter(Boolean).length / 3, 950, 170);
+      const count = slots.filter(Boolean).length;
+      drawWaterScene(c, { machines: pos, bays: [0, 1, 2].map(slotRect), filled: slots, next, drag, wobble, dropletX: dx, clean, ready, count, now, atlas }); // the picture (mg-scenes.js)
+      label(c, flowing ? 'Watch the droplet get clean!' : full() ? 'Now tap the yellow TAP!' : `Drag a machine into box ${next + 1}. Order: Filter, Boiler, Purifier`, W / 2, 60, 26, '#ffb000');
       if (!moved && !drag) { const f = pos.find((m) => m.id === 'Filter'); dragHand(c, f.x, f.y, slotRect(0).x + 100, slotRect(0).y + 55, now); }
       else if (ready && !said?.text.startsWith('Box')) tapHand(c, 105, 185, now);
-      sayBox(c, said, now);
+      sayBox(c, said, now, 96); // under the instruction: the machines wait at the bottom
       this._done = flowing && now - flowing > 1000;
     },
     done() { return Boolean(this._done); },
@@ -309,7 +248,7 @@ function waterSort() {
 }
 
 // ------------------------------------------------------------------ 4.6 Hydroponic LED & Nutrient Match
-function nutrientMatch() {
+function nutrientMatch({ atlas } = {}) {
   const cols = ['#43e060', '#ffd600', '#b36bff'];
   const names = { '#43e060': 'green', '#ffd600': 'yellow', '#b36bff': 'purple' };
   const trays = [0, 1, 2].map((i) => ({ x: 220 + i * 330, tag: cols[[1, 2, 0][i]], filled: false, bad: 0 }));
@@ -330,26 +269,15 @@ function nutrientMatch() {
     up(p) {
       if (!drag) return;
       const t = trays.find((q) => Math.abs(p.x - q.x) < 130 && p.y > 230);
-      if (t && !t.filled && t.tag === drag.c) { t.filled = true; drag.used = true; director.minigame('nutrient_match', 'drop'); }
+      if (t && !t.filled && t.tag === drag.c) { t.filled = true; t.poured = performance.now(); drag.used = true; director.minigame('nutrient_match', 'drop'); }
       else if (t && !t.filled) { t.bad = performance.now(); said = saying(`This plant has a ${names[t.tag]} tag: it needs the ${names[t.tag]} bottle.`); }
       else if (!t) said = saying('Drop the bottle on a plant.');
       drag.x = drag.hx; drag.y = drag.hy; drag = null;
     },
     draw(c, now) {
-      label(c, fed() < 3 ? 'Drag each bottle to the plant with the SAME colour tag' : led ? 'All plants are happy!' : 'Now tap the LED switch!', W / 2, 60, 26, '#ffb000');
-      trays.forEach((t) => {
-        c.fillStyle = t.filled ? '#2e6b3a' : '#2a3a4a'; rr(c, t.x - 120, 300, 240, 200); c.fill();
-        c.fillStyle = t.tag; rr(c, t.x - 30, 470, 60, 24, 8); c.fill();
-        if (drag && !t.filled && t.tag === drag.c) { c.strokeStyle = `rgba(255,255,255,${0.1 + 0.8 * wave(now, 150)})`; c.lineWidth = 4; rr(c, t.x - 120, 300, 240, 200); c.stroke(); }
-        const wilt = !t.filled || !led; const yellow = now - t.bad < 900;
-        c.fillStyle = yellow ? '#e5d34a' : wilt ? '#7a8a3a' : '#43e060'; c.fillRect(t.x - 8, wilt ? 380 : 340, 16, wilt ? 90 : 130); c.beginPath(); c.arc(t.x, wilt ? 380 : 340, wilt ? 30 : 46, 0, Math.PI * 2); c.fill();
-        if (t.filled) label(c, '✔', t.x + 95, 330, 26, '#9affb0');
-      });
-      bottles.forEach((b) => { if (b.used) return; c.fillStyle = b.c; rr(c, b.x - 28, b.y - 50, 56, 100, 10); c.fill(); c.fillStyle = '#fff'; c.fillRect(b.x - 12, b.y - 62, 24, 14); });
       const ready = fed() === 3 && !led;
-      if (ready) { c.shadowColor = '#ff4de1'; c.shadowBlur = 10 + 16 * wave(now, 200); }
-      c.fillStyle = led ? '#ff4de1' : ready ? '#9a5a8a' : '#555'; rr(c, 500, 520, 100, 90, 14); c.fill(); c.shadowBlur = 0; label(c, 'LED', 550, 575, 26, '#000'); // below the trays, not on top of one
-      progress(c, `Plants fed: ${fed()} / 3`, fed() / 3, 950, 225);
+      drawNutrientScene(c, { trays, bottles, drag, led, ready, fed: fed(), now, atlas }); // the picture (mg-scenes.js); the rules stay here
+      label(c, fed() < 3 ? 'Drag each bottle to the plant with the SAME colour tag' : led ? 'All plants are happy!' : 'Now tap the LED switch!', W / 2, 60, 26, '#ffb000');
       if (!moved && !drag) { const b = bottles[0]; const tr = trays.find((q) => q.tag === b.c); dragHand(c, b.x, b.y, tr.x, 400, now); }
       else if (ready) tapHand(c, 550, 560, now);
       sayBox(c, said, now);
@@ -360,22 +288,23 @@ function nutrientMatch() {
 }
 
 // ------------------------------------------------------------------ 4.2 Air Dust Filter Scrub
-function airFilter() {
+function airFilter({ atlas } = {}) {
   const cells = Array.from({ length: 16 }, () => ({ dust: 3, last: -1 }));
   let step = 0; // 0 pull the filter out, 1 scrub, 2 lock
   let rub = null, said = null, scrubbedThisPress = false;
+  let pulledAt = 0, lockedAt = 0; // when the filter came out and when it was locked back in (for the slide animations)
   const X = 340, Y = 130, C = 100;
   const clean = () => cells.filter((q) => q.dust === 0).length;
   return {
     down(p) {
       if (step === 0) {
-        if (inR(p, X - 100, Y, 80, 200)) { step = 1; director.minigame('air_filter', 'pull'); said = saying('Out it comes! Now rub off the red dust.', '#9affb0'); }
+        if (inR(p, X - 100, Y, 80, 200)) { step = 1; pulledAt = performance.now(); director.minigame('air_filter', 'pull'); said = saying('Out it comes! Now rub off the red dust.', '#9affb0'); }
         else said = saying('Grab the yellow PULL handle first.');
         return;
       }
       if (step === 1) { rub = { last: p, dir: 0 }; scrubbedThisPress = false; }
       if (step === 2) {
-        if (inR(p, 820, 300, 120, 100)) { this._ok = true; director.minigame('air_filter', 'lock'); }
+        if (inR(p, 820, 300, 120, 100)) { this._ok = true; lockedAt = performance.now(); director.minigame('air_filter', 'lock'); }
         else said = saying('Tap the green LOCK to put the filter back.');
       }
     },
@@ -391,17 +320,14 @@ function airFilter() {
     },
     up() { if (step === 1 && rub && !scrubbedThisPress) said = saying('Keep your finger down and rub left and right.'); rub = null; },
     draw(c, now) {
+      drawFilterScene(c, { step, cells, pulledAt, lockedAt, brushAt: rub?.last ?? null, clean: clean(), now, atlas }); // the picture (mg-scenes.js); the rules stay here
       label(c, step === 0 ? 'Tap the yellow handle to pull the filter out' : step === 1 ? 'Rub each brown square left and right until it is clean' : 'Tap the green LOCK lever', W / 2, 60, 26, '#ffb000');
-      c.fillStyle = '#394b5d'; rr(c, X - 110, Y - 20, 640, 440, 16); c.fill();
-      if (step === 0) { c.shadowColor = '#ffd600'; c.shadowBlur = 10 + 16 * wave(now, 200); c.fillStyle = '#ffb000'; rr(c, X - 100, Y, 80, 200); c.fill(); c.shadowBlur = 0; label(c, 'PULL', X - 60, Y + 110, 22, '#000'); }
-      cells.forEach((q, i) => { const x = X + (i % 4) * C, y = Y + Math.floor(i / 4) * C; c.fillStyle = '#9fb5c8'; c.fillRect(x + 4, y + 4, C - 8, C - 8); c.fillStyle = `rgba(180,70,30,${q.dust / 3 * 0.85})`; c.fillRect(x + 4, y + 4, C - 8, C - 8); if (q.dust === 0 && step === 1) label(c, '✔', x + C / 2, y + C / 2 + 10, 28, '#1d6e2e'); });
-      if (step === 2) { c.shadowColor = '#43e060'; c.shadowBlur = 10 + 16 * wave(now, 200); c.fillStyle = '#43e060'; rr(c, 820, 300, 120, 100); c.fill(); c.shadowBlur = 0; label(c, 'LOCK', 880, 360, 26, '#000'); }
-      if (step === 1) progress(c, `Clean squares: ${clean()} / 16`, clean() / 16, 950, 170);
       if (step === 0) tapHand(c, X - 60, Y + 100, now);
       else if (step === 1 && clean() === 0 && !rub) { const i = cells.findIndex((q) => q.dust > 0); const x = X + (i % 4) * C, y = Y + Math.floor(i / 4) * C + C / 2; dragHand(c, x + 15, y, x + C - 15, y, now); }
       else if (step === 2) tapHand(c, 880, 350, now);
       sayBox(c, said, now);
     },
+    outroMs: 700, // the filter slides back into its housing
     done() { return Boolean(this._ok); },
   };
 }
@@ -410,45 +336,43 @@ function airFilter() {
 // On a win a message icon flies to Earth with "Arriving in {delay}...": {delay} starts at the real
 // one-way light time for the current Sol (lightTime.js) and counts down sped up (gameplay).
 const ANTENNA_OUTRO_MS = 2600;
-function antenna({ delaySeconds = 840 } = {}) {
+function antenna({ delaySeconds = 840, dishBent = false, atlas } = {}) {
   const sl = { lr: 0.15, ud: 0.85 };
   let drag = null, good = null, touched = false, said = null, hadLock = false;
+  // C11 / SCENARIO 4.9 step 1: after a storm the dish is bent; one swipe over it puts it right before the sliders work
+  let bent = Boolean(dishBent), swipe = null, straightenedAt = 0;
   const earth = (now) => ({ x: 0.5 + 0.28 * Math.sin(now / 5200), y: 0.35 + 0.18 * Math.cos(now / 6800) });
   return {
     down(p) {
+      if (bent) { if (inR(p, 920, 110, 180, 250)) swipe = { x0: p.x, y0: p.y }; else said = saying('The dish is bent from the storm. Swipe it to straighten it!'); return; }
       if (inR(p, 100, 505, 440, 80)) drag = 'lr'; else if (inR(p, 580, 505, 440, 80)) drag = 'ud';
       else said = saying('Use the two orange sliders at the bottom.');
       if (drag) touched = true;
     },
-    move(p) { if (drag === 'lr') sl.lr = Math.max(0, Math.min(1, (p.x - 120) / 400)); if (drag === 'ud') sl.ud = Math.max(0, Math.min(1, (p.x - 600) / 400)); },
-    up() { drag = null; },
+    move(p) {
+      if (bent) {
+        if (swipe && Math.hypot(p.x - swipe.x0, p.y - swipe.y0) > 110) { bent = false; swipe = null; straightenedAt = performance.now(); said = saying('Straight again! Now find Earth.', '#9affb0'); director.minigame('antenna', 'lock'); }
+        return;
+      }
+      if (drag === 'lr') sl.lr = Math.max(0, Math.min(1, (p.x - 120) / 400)); if (drag === 'ud') sl.ud = Math.max(0, Math.min(1, (p.x - 600) / 400)); },
+    up() { drag = null; swipe = null; },
     draw(c, now) {
-      c.fillStyle = '#020611'; c.fillRect(0, 100, W, 380);
-      for (let i = 0; i < 60; i++) { c.fillStyle = '#9ab'; c.fillRect((i * 137) % W, 110 + ((i * 59) % 360), 2, 2); }
       const e = earth(now), ex = 60 + e.x * 980, ey = 120 + e.y * 340;
       const bx = 60 + sl.lr * 980, by = 120 + (1 - sl.ud) * 340;
-      // the dish in the corner and its beam (a cone of light) to the ring it points at (4.9)
-      c.fillStyle = 'rgba(255,214,0,.10)'; c.beginPath(); c.moveTo(1050, 470); c.lineTo(bx - 50, by); c.lineTo(bx + 50, by); c.closePath(); c.fill();
-      c.fillStyle = '#b9b3a6'; c.beginPath(); c.ellipse(1050, 462, 34, 14, -0.6, 0, Math.PI * 2); c.fill(); c.fillRect(1046, 462, 8, 18);
-      c.fillStyle = '#3d8bff'; c.beginPath(); c.arc(ex, ey, 14, 0, Math.PI * 2); c.fill();
-      label(c, 'EARTH', ex, ey - 24, 18, '#9fd8ff');
-      c.strokeStyle = 'rgba(255,214,0,.8)'; c.lineWidth = 3; c.beginPath(); c.arc(bx, by, 60, 0, Math.PI * 2); c.stroke();
-      label(c, 'dish beam', bx, by + 82, 16, 'rgba(255,214,0,.8)');
       const d = Math.hypot(ex - bx, ey - by);
-      const bars = d < 40 ? 5 : d < 80 ? 4 : d < 150 ? 3 : d < 260 ? 2 : d < 400 ? 1 : 0;
-      for (let i = 0; i < 5; i++) { c.fillStyle = i < bars ? (bars >= 4 ? '#43e060' : '#ffd600') : '#333'; c.fillRect(40 + i * 40, 60 - i * 8, 28, 20 + i * 8); }
-      label(c, bars >= 4 ? 'Hold it there! Earth is moving, follow it' : 'Move the yellow ring onto Earth with the sliders', W / 2, 60, 26, '#ffb000');
-      [['Left / Right', 120, sl.lr], ['Up / Down', 600, sl.ud]].forEach(([n, x, v]) => { c.fillStyle = '#394b5d'; rr(c, x, 530, 400, 30, 15); c.fill(); c.fillStyle = '#ffb000'; c.beginPath(); c.arc(x + 400 * v, 545, 26, 0, Math.PI * 2); c.fill(); label(c, n, x + 200, 600, 20); });
+      const bars = bent ? 0 : d < 40 ? 5 : d < 80 ? 4 : d < 150 ? 3 : d < 260 ? 2 : d < 400 ? 1 : 0; // a bent dish gets no signal
+      drawAntennaScene(c, { bent, straight: bent ? 0 : Math.min(1, (now - straightenedAt) / 500), beam: { x: bx, y: by }, earth: { x: ex, y: ey }, bars, lr: sl.lr, ud: sl.ud, held: drag, now, atlas }); // the picture (mg-scenes.js)
+      label(c, bent ? 'Swipe across the bent dish to straighten it' : bars >= 4 ? 'Hold it there! Earth is moving, follow it' : 'Move the yellow ring onto Earth with the sliders', W / 2, 60, 26, '#ffb000');
       if (bars >= 4) {
         if (good === null) director.minigame('antenna', 'lock');
         good ??= now; hadLock = true;
-        c.fillStyle = '#16293c'; rr(c, 300, 486, 500, 14, 7); c.fill();
-        c.fillStyle = '#43e060'; rr(c, 300, 486, Math.max(14, Math.min(500, ((now - good) / 3000) * 500)), 14, 7); c.fill();
+        meter(c, 300, 494, 500, Math.min(1, (now - good) / 3000), { label: 'Hold steady', color: '#43e060', h: 14 });
       } else {
         if (good !== null && hadLock && this.wonAt == null) said = saying('Earth slipped away. Follow it with the sliders!');
         good = null;
       }
-      if (!touched) dragHand(c, 120 + 400 * sl.lr, 545, 120 + 400 * Math.min(1, sl.lr + 0.45), 545, now);
+      if (bent) { if (!swipe) dragHand(c, 960, 300, 1070, 190, now); }
+      else if (!touched) dragHand(c, 120 + 400 * sl.lr, 530, 120 + 400 * Math.min(1, sl.lr + 0.45), 530, now);
       sayBox(c, said, now);
       this._since = good; this._now = now;
       if (this.wonAt != null) {
@@ -466,7 +390,7 @@ function antenna({ delaySeconds = 840 } = {}) {
 }
 
 // ------------------------------------------------------------------ 4.7 Rover Wheel Pebble Vacuum
-function wheelVacuum() {
+function wheelVacuum({ atlas } = {}) {
   // side view: six wheels in one row under the Rover's body, standing on the ground (they used to float in two rows)
   const wheels = Array.from({ length: 6 }, (_, i) => ({ x: 140 + i * 164, y: 330, dust: 1 }));
   const pebbles = [{ w: 1, ox: 30, oy: -20, out: false }, { w: 4, ox: -30, oy: 10, out: false }];
@@ -486,22 +410,9 @@ function wheelVacuum() {
     draw(c, now) {
       const wheelsDone = cleanCount() === 6;
       const left = pebbles.filter((q) => !q.out).length;
+      drawRoverScene(c, { wheels, pebbles, nozzle, pressed, now, atlas }); // the picture (mg-scenes.js); the rules stay here
       label(c, !wheelsDone ? 'Slide the blue vacuum over every wheel until it shines' : left ? `Tap the ${left} sparkling pebble${left > 1 ? 's' : ''}!` : 'Wheels ready!', W / 2, 60, 26, '#ffb000');
-      c.fillStyle = '#c9b9a0'; rr(c, 60, 150, 980, 150, 20); c.fill();
-      c.fillStyle = '#7a5a40'; c.fillRect(30, 400, 1040, 8); // the ground the wheels stand on
-      wheels.forEach((w) => {
-        c.fillStyle = '#222'; c.beginPath(); c.arc(w.x, w.y, 70, 0, Math.PI * 2); c.fill();
-        c.fillStyle = `rgb(${90 + w.dust * 110},${80 + w.dust * 20},${70})`; c.beginPath(); c.arc(w.x, w.y, 56, 0, Math.PI * 2); c.fill();
-        c.fillStyle = '#ddd'; c.beginPath(); c.arc(w.x, w.y, 16, 0, Math.PI * 2); c.fill();
-        if (w.dust < 0.12) { c.strokeStyle = '#43e060'; c.lineWidth = 5; c.beginPath(); c.arc(w.x, w.y, 74, 0, Math.PI * 2); c.stroke(); label(c, '✔', w.x, w.y + 108, 26, '#9affb0'); }
-      });
-      pebbles.forEach((q) => { if (q.out) return; const w = wheels[q.w]; c.fillStyle = Math.floor(now / 200) % 2 ? '#fff' : '#ffd600'; c.beginPath(); c.arc(w.x + q.ox, w.y + q.oy, 12, 0, Math.PI * 2); c.fill(); });
-      // the vacuum nozzle: parked at the right until the finger is down, then it follows the finger
-      const nz = nozzle ?? { x: 1000, y: 500 };
-      c.fillStyle = '#4db8ff'; c.beginPath(); c.arc(nz.x, nz.y, 26, 0, Math.PI * 2); c.fill();
-      if (!nozzle) label(c, 'vacuum', 1000, 552, 18, '#9fd8ff');
-      progress(c, `Clean wheels: ${cleanCount()} / 6`, cleanCount() / 6, 200, 480);
-      progress(c, `Pebbles out: ${2 - left} / 2`, (2 - left) / 2, 460, 480);
+      drawRoverMeters(c, { clean: cleanCount(), total: 6, out: 2 - left, pebbles: 2, atlas });
       if (!touched) dragHand(c, wheels[0].x, wheels[0].y, wheels[2].x, wheels[2].y, now);
       else if (wheelsDone && left) { const q = pebbles.find((x) => !x.out); tapHand(c, wheels[q.w].x + q.ox, wheels[q.w].y + q.oy, now); }
       sayBox(c, said, now);

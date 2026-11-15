@@ -247,7 +247,7 @@ function openMini(game, { onDone = null } = {}) {
   const win = () => { closeMini(); finish(true); onDone?.(true); };
   if (game === 'solar_wipe') mini = startSolarWipe({ ...common, help, title: t('ui.mg.solar_wipe.title'), hint: 'Swipe across the panels to wipe the dust. Sparkly sticky spots need a few extra wipes.', onWin: () => { closeMini(); onSolarWin(); onDone?.(true); } });
   else if (game === 'battery') mini = startBatteryStep({ ...common, title: 'Wake up Drone #01', hint: 'Drag the charged battery into the hatch, then plug in the cable.', onDone: () => { closeMini(); onBatteryDone(); } });
-  else if (hasMini2(game)) mini = startMini2(game, { ...common, help, delaySeconds, liner: Boolean(s.upgrades?.suit_liner) /* Suit Seal Check: one more thing to drag (SCENARIO 4.8) */, title: miniTitle(game), hint: '' /* the game's own line at the top says what to do; a second generic line only adds reading */, onWin: win, onFail: () => finish(false) });
+  else if (hasMini2(game)) mini = startMini2(game, { ...common, help, delaySeconds, liner: Boolean(s.upgrades?.suit_liner) /* Suit Seal Check: one more thing to drag (SCENARIO 4.8) */, dishBent: Boolean(s.flags.dishBent) /* Dish Antenna: step 1 after a storm (SCENARIO 4.9) */, title: miniTitle(game), hint: '' /* the game's own line at the top says what to do; a second generic line only adds reading */, onWin: win, onFail: () => finish(false) });
   else { toast('That job is not ready yet.'); $('mgWrap').hidden = true; }
 }
 function closeMini() {

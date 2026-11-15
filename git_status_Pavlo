@@ -1,19 +1,12 @@
 # git_status_Pavlo
 
 Owner: agent on Pavlo's PC (git user "Pavlo"). Only this agent edits this file.
-Updated: 2026-11-15 00:22 (UTC+1). Answer to the LIVE NOTE in git_status_Mykhailo: I take the UI side.
+Updated: 2026-11-15 (UTC+1), end of the tickets + mini-game looks batch.
 
 ## DOING NOW (2026-11-15)
-The user asked: (1) check the open tickets and fix them, with an extra check of each fix; (2) improve the look of the mini-games nobody touched yet.
-Tickets I take (UI side, small commits, tests + a real-browser check for each): D-T9 / B4 (validate every part of a save), D-T1 / A22 (grey out refused
-choices with the reason), B2 (after 3 failures a drone OFFERS help: 1 Sol of drone time; needs one engine command `droneFix` and a chore-done hook), C21 (dormant
-drone blink with Reduce motion), C11 (the bent-dish step in the antenna game; note: the campaign has only ONE storm, Sol 4-6, before the dish exists, so the step is
-reachable only after a later storm). Not mine: B12/C10 (roles, Sol Plans: team decision), B6/C12 (Mykhailo's expeditions.js), C17 (art), C18 (deploy), C20 (design decision).
-Mini-game looks (src/ui/minigames2.js drawing, minigames.js if needed): Air Filter, Antenna, Nutrient Match, Wheel Vacuum, Heat Pump, Solar Wipe: all new motion respects Reduce motion.
-Files: src/ui/minigames2.js, src/ui/minigames.js, src/ui/campaign-ui.js (showChoice), src/main.js (save, mini-game options), src/campaign/save-migrate.js, tests/save-migrate.test.mjs,
-src/render/campaign-world.js (C21 one line), docs/ERRORS.md (rows only). Engine: only a small `droneFix` command in src/campaign/engine.js and an `auto` flag in story.js `onMini`
-(Mykhailo: tell me if you are editing those two right now; I fetch before every commit).
-- Still waiting for the team: the Game Over rule `RULES.hpZeroEndsRun` (A28), see docs/ERRORS.md.
+Nothing is being edited at the moment: the tickets and the mini-game looks of this session are committed and pushed (see DONE).
+Still waiting for the team: the Game Over rule `RULES.hpZeroEndsRun` (A28), see docs/ERRORS.md.
+Not mine: B12/C10 (roles, Sol Plans: team decision), B6/C12 (Mykhailo's expeditions.js), C17 (art), C18 (deploy), C20 (design decision).
 
 ## FILES / FOLDERS I AM EDITING (please do not edit these right now)
 - src/ui/ (campaign-ui.js, extras.js, minigames.js, minigames2.js, NEW pipes.js), src/render/ (campaign-world.js, movers.js, world.js, atlas.js, NEW geometry.js), src/main.js
@@ -33,9 +26,16 @@ src/render/campaign-world.js (C21 one line), docs/ERRORS.md (rows only). Engine:
 - docs/ERRORS.md: the list of errors with causes and fixes (the player's reports, the Codex records R1 to R4, my findings).
 - A26 roof drone, A27 Ice Run on the map, A28 Game Over, A30 Missions tracker in the tutorial, A36 climbing animation, A37 Suit Seal Check, A41 lander flames: docs/ERRORS.md.
 - npm test: 297 of 297 pass (2026-11-14 23:45 UTC+1, on the merged main).
+- Tickets: C21 (dormant drone blink with Reduce motion), C15 effects-volume slider, A22/D-T1 (refused choices are greyed out with the reason), B4/D-T9 (a save is validated
+  before Continue loads it), B2 (after 3 failed tries a drone OFFERS help for 1 Sol: engine command `droneFix` + `droneFixBlock`, `src/ui/drone-offer.js`), C11 dish step (A42).
+- Mini-game looks (A42): `src/ui/mg-kit.js` + `src/ui/mg-scenes.js`, a scene per game; the rules kept their hit areas and timing; Reduce motion respected.
+  Played to the win with the real mouse in Edge: Heat Pump, Valve Balance, Water Sort (also the wrong order), Nutrient Match, Air Filter, Antenna (also the bent dish), Wheel Vacuum, battery step.
+- npm test: 330 of 330 pass (2026-11-15, on the tree before the commit; 4 new tests in tests/dish-bent.test.mjs).
 
 ## NEXT
 - PR #7 (audio hooks into main.js) after this batch: it touches main.js, so it must be rebased on top of it.
+- C11 stays PARTIAL: the campaign has one storm (Sols 4-6), before the Lab exists, so the bent-dish step cannot be reached until a later storm is added (team decision).
+- C15 colour-blind palette is still open. The Codex read-only review of B4/B2 can be retried after the usage limit resets.
 
 ## FREE FOR OTHERS
 - P2 breakdowns, P5 Research gate, P6 Recreation refill, P7 Earth windows (engine side), Sol Plans and Fitness.

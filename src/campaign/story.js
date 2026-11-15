@@ -69,6 +69,7 @@ function endStorm(s, emit) {
   say(emit, 'astra.act1.storm_end', 'cheerful');
   emit({ type: 'storm', on: false });
   s.flags.panelsCleaned = false;
+  if (online(s, 'lab')) s.flags.dishBent = true; // C11 / SCENARIO 4.9: a storm bends the dish (if there is one); the next Earth window starts with a swipe to put it right
   addTask(s, 'solar_wipe', 'The storm left dust on the panels.');
   s.flags.filterDue = clockAt(s.minute).sol + 1;
 }
@@ -449,6 +450,7 @@ export function onMini(s, { game, win, auto = false }, emit) {
   } else if (game === 'antenna') {
     if (win) {
       dropTask(s, 'antenna');
+      s.flags.dishBent = false; // the call went out: the dish is straight
       setRes(s, 'morale', s.flags.d4b ? 10 : 5);
       s.research += s.flags.d4b ? 10 : 0;
       if (!s.flags.earthContact) { // the reply and the badge belong to the first contact; later windows bring Morale
