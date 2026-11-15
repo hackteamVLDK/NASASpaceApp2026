@@ -10,7 +10,7 @@ import { EXPEDITIONS, hpCost, durationMinutes, awayProgress, expectedLoot } from
 import { t, hasString } from '../flow/strings.js';
 import { ICON } from '../render/atlas.js';
 import { play, director } from './audio.js';
-import { CARDS, BADGES, buildReport } from '../campaign/logbook.js';
+import { CARDS, STORY_CARDS, BADGES, buildReport } from '../campaign/logbook.js';
 import { LOW_LIMITS } from '../campaign/hazards.js';
 import { missingItems, whereText } from '../campaign/sources.js';
 import { choiceBlock } from '../campaign/story.js';
@@ -210,6 +210,13 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {}, 
     body.append(el('h4', '', t('ui.logbook.title')));
     body.append(el('div', 'why', t('ui.logbook.count').replace('{unlocked}', s.logbook.length).replace('{total}', CARDS.length)));
     const grid = el('div', 'cards');
+    for (const c of STORY_CARDS) { // the Mission file: open from the start
+      const b = el('button', 'cardbtn story', t(`card.${c.id}.title`));
+      b.prepend(icon(ICON.explore, 20));
+      b.dataset.card = c.id;
+      b.addEventListener('click', () => showCard(c));
+      grid.append(b);
+    }
     for (const c of CARDS) {
       const got = s.logbook.includes(c.id);
       const b = el('button', `cardbtn ${c.tier} ${got ? '' : 'locked'}`, got ? t(`card.${c.id}.title`) : t('ui.logbook.locked'));
@@ -228,7 +235,7 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {}, 
   function showCard(c) {
     modalKey = `card:${c.id}`;
     modalRoot.hidden = false;
-    modalRoot.innerHTML = `<div class="card logcard"><div class="hd">${c.tier === 'core' ? 'CORE CARD' : 'BONUS CARD'} \u00b7 ${c.org}</div><canvas class="cardpic" width="96" height="96"></canvas><h2>${t(`card.${c.id}.title`)}</h2><p>${t(`card.${c.id}.text`)}</p><p><a href="${c.url}" target="_blank" rel="noopener">${t('ui.logbook.how_we_know')}</a> <small>(${c.org})</small></p><button class="choice" id="cardOk">Close</button></div>`;
+    modalRoot.innerHTML = `<div class="card logcard"><div class="hd">${c.tier === 'story' ? 'MISSION FILE' : c.tier === 'core' ? 'CORE CARD' : 'BONUS CARD'} \u00b7 ${c.org}</div><canvas class="cardpic" width="96" height="96"></canvas><h2>${t(`card.${c.id}.title`)}</h2><p>${t(`card.${c.id}.text`)}</p>${c.url ? `<p><a href="${c.url}" target="_blank" rel="noopener">${t('ui.logbook.how_we_know')}</a> <small>(${c.org})</small></p>` : ''}<button class="choice" id="cardOk">Close</button></div>`;
     $('cardOk').addEventListener('click', closeModal);
     const pic = modalRoot.querySelector('.cardpic').getContext('2d');
     pic.imageSmoothingEnabled = false;

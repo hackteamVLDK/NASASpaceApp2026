@@ -1505,6 +1505,19 @@
   },
   "logbook": [
     {
+      "id": "mission_file",
+      "tier": "story",
+      "trigger": "Start of the game",
+      "triggerIds": [],
+      "titleId": "card.mission_file.title",
+      "textId": "card.mission_file.text",
+      "mission": "Ares-Kids story (fiction)",
+      "image": "—",
+      "sources": [
+        "—"
+      ]
+    },
+    {
       "id": "gravity",
       "tier": "core",
       "trigger": "astra.intro.landing",

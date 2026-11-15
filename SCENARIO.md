@@ -5,7 +5,7 @@ Status: Binding game scenario and design specification (v2, 2026-11-14). Source 
 ## How to use this file
 
 - Precedence. For story, gameplay rules, balance numbers and player-facing text, this file wins. For process (Git, agents, assets, sync), the master project instructions win.
-- Localization keys. Every player-facing line has an ID (astra.*, radio.*, crawl.*, ui.*, card.*, report.*, badge.*). Code must reference IDs, never hard-code English strings. All player-facing text is extracted to `content/data/strings.en.json` by `content/tools/extract-strings.mjs`. Lines written without an explicit ID get a derived ID: dilemma N `ui.dN.title`, `ui.dN.header`, `astra.dN.alert`, `ui.dN.<a|b|c>.label`, `astra.dN.<a|b|c>`; event N the same with `eN` (plus `astra.e1.watch`, `astra.e2.a.clean`/`.dusty`); mini-game `ui.mg.<id>.title`, `astra.mg.<id>` (ids as in Section 7); expedition N `ui.expN.name`, `radio.expN.<percent>` (0% is `00`), `ui.expN.<percent>.<a|b>.label` for radio decisions, `astra.expN.return`, `astra.expN.at<percent>`; Scrap & Ice Run `radio.run.<percent>.<1-3>`; names `ui.module.*`, `ui.upgrade.*`, `ui.item.*`, `ui.res.*`, `ui.role.*`, `ui.buff.*`; Logbook `card.<card>.title`/`.text`. "(fiction)" tags are stripped.
+- Localization keys. Every player-facing line has an ID (astra.*, radio.*, intro.*, ui.*, card.*, report.*, badge.*). Code must reference IDs, never hard-code English strings. All player-facing text is extracted to `content/data/strings.en.json` by `content/tools/extract-strings.mjs`. Lines written without an explicit ID get a derived ID: dilemma N `ui.dN.title`, `ui.dN.header`, `astra.dN.alert`, `ui.dN.<a|b|c>.label`, `astra.dN.<a|b|c>`; event N the same with `eN` (plus `astra.e1.watch`, `astra.e2.a.clean`/`.dusty`); mini-game `ui.mg.<id>.title`, `astra.mg.<id>` (ids as in Section 7); expedition N `ui.expN.name`, `radio.expN.<percent>` (0% is `00`), `ui.expN.<percent>.<a|b>.label` for radio decisions, `astra.expN.return`, `astra.expN.at<percent>`; Scrap & Ice Run `radio.run.<percent>.<1-3>`; names `ui.module.*`, `ui.upgrade.*`, `ui.item.*`, `ui.res.*`, `ui.role.*`, `ui.buff.*`; Logbook `card.<card>.title`/`.text`. "(fiction)" tags are stripped.
 - Numbers. All rates and costs are starting values for playtesting. Change them in data modules (src/data/*.js), then update this file in the same commit. The JSON in Section 7 is the shape spec: the JS modules export objects with the same shape.
 - Data labels. Tag every number in data files with source: nasa_measurement, approximation or gameplay.
 
@@ -64,7 +64,7 @@ In 2038 a robot scout recorded a thump every 37 minutes and a methane spike in a
 ### Script conventions
 
 - ASTRA lines appear in the left slide-in panel. In solo, ASTRA says "Commander". In co-op, she says "crew" or the role name.
-- CRAWL lines type out letter by letter, bold sci-fi sans-serif on `#05070A`, like the intro of Among Us. The last line is Martian Orange `#FF6B35`.
+- INTRO lines are big picture-panel captions (the storyboard below), one line per panel, one key word in Martian Orange `#FF6B35`.
 - ASTRA lines play from a queue. If the next line is due while one is still typing, the current line finishes instantly and stays at least 1.5 s before the next one starts. Tap or click skips to the full line, then to the next. Cutscene camera moves never wait for text.
 - RADIO lines appear in the expedition radio log, prefixed with the Sol and time.
 - (fiction) marks invented story facts. All other science claims are real. The tag is a note for writers: the game never shows it.
@@ -124,26 +124,55 @@ science. She speaks like a kind older sibling who happens to know a lot about Ma
 
 New lines that break a rule above are rewritten before they go into this file.
 
-### Intro: text crawl (fiction)
+### Intro: picture storyboard
 
-State `INTRO_TEXT`, `0.0s – 19.0s`.
+State `INTRO_TEXT` (the storyboard). It replaced the 8-line text crawl on 2026-11-15: nobody read 8 typed lines.
+Goals: (a) hook a 7–12-year-old with a mystery, (b) tell a jury in seconds that the game teaches real NASA science.
+About 15 s, picture first. The old crawl story is kept word for word in the Logbook card `mission_file` (Section 8.1).
 
-- **Visual style (reference: *Among Us* role reveal / intro screen):** pitch-black background (`#05070A`) with subtle drifting starfield particles and a faint horizontal scanline/vignette effect. Centered, bold sci-fi sans-serif typography with a crisp **typewriter reveal effect** (about 37 characters per second). Lines appear one after another.
-- **Audio:** classic *Among Us*-style high-pitched electronic blip/chirp synchronized with each revealed character, followed by a low bass boom on the final line.
-- **Last line:** `crawl.08` is highlighted in Martian Orange `#FF6B35`.
-- **Skip:** `Skip >>` in the top-right corner. After the first playthrough, a tap anywhere also skips.
-- **Transition (`19.0s`):** the screen fades/wipes into the top sky of the 2D Mars world canvas (state `DESCENT`).
+- **Panels 1–3** are drawn full screen on the canvas with the game's own sprites (Rover/Pathfinder-X, drones,
+  base, sky, dust). Each has ONE big line: at most 8 words, bold, 64 px or more at 1920 x 1080, white, with one key word
+  in Martian Orange `#FF6B35`.
+- **Timing:** panel 0 shows for 1.5 s, panels 1 and 2 for 3 s each, panel 3 for 4 s (2 s per line); then the briefing
+  waits for the player. Gentle fades (0.4 s) between panels.
+- **Input:** tap, click, Space or Enter goes to the next panel. `Skip >>` (top-right) jumps to the briefing, never past
+  it, so everyone sees the goals. Progress dots at the bottom (one per panel).
+- **Reduce motion:** fades only; no shaking, sliding or pulsing rings (the rings are drawn still).
+- **Audio:** the intro night tune keeps playing. Panel 1: one soft thump per seismic ring. Panel 2: short radio static
+  when the last signal bar drops.
+- **START MISSION** goes to the landing cutscene: the opening clock jumps to 19.0 s (`DESCENT`); the cutscene times
+  below keep their values.
 
-| Line ID | Line | Starts at | Pause after |
+| Panel | Label | What the player sees | Lines |
 |---|---|---|---|
-| crawl.01 | YEAR 2038. | 0.0s | 0.8s |
-| crawl.02 | A robot scout named PATHFINDER-X is exploring Jezero Crater on Mars. | 1.1s | 0.8s |
-| crawl.03 | Deep inside a canyon, it feels something strange. A thump in the ground... every 37 minutes. | 3.7s | 1.0s |
-| crawl.04 | Then its nose sniffs a sudden puff of methane gas. | 6.8s | 0.8s |
-| crawl.05 | A giant dust storm rolls in. Pathfinder-X goes silent. | 9.0s | 1.2s |
-| crawl.06 | YEAR 2042. MISSION ARES-KIDS. | 11.4s | 0.8s |
-| crawl.07 | Builder drones were sent ahead to dig an underground base. But a new storm buried them too. | 13.0s | 1.0s |
-| crawl.08 | Now it's your turn. Land. Wake the drones. Find the signal. | 16.3s | 1.2s (bass boom) |
+| 0 | gameplay | Dark screen, a badge and one line; auto-advance after 1.5 s | `intro.badge`, `intro.00` |
+| 1 | fiction | Pathfinder-X in a canyon at dusk; slow seismic rings pulse out of the ground under it | `intro.01` (key word "strange") |
+| 2 | fiction | Dust sweeps across; the Rover's signal bars drop one by one, then radio static | `intro.02` (key word "silent") |
+| 3 | fiction | Drones dig a cutaway base; then sand pours over them (the line changes halfway) | `intro.03` (key word "Robots"), `intro.04` (key word "storm") |
+| 4 | gameplay | Mission briefing: title, 3 big icon tiles (goal + what it teaches), the facts line, a big button | `intro.05`, `intro.goal1`–`3`, `intro.learn1`–`3`, `intro.facts`, `intro.start` |
+
+| Line ID | Line |
+|---|---|
+| intro.badge | Based on real NASA missions |
+| intro.00 | Learn how people could live on Mars |
+| intro.01 | 2038. A rover hears something strange. |
+| intro.02 | A dust storm. The rover goes silent. |
+| intro.03 | 2042. Robots dig your base… |
+| intro.04 | …but the storm buries them too. |
+| intro.05 | YOUR MISSION |
+| intro.goal1 | Wake the drones |
+| intro.learn1 | Learn: solar power and Mars dust |
+| intro.goal2 | Keep the crew safe |
+| intro.learn2 | Learn: air, water, food and radiation |
+| intro.goal3 | Find the signal |
+| intro.learn3 | Learn: how NASA rovers explore Mars |
+| intro.facts | Every fact in the game comes from NASA missions. Collect them in your Logbook. |
+| intro.start | START MISSION |
+
+The three "Learn:" lines match what the game teaches: solar power and dust (Solar Wipe, the storm, cards `sunlight`,
+`sticky_dust`, `global_storms`), air, water, food and radiation (Life Support, Greenhouse, Radiation view, cards `moxie`,
+`perchlorates`, `space_salad`, `surface_dose`, `soil_blanket`), and rovers (the expeditions, cards `ingenuity`,
+`weather_station`, `rock_pages`, `ancient_lake`).
 
 ### Landing cutscene & tutorial (Sol 1)
 
@@ -1481,11 +1510,14 @@ There is a kid-friendly Mission Rating (stars, never zero) but no "lose" state.
   `.plants`, `.earth`). Image prompts: `content/handoff/LOGBOOK_IMAGE_PROMPTS.md`.
 - Line IDs: `card.<card>.title` and `card.<card>.text`. The table below holds the English text.
 - Every card restates a claim from `content/science/FACT_CHECK.md`; the Source column is the
-  page that claim was checked against. Story inventions (fiction) never become cards.
+  page that claim was checked against. Story inventions (fiction) never become science cards. The one exception is the
+  story card `mission_file` (tier `story`, 2026-11-15): the old intro crawl, word for word, open from the start; it is not
+  counted among the science cards.
 - In co-op the Logbook is shared by the crew.
 
 | Card | Tier | Unlocked by | Title | Text | Real mission / source org | Image | Source |
 |---|---|---|---|---|---|---|---|
+| mission_file | story | Start of the game | Mission file | YEAR 2038. A robot scout named PATHFINDER-X is exploring Jezero Crater on Mars. Deep inside a canyon, it feels something strange. A thump in the ground... every 37 minutes. Then its nose sniffs a sudden puff of methane gas. A giant dust storm rolls in. Pathfinder-X goes silent. YEAR 2042. MISSION ARES-KIDS. Builder drones were sent ahead to dig an underground base. But a new storm buried them too. Now it's your turn. Land. Wake the drones. Find the signal. | Ares-Kids story (fiction) | — | — |
 | gravity | core | astra.intro.landing | Mars Gravity | Mars pulls on you with 38% of Earth's gravity. You could jump about two and a half times higher there! | NASA Mars Fact Sheet | logbook.gravity | https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html |
 | no_shield | core | astra.intro.why_underground | No Global Shield | Mars lost its planet-wide magnetic field billions of years ago. Only small magnetic patches remain in its crust. | MAVEN | logbook.no_shield | https://science.nasa.gov/missions/maven/nasas-maven-illuminates-new-understanding-of-auroras-at-mars/ |
 | soil_blanket | core | astra.intro.why_underground | Soil Blanket | Soil overhead blocks a lot of space radiation. Scientists calculate that about 1 to 2.5 meters would protect a Mars base. | Curiosity RAD (model checked against it) | logbook.soil_blanket | https://doi.org/10.1029/2019JE006246 |

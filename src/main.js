@@ -1,6 +1,6 @@
 /**
  * Browser entry point: loads strings and art, then runs
- *   intro crawl -> landing cutscene -> tutorial -> the 20-Sol campaign and Free-Play
+ *   intro storyboard -> landing cutscene -> tutorial -> the 20-Sol campaign and Free-Play
  * as SCENARIO.md describes. The campaign simulation (src/campaign) runs only while playing;
  * the screen reads its state and sends commands, it never edits it.
  */
@@ -14,7 +14,8 @@ import { createCampaign, step, command, clockAt, droneFixBlock } from './campaig
 import { prefs, setPref, applyPrefs } from './ui/prefs.js';
 import { restoreSave } from './campaign/save-migrate.js';
 import { SECONDS_PER_SOL, SOL, RECIPES, MODULES } from './campaign/data.js';
-import { openingFrameAt, cuesBetween, skipTarget, T, GAMEPLAY_VIEW, INTRO_TEXT, introTextAt, flowStateAt, astronautPathAt, entryDoorsAt } from './flow/intro.js';
+import { openingFrameAt, cuesBetween, skipTarget, T, GAMEPLAY_VIEW, flowStateAt, astronautPathAt, entryDoorsAt, storyAt, nextPanelAt, storyCuesBetween, BRIEFING_AT } from './flow/intro.js';
+import { drawStory } from './render/intro-story.js';
 import { createGuide, say } from './flow/astra.js';
 import { createAstraPanel } from './ui/astra-panel.js';
 import { createUi, miniTitle } from './ui/campaign-ui.js';
@@ -63,6 +64,10 @@ let atlas, soil, s, guide, astra, ui, extras;
 let mode = 'loading'; // loading | intro | tutorial | play
 let flowT = 0;
 let prevFlowT = 0;
+let storyT = 0; // the intro storyboard's own clock (it waits on the briefing until START MISSION)
+const inStory = () => mode === 'intro' && flowT < T.introEnd;
+/** The storyboard goes on: to the next panel, or (Skip) straight to the briefing. */
+function storyGo(to) { storyT = Math.max(storyT, to); }
 let speed = 1;
 let simAccum = 0;
 let tut = null; // { state, phase }
@@ -406,6 +411,7 @@ const pick = (p) => [...hits].reverse().find((h) => p.x >= h.x && p.x <= h.x + h
 
 canvas.addEventListener('pointermove', (e) => { if (mode === 'tutorial' || mode === 'play') hover = pick(worldPoint(e)); });
 canvas.addEventListener('pointerdown', (e) => {
+  if (inStory()) { storyGo(nextPanelAt(storyT)); return; } // tap or click: the next panel
   if (mini || ui.modalOpen || (mode !== 'tutorial' && mode !== 'play')) return;
   const id = pick(worldPoint(e));
   if (!id) return;
@@ -478,6 +484,7 @@ function wakeDrone(d) {
 }
 
 $('skipBtn').addEventListener('click', () => {
+  if (inStory()) { storyGo(BRIEFING_AT); audio.play('click'); return; } // Skip goes to the briefing, never past it
   const target = skipTarget(flowT);
   // B15: Skip keeps the transition sounds of the part it jumps over (the touchdown thud, the airlock hiss),
   // each sound once and at most three, instead of dropping them; typing blips and ASTRA lines are skipped
@@ -492,54 +499,15 @@ for (const b of document.querySelectorAll('#speed button')) {
     document.querySelectorAll('#speed button').forEach((x) => x.classList.toggle('on', x === b));
   });
 }
+window.addEventListener('keydown', (e) => {
+  if (inStory() && (e.code === 'Space' || e.code === 'Enter') && !storyAt(storyT).briefing) { e.preventDefault(); storyGo(nextPanelAt(storyT)); }
+});
+$('introStart').addEventListener('click', () => { // START MISSION: on to the landing cutscene
+  flowT = T.introEnd; prevFlowT = flowT; $('introStart').hidden = true; audio.play('click');
+});
 window.addEventListener('keydown', (e) => { if (e.code === 'Space' && mode === 'play') { e.preventDefault(); document.querySelector(speed ? '#speed [data-speed="0"]' : '#speed [data-speed="1"]').click(); } });
 
 // ------------------------------------------------------------------ frames
-
-const stars = Array.from({ length: 140 }, (_, i) => ({ x: (i * 977) % 1920, y: (i * 619) % 1080, z: 0.3 + ((i * 37) % 10) / 12 }));
-
-function wrapLines(text, maxWidth) {
-  const words = text.split(' ');
-  const out = [];
-  let line = '';
-  for (const w of words) {
-    const test = line ? `${line} ${w}` : w;
-    if (ctx.measureText(test).width > maxWidth && line) { out.push(line); line = w; } else line = test;
-  }
-  if (line) out.push(line);
-  return out;
-}
-
-function drawCrawl(nowMs) {
-  ctx.fillStyle = INTRO_TEXT.background;
-  ctx.fillRect(0, 0, SCREEN.w, SCREEN.h);
-  ctx.fillStyle = '#fff';
-  for (const st of stars) { const x = (st.x - nowMs * 0.012 * st.z + 1920 * 10) % 1920; ctx.globalAlpha = 0.25 + 0.5 * st.z; ctx.fillRect(x, st.y, 2 * st.z + 1, 2 * st.z + 1); }
-  ctx.globalAlpha = 1;
-  const { lines } = introTextAt(flowT);
-  ctx.font = 'bold 46px "Trebuchet MS", sans-serif';
-  ctx.textAlign = 'center';
-  let y = 200;
-  for (const l of lines) {
-    if (!l.shown) continue;
-    let left = l.shown;
-    for (const part of wrapLines(l.text, 1500)) {
-      const visible = part.slice(0, Math.max(0, Math.min(part.length, left)));
-      left -= part.length + 1;
-      ctx.fillStyle = l.highlight ? INTRO_TEXT.highlightColor : '#e8f4ff';
-      if (l.highlight) { ctx.shadowColor = INTRO_TEXT.highlightColor; ctx.shadowBlur = 24; }
-      ctx.fillText(visible, SCREEN.w / 2, y);
-      ctx.shadowBlur = 0;
-      y += 62;
-    }
-    y += 22;
-  }
-  ctx.fillStyle = 'rgba(0,0,0,0.16)';
-  for (let sy = 0; sy < SCREEN.h; sy += 4) ctx.fillRect(0, sy, SCREEN.w, 1);
-  const vg = ctx.createRadialGradient(960, 540, 300, 960, 540, 1100);
-  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.65)');
-  ctx.fillStyle = vg; ctx.fillRect(0, 0, SCREEN.w, SCREEN.h);
-}
 
 /** The Commander boards, the Rover drives out and later rolls home; the Commander steps off. */
 function stepRover(nowMs) {
@@ -558,7 +526,7 @@ function stepRover(nowMs) {
 
 function render(nowMs) {
   if (mode === 'loading') return;
-  if (mode === 'intro' && flowT < T.introEnd) { drawCrawl(nowMs); hits = []; return; }
+  if (inStory()) { drawStory(ctx, storyAt(storyT), { atlas, nowMs, reduceMotion: prefs.reduceMotion, t, soil }); hits = []; return; }
   let S;
   if (mode === 'intro') {
     const f = openingFrameAt(flowT);
@@ -614,7 +582,14 @@ function loop(now) {
   const dt = Math.min(0.1, (now - last) / 1000);
   last = now;
   try {
-    if (mode === 'intro') {
+    if (inStory()) {
+      const prevStory = storyT;
+      storyT += dt;
+      for (const cue of storyCuesBetween(prevStory, storyT)) audio.director.flowCue(cue);
+      const briefing = storyAt(storyT).briefing;
+      $('introStart').hidden = !briefing;
+      $('skipBtn').hidden = briefing;
+    } else if (mode === 'intro') {
       prevFlowT = flowT;
       flowT += dt;
       for (const cue of cuesBetween(prevFlowT, flowT)) {
@@ -709,6 +684,7 @@ async function boot() {
     });
     $('startBtn').after(cont);
   }
+  $('introStart').textContent = t('intro.start'); // the English text lives in strings.en.json
   $('startBtn').addEventListener('click', () => {
     audio.unlock();
     remindIfMuted();
@@ -721,7 +697,7 @@ async function boot() {
   window.__ares = {
     get hits() { return hits; }, view: () => currentView(), get mode() { return mode; }, get tut() { return tut; }, get s() { return s; },
     get rover() { return rover; }, get walker() { return walker; }, get droneMovers() { return droneMovers; },
-    send, jump: (sec) => { flowT = sec; prevFlowT = sec; }, state: () => flowStateAt(flowT), openMini,
+    send, jump: (sec) => { flowT = sec; prevFlowT = sec; }, story: (st) => { storyT = st; }, get storyT() { return storyT; }, state: () => flowStateAt(flowT), openMini,
     // jump over the two tutorial mini-games to the "build the Battery" step (Drone #01 repaired)
     fast: (minutes) => { if (mode === 'play' && !s.pending && s.status !== 'over') handleEvents(step(s, minutes)); }, // dev/test: run game time now
     tutorialBuild: () => { if (mode === 'tutorial') { s.flags.panelsCleaned = true; onBatteryDone(); } },

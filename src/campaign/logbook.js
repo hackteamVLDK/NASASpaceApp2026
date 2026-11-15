@@ -71,6 +71,12 @@ export const CARDS = [
   ['mars_gravity_body', 'bonus', ['astra.fit.mars'], 'Physiology research (Frontiers in Physiology 2019)', 'https://doi.org/10.3389/fphys.2019.00899'],
 ].map(([id, tier, triggers, org, url]) => ({ id, tier, triggers, org, url }));
 
+/**
+ * Story cards (SCENARIO 8.1, tier `story`): open from the start, never counted among the science cards, no source link.
+ * `mission_file` keeps the old intro crawl word for word (fiction), now that the intro is a picture storyboard.
+ */
+export const STORY_CARDS = Object.freeze([Object.freeze({ id: 'mission_file', tier: 'story', triggers: Object.freeze([]), org: 'Ares-Kids story (fiction)', url: null })]);
+
 const BY_TRIGGER = new Map();
 for (const c of CARDS) for (const t of c.triggers) { if (!BY_TRIGGER.has(t)) BY_TRIGGER.set(t, []); BY_TRIGGER.get(t).push(c.id); }
 

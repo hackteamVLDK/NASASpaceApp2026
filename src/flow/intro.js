@@ -1,5 +1,5 @@
 /**
- * Game opening: text crawl, landing cutscene, tutorial (SCENARIO.md Section 1).
+ * Game opening: picture storyboard, landing cutscene, tutorial (SCENARIO.md Section 1).
  *
  * Pure data and pure functions of time. No rendering, no audio: a screen asks "what does
  * second 24.3 look like?" and draws the answer. tests/flow.test.mjs keeps every number here
@@ -31,46 +31,71 @@ export function flowStateAt(sec) {
   return 'TUT_HP';
 }
 
-// ---------------------------------------------------------------- text crawl (0.0 s - 19.0 s)
+// ---------------------------------------------------------------- picture storyboard (state INTRO_TEXT)
 
-export const CRAWL_CHARS_PER_SECOND = 37;
-
-export const INTRO_TEXT = Object.freeze({
-  from: 0.0,
-  to: T.introEnd,
+/**
+ * SCENARIO "Intro: picture storyboard". The storyboard has its own clock (`st`, seconds since it started):
+ * it auto-advances, then waits on the briefing until START MISSION, which jumps the opening clock to T.introEnd.
+ * Labels: panel 0 and the briefing are `gameplay`, panels 1-3 are `fiction`.
+ */
+export const STORYBOARD = Object.freeze({
   background: '#05070A',
-  highlightColor: '#FF6B35',
-  effects: Object.freeze(['drifting starfield', 'faint horizontal scanlines', 'vignette']),
-  typography: 'centered, bold sci-fi sans-serif, typewriter reveal',
+  keyColor: '#FF6B35', // Martian Orange for the key word
+  fadeSec: 0.4,
+  minFontPx: 64, // the big panel lines at 1920 x 1080
   skipLabel: 'Skip >>',
   skipPosition: 'top-right',
-  /** Line IDs, start times and pauses from the scenario table. The last line is highlighted. */
-  lines: Object.freeze([
-    Object.freeze({ id: 'crawl.01', start: 0.0, pauseAfter: 0.8, highlight: false }),
-    Object.freeze({ id: 'crawl.02', start: 1.1, pauseAfter: 0.8, highlight: false }),
-    Object.freeze({ id: 'crawl.03', start: 3.7, pauseAfter: 1.0, highlight: false }),
-    Object.freeze({ id: 'crawl.04', start: 6.8, pauseAfter: 0.8, highlight: false }),
-    Object.freeze({ id: 'crawl.05', start: 9.0, pauseAfter: 1.2, highlight: false }),
-    Object.freeze({ id: 'crawl.06', start: 11.4, pauseAfter: 0.8, highlight: false }),
-    Object.freeze({ id: 'crawl.07', start: 13.0, pauseAfter: 1.0, highlight: false }),
-    Object.freeze({ id: 'crawl.08', start: 16.3, pauseAfter: 1.2, highlight: true, bassBoom: true }),
+  panels: Object.freeze([
+    Object.freeze({ id: 'title', label: 'gameplay', dur: 1.5, lines: Object.freeze([Object.freeze({ id: 'intro.00', key: 'Mars' })]), badge: 'intro.badge' }),
+    Object.freeze({ id: 'signal', label: 'fiction', dur: 3, lines: Object.freeze([Object.freeze({ id: 'intro.01', key: 'strange' })]), rings: Object.freeze([0.4, 1.3, 2.2]) }),
+    Object.freeze({ id: 'storm', label: 'fiction', dur: 3, lines: Object.freeze([Object.freeze({ id: 'intro.02', key: 'silent' })]), barsDropAt: Object.freeze([0.6, 1.1, 1.6, 2.1]) }),
+    Object.freeze({ id: 'drones', label: 'fiction', dur: 4, lines: Object.freeze([Object.freeze({ id: 'intro.03', key: 'Robots', until: 2 }), Object.freeze({ id: 'intro.04', key: 'storm', from: 2 })]), sandFrom: 2 }),
+    Object.freeze({ id: 'briefing', label: 'gameplay', dur: Infinity, title: 'intro.05',
+      tiles: Object.freeze([
+        Object.freeze({ goal: 'intro.goal1', learn: 'intro.learn1', icon: 'drone' }),
+        Object.freeze({ goal: 'intro.goal2', learn: 'intro.learn2', icon: 'crew' }),
+        Object.freeze({ goal: 'intro.goal3', learn: 'intro.learn3', icon: 'rover' }),
+      ]),
+      facts: 'intro.facts', start: 'intro.start' }),
   ]),
 });
 
-/** When line `i` finishes typing, in seconds. */
-export function crawlLineEnd(i) {
-  return INTRO_TEXT.lines[i].start + text(INTRO_TEXT.lines[i].id).length / CRAWL_CHARS_PER_SECOND;
+/** When panel `i` starts on the storyboard clock. */
+export function panelStart(i) {
+  let t = 0;
+  for (let k = 0; k < i; k++) t += STORYBOARD.panels[k].dur;
+  return t;
 }
 
-/** What the crawl shows at time `sec`: for each line, how many characters are revealed. */
-export function introTextAt(sec) {
-  const lines = INTRO_TEXT.lines.map((line) => {
-    const full = text(line.id);
-    // The epsilon stops floating-point error from hiding a character at its exact moment.
-    const shown = sec < line.start ? 0 : Math.min(full.length, Math.floor((sec - line.start) * CRAWL_CHARS_PER_SECOND + 1e-9));
-    return { id: line.id, text: full, shown, visible: full.slice(0, shown), highlight: line.highlight };
+/** The briefing's start: where Skip goes (never past it). */
+export const BRIEFING_AT = panelStart(STORYBOARD.panels.length - 1);
+
+/** What the storyboard shows at `st`: panel index, time inside it, its fade-in (0..1) and the visible line. */
+export function storyAt(st) {
+  const P = STORYBOARD.panels;
+  let i = 0;
+  while (i < P.length - 1 && st >= panelStart(i + 1)) i++;
+  const local = st - panelStart(i);
+  const line = P[i].lines?.find((l) => (l.from ?? 0) <= local && local < (l.until ?? Infinity)) ?? null;
+  return { index: i, panel: P[i], local, fade: Math.min(1, local / STORYBOARD.fadeSec), line, briefing: i === P.length - 1 };
+}
+
+/** Tap, click, Space or Enter: the start of the next panel (the briefing stays). */
+export function nextPanelAt(st) {
+  const { index } = storyAt(st);
+  return index >= STORYBOARD.panels.length - 1 ? st : panelStart(index + 1);
+}
+
+/** Storyboard sounds in (t0, t1]: a soft thump per seismic ring, radio static when the last bar drops. */
+export function storyCuesBetween(t0, t1) {
+  const cues = [];
+  STORYBOARD.panels.forEach((p, i) => {
+    const s0 = panelStart(i);
+    for (const r of p.rings ?? []) if (s0 + r > t0 && s0 + r <= t1) cues.push({ at: s0 + r, type: 'sfx', id: 'canyonSeismicThump' });
+    const last = p.barsDropAt?.at(-1);
+    if (last != null && s0 + last > t0 && s0 + last <= t1) cues.push({ at: s0 + last, type: 'sfx', id: 'staticZap' });
   });
-  return { lines, complete: lines.every((l) => l.shown === l.text.length) };
+  return cues.sort((x, y) => x.at - y.at);
 }
 
 // ---------------------------------------------------------------- landing cutscene (19.0 s - 33.0 s)
@@ -246,7 +271,6 @@ export function openingFrameAt(sec) {
   return {
     t: sec,
     flowState: flowStateAt(sec),
-    text: sec < INTRO_TEXT.to ? introTextAt(sec) : null,
     cameraX: cameraXAt(sec),
     cameraY: cameraYAt(sec),
     zoom: cameraZoomAt(sec),
@@ -259,21 +283,12 @@ export function openingFrameAt(sec) {
 }
 
 /**
- * Cues that fire in the half-open interval (t0, t1]: sound effects, typewriter blips (one per
- * revealed character), the bass boom on the last crawl line, state changes, and ASTRA lines.
+ * Cues of the landing cutscene that fire in the half-open interval (t0, t1]: sound effects, state changes and
+ * ASTRA lines. The storyboard before it has its own cues (storyCuesBetween).
  * Call once per frame with the previous and current time.
  */
 export function cuesBetween(t0, t1) {
   const cues = [];
-  for (const [i, line] of INTRO_TEXT.lines.entries()) {
-    const full = text(line.id);
-    for (let k = 1; k <= full.length; k++) {
-      const at = line.start + k / CRAWL_CHARS_PER_SECOND;
-      if (at > t0 && at <= t1 && full[k - 1] !== ' ') cues.push({ at, type: 'sfx', id: 'type-blip', char: full[k - 1] });
-    }
-    const end = crawlLineEnd(i);
-    if (line.bassBoom && end > t0 && end <= t1) cues.push({ at: end, type: 'sfx', id: 'bass-boom' });
-  }
   for (const cue of SFX_CUES) if (cue.at > t0 && cue.at <= t1) cues.push({ at: cue.at, type: 'sfx', id: cue.id });
   for (const at of [T.introEnd, T.descentEnd, T.touchdownEnd, T.panEnd]) {
     if (at > t0 && at <= t1) cues.push({ at, type: 'state', flowState: flowStateAt(at) });
@@ -285,7 +300,7 @@ export function cuesBetween(t0, t1) {
 }
 
 /**
- * Where "Skip >>" jumps to: the crawl is skipped into the cutscene (SCENARIO). PROPOSAL: pressing
+ * Where "Skip >>" jumps to on the opening clock (the storyboard's own Skip goes to the briefing, BRIEFING_AT). PROPOSAL: pressing
  * it again during the cutscene jumps to the end of the pan.
  */
 export function skipTarget(sec) {

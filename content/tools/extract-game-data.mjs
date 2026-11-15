@@ -115,7 +115,8 @@ const MINIGAME_IDS = {
 export function triggerIds(trigger) {
   return trigger.split(/;\s*/).map((t) => t.trim()).filter(Boolean).flatMap((t) => {
     let m;
-    if (/^(astra|radio|crawl|ui|card|log)\./.test(t)) return [t];
+    if (/^(astra|radio|intro|ui|card|log)\./.test(t)) return [t];
+    if (t === 'Start of the game') return []; // the story card mission_file is open from the start
     if ((m = t.match(/^Dilemma (\d) alert$/))) return [`astra.d${m[1]}.alert`];
     if ((m = t.match(/^Dilemma (\d), choice ([A-C]) follow-up$/))) return [`astra.d${m[1]}.${m[2].toLowerCase()}`];
     if ((m = t.match(/^Event (\d) alert$/))) return [`astra.e${m[1]}.alert`];

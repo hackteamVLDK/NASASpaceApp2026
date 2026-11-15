@@ -7,7 +7,7 @@
  *   node content/tools/extract-strings.mjs --check    exit 1 if the file is out of date or there are errors
  *
  * No dependencies. Explicit IDs come from table rows whose first cell is a line ID
- * (astra.*, radio.*, crawl.*, ui.*, card.*, report.*, badge.*, char.*, log.*) and from the
+ * (astra.*, radio.*, intro.*, ui.*, card.*, report.*, badge.*, char.*, log.*) and from the
  * JSON in Section 7. Lines that have no ID in SCENARIO.md get a DERIVED ID by these rules
  * (also listed in SCENARIO.md, "How to use this file"):
  *
@@ -32,7 +32,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
 const SRC = path.join(ROOT, 'SCENARIO.md');
 const OUT = path.join(ROOT, 'content', 'data', 'strings.en.json');
 
-const ID_RE = /^(astra|radio|crawl|ui|card|report|badge|char|log)\.[A-Za-z0-9_.]+$/;
+const ID_RE = /^(astra|radio|intro|ui|card|report|badge|char|log)\.[A-Za-z0-9_.]+$/;
 const MINIGAME_IDS = {
   '4.1': 'solar_wipe', '4.2': 'air_filter_scrub', '4.3': 'valve_balance', '4.4': 'water_sort',
   '4.5': 'heat_pump_reroute', '4.6': 'nutrient_match', '4.7': 'wheel_pebble_vacuum',
@@ -91,7 +91,7 @@ export function extract(md) {
     if (inCode) { codeBuf.push(raw); continue; }
 
     // collect line IDs mentioned in prose/backticks, to report references to undefined IDs
-    for (const m of raw.matchAll(/`((?:astra|radio|crawl|ui|card|report|badge|char|log)\.[A-Za-z0-9_.]+)`|\b((?:astra|radio)\.[a-z0-9_]+\.[a-z0-9_.]+)\b/g)) {
+    for (const m of raw.matchAll(/`((?:astra|radio|intro|ui|card|report|badge|char|log)\.[A-Za-z0-9_.]+)`|\b((?:astra|radio)\.[a-z0-9_]+\.[a-z0-9_.]+)\b/g)) {
       const id = (m[1] || m[2]).replace(/\.$/, '');
       if (!id.includes('*') && !id.includes('<') && !/(^|\.)(d|e|exp)N(\.|$)/.test(id)) referenced.add(id); // skip documented placeholders like astra.dN.alert
     }

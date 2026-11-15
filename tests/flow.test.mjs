@@ -3,8 +3,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  FLOW_STATES, INTRO_TEXT, CUTSCENE, TUTORIAL, T, CRAWL_CHARS_PER_SECOND, GAMEPLAY_VIEW,
-  flowStateAt, introTextAt, crawlLineEnd, cameraYAt, cameraZoomAt, landerAt, shakeAt, droneLedOn,
+  FLOW_STATES, STORYBOARD, BRIEFING_AT, CUTSCENE, TUTORIAL, T, GAMEPLAY_VIEW,
+  flowStateAt, storyAt, nextPanelAt, storyCuesBetween, panelStart, cameraYAt, cameraZoomAt, landerAt, shakeAt, droneLedOn,
   openingFrameAt, cuesBetween, skipTarget,
 } from '../src/flow/intro.js';
 import { setStrings, t, hasString } from '../src/flow/strings.js';
@@ -29,31 +29,45 @@ test('state machine uses the states named in SCENARIO.md', () => {
   assert.deepEqual(TUTORIAL.steps.map((s) => s.state), FLOW_STATES.slice(4));
 });
 
-test('crawl lines, start times and pauses match the scenario table', () => {
-  assert.equal(INTRO_TEXT.lines.length, 8);
-  for (const line of INTRO_TEXT.lines) {
-    const [id, textCell, start, pause] = row(line.id);
-    assert.equal(t(line.id), textCell, `${id} text`);
-    near(line.start, parseFloat(start));
-    near(line.pauseAfter, parseFloat(pause));
+test('storyboard lines match the scenario table and keep the panel rules', () => {
+  const ids = ['intro.badge', 'intro.00', 'intro.01', 'intro.02', 'intro.03', 'intro.04', 'intro.05',
+    'intro.goal1', 'intro.learn1', 'intro.goal2', 'intro.learn2', 'intro.goal3', 'intro.learn3', 'intro.facts', 'intro.start'];
+  for (const id of ids) assert.equal(t(id), row(id)[1], `${id} text`);
+  const P = STORYBOARD.panels;
+  assert.equal(P.length, 5);
+  assert.deepEqual(P.map((p) => p.label), ['gameplay', 'fiction', 'fiction', 'fiction', 'gameplay']);
+  assert.equal(P[0].dur, 1.5);
+  for (const p of P.slice(1, 4)) {
+    for (const l of p.lines) {
+      assert.ok(t(l.id).split(/\s+/).length <= 8, `${l.id}: at most 8 words`);
+      assert.ok(t(l.id).includes(l.key), `${l.id}: key word "${l.key}" is in the line`);
+    }
   }
-  assert.equal(INTRO_TEXT.lines.filter((l) => l.highlight).length, 1);
-  assert.ok(INTRO_TEXT.lines.at(-1).highlight && INTRO_TEXT.lines.at(-1).bassBoom);
-  assert.equal(INTRO_TEXT.highlightColor, '#FF6B35');
-  assert.equal(INTRO_TEXT.background, '#05070A');
-  assert.equal(CRAWL_CHARS_PER_SECOND, 37);
-  assert.equal(INTRO_TEXT.skipLabel, 'Skip >>');
+  assert.ok(STORYBOARD.minFontPx >= 64);
+  assert.equal(STORYBOARD.keyColor, '#FF6B35');
+  assert.equal(STORYBOARD.skipLabel, 'Skip >>');
+  const total = panelStart(4);
+  assert.ok(total >= 9 && total <= 15, `about 15 s with the briefing (${total} s before it)`);
+  assert.equal(P[4].tiles.length, 3);
 });
 
-test('the crawl finishes before 19.0 s and lines never overlap', () => {
-  for (let i = 0; i < INTRO_TEXT.lines.length - 1; i++) assert.ok(crawlLineEnd(i) <= INTRO_TEXT.lines[i + 1].start + 1e-9, `line ${i + 1} overlaps the next`);
-  assert.ok(crawlLineEnd(7) + INTRO_TEXT.lines[7].pauseAfter <= T.introEnd + 0.2);
-  assert.equal(introTextAt(0).lines[0].shown, 0);
-  assert.equal(introTextAt(18.9).complete, true);
-  const mid = introTextAt(1.1 + 5 / 37 + 1e-6);
-  assert.equal(mid.lines[0].visible, 'YEAR 2038.');
-  assert.equal(mid.lines[1].shown, 5);
-  assert.equal(mid.lines[2].shown, 0);
+test('the storyboard advances on time and on tap, and Skip stops at the briefing', () => {
+  assert.equal(storyAt(0).index, 0);
+  assert.equal(storyAt(1.49).index, 0);
+  assert.equal(storyAt(1.5).index, 1);
+  assert.equal(storyAt(BRIEFING_AT + 100).index, 4); // the briefing waits for START MISSION
+  assert.equal(storyAt(BRIEFING_AT + 100).briefing, true);
+  assert.equal(nextPanelAt(0.2), 1.5);
+  assert.equal(nextPanelAt(BRIEFING_AT + 1), BRIEFING_AT + 1); // a tap on the briefing does not start the mission
+  const p3 = panelStart(3);
+  assert.equal(storyAt(p3 + 0.5).line.id, 'intro.03');
+  assert.equal(storyAt(p3 + 2.5).line.id, 'intro.04');
+  const cues = storyCuesBetween(0, BRIEFING_AT);
+  assert.equal(cues.filter((c) => c.id === 'canyonSeismicThump').length, STORYBOARD.panels[1].rings.length);
+  assert.equal(cues.filter((c) => c.id === 'staticZap').length, 1);
+  let split = 0;
+  for (let x = 0; x < BRIEFING_AT; x += 0.1) split += storyCuesBetween(x, Math.min(BRIEFING_AT, x + 0.1)).length;
+  assert.equal(split, cues.length);
 });
 
 test('cutscene numbers match the scenario (Section 1, landing cutscene)', () => {
@@ -118,15 +132,12 @@ test('Drone #01 blinks red at 1 Hz from 31.0 s', () => {
 });
 
 test('cues and frames are consistent and fire exactly once', () => {
-  assert.equal(openingFrameAt(5).text !== null, true);
-  assert.equal(openingFrameAt(25).text, null);
   assert.equal(openingFrameAt(25.5).dustBurst, true);
   const cues = cuesBetween(18.99, 33);
   const sfx = cues.filter((c) => c.type === 'sfx').map((c) => c.id);
   for (const id of ['wind-hum', 'parachute-deploy', 'retro-rocket-roar', 'landing-thud', 'airlock-hiss', 'astra-chime']) assert.ok(sfx.includes(id), id);
   assert.deepEqual(cues.filter((c) => c.type === 'astra').map((c) => c.lineId), ['astra.intro.landing', 'astra.intro.why_underground']);
-  assert.ok(cuesBetween(0, 19).some((c) => c.id === 'bass-boom'));
-  assert.ok(cuesBetween(0, 19).filter((c) => c.id === 'type-blip').length > 150);
+  assert.equal(cuesBetween(0, 18.99).filter((c) => c.type === 'sfx').length, 0); // the storyboard has its own cues
   const once = cuesBetween(0, 33).length;
   let split = 0;
   for (let s = 0; s < 33; s += 0.25) split += cuesBetween(s, Math.min(33, s + 0.25)).length;
@@ -188,4 +199,13 @@ test('a won mini-game repairs a system, never worsens it, and bad input is rejec
   assert.equal(game.systems.solarClean, 0.95, 'a repair never lowers the value');
   assert.equal(applyCommand(game, { type: 'repairSystem', system: 'solarClean', value: 2 }).ok, false);
   assert.equal(applyCommand(game, { type: 'repairSystem', system: 'toString', value: 1 }).ok, false);
+});
+
+test('the old crawl story lives on, word for word, in the Mission file story card', async () => {
+  const { STORY_CARDS, CARDS } = await import('../src/campaign/logbook.js');
+  assert.deepEqual(STORY_CARDS.map((c) => c.id), ['mission_file']);
+  assert.ok(!CARDS.some((c) => c.id === 'mission_file'), 'not counted among the science cards');
+  const text = t('card.mission_file.text');
+  for (const part of ['YEAR 2038.', 'PATHFINDER-X', 'every 37 minutes', 'puff of methane gas', 'goes silent', 'YEAR 2042. MISSION ARES-KIDS.', 'buried them too', 'Find the signal.']) assert.ok(text.includes(part), part);
+  assert.equal(t('card.mission_file.title'), 'Mission file');
 });

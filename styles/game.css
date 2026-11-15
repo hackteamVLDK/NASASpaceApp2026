@@ -11,6 +11,8 @@ button:hover { background:#1a4668; } button:disabled { opacity:.45; cursor:defau
 #loading .sub { font-size:34px; color:var(--cyan); letter-spacing:6px; margin-bottom:30px; }
 #loadbar { width:520px; height:14px; border:2px solid var(--line); border-radius:8px; overflow:hidden; } #loadbar i { display:block; height:100%; width:0; background:var(--cyan); }
 #startBtn { font-size:34px; padding:16px 44px; background:var(--orange); border-color:#ffd0bd; }
+#introStart { position:absolute; left:50%; top:850px; transform:translateX(-50%); z-index:40; font-size:46px; font-weight:900; letter-spacing:3px; padding:22px 70px; background:var(--orange); border:4px solid #ffd0bd; border-radius:18px; box-shadow:0 0 30px rgba(255,107,53,.5); }
+#introStart:hover, #introStart:focus-visible { background:#ff8355; }
 #skipBtn { position:absolute; top:24px; right:28px; z-index:40; font-size:26px; background:rgba(0,0,0,.5); }
 #hud { position:absolute; left:0; right:0; top:0; height:74px; display:flex; align-items:center; gap:26px; padding:0 24px; background:linear-gradient(#050a14ee,#050a1400); z-index:10; }
 #clock { font-size:30px; font-weight:800; color:var(--amber); min-width:210px; }
@@ -62,7 +64,7 @@ button:hover { background:#1a4668; } button:disabled { opacity:.45; cursor:defau
 #hud { background:linear-gradient(#050a14f2,#050a14e6); height:76px; } #clock { min-width:360px; font-size:26px; line-height:1.1; }
 .actcard { z-index:41; }
 
-.cards { display:grid; grid-template-columns:1fr 1fr; gap:6px; } .cardbtn { font-size:13px; padding:8px 6px; text-align:left; } .cardbtn.core { border-color:#ffb000; } .cardbtn.locked { opacity:.45; text-align:center; }
+.cards { display:grid; grid-template-columns:1fr 1fr; gap:6px; } .cardbtn { font-size:13px; padding:8px 6px; text-align:left; } .cardbtn.core { border-color:#ffb000; } .cardbtn.story { border-color:var(--orange); grid-column:1 / -1; } .cardbtn.locked { opacity:.45; text-align:center; }
 .card.report { max-height:92%; overflow:auto; } .card.report h3 { margin:8px 0 2px; color:var(--cyan); font-size:20px; } .card.report p, .card.report li { font-size:18px; margin:2px 0; } .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:24px; } .rating { display:flex; gap:20px; } .rating > div { flex:1; background:#12304a; padding:10px; border-radius:12px; font-size:18px; } .stars { color:var(--amber); font-size:34px; letter-spacing:4px; }
 #tabBar { flex-wrap:wrap; }
 #hud { gap:14px; padding:0 16px; } #gauges { gap:8px; } .gauge { min-width:0; gap:4px; flex:1; } .gauge .val { min-width:34px; font-size:17px; } .gauge .bar { min-width:30px; } #clock { min-width:300px; font-size:24px; } #speed button { padding:5px 9px; }
