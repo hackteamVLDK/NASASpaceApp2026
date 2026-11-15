@@ -13,7 +13,9 @@ export const DRONE_BUMPERS = Object.freeze({ 'drone-01': '#00E5FF', 'drone-02': 
 export const SOIL = { x0: -1250, x1: 3450, scale: 0.5 }; // wide enough to fill the screen at the gameplay zoom
 
 /** Surface props live in geometry.js (shared with the movers and the tests). */
-import { SURFACE } from './geometry.js';
+import { SURFACE, roomRect, baseBottom } from './geometry.js';
+import { LAYOUT } from '../campaign/data.js';
+import { paintSoilDetail } from './soil-detail.js';
 export { SURFACE };
 
 /** Where a crew member stands for each place of the base graph (world units, feet). */
@@ -38,6 +40,7 @@ export function buildSoil(atlas) {
   const ctx = c.getContext('2d');
   ctx.imageSmoothingEnabled = false;
   const tile = 80;
+  const ice = [];
   const put = (idx, wx, wy, crop = null) => {
     atlas.cell(ctx, 'terrain', idx, (wx - SOIL.x0) * SOIL.scale, (wy - (WORLD.groundY - 40)) * SOIL.scale, tile * SOIL.scale + 1, tile * SOIL.scale + 1, crop);
   };
@@ -52,13 +55,23 @@ export function buildSoil(atlas) {
       if (wy < 1560) idx = 4 + Math.floor(hash(col, row) * 4);        // regolith (indexes 4..7)
       else if (wy < 2700) idx = 8 + Math.floor(hash(col, row) * 4);   // compacted soil, stones (8..11)
       else idx = 12 + Math.floor(hash(col, row) * 2);                 // bedrock (12, 13)
-      if (wy > 1800 && hash(col * 7, row * 3) > 0.985) idx = 14 + Math.floor(hash(row, col) * 2); // an ice pocket
+      if (wy > 1800 && hash(col * 7, row * 3) > 0.985) { idx = 14 + Math.floor(hash(row, col) * 2); ice.push({ x: Math.round((wx + tile / 2 - SOIL.x0) * SOIL.scale), y: Math.round((wy + tile / 2 - (WORLD.groundY - 40)) * SOIL.scale) }); } // an ice pocket
       put(idx, wx, wy);
     }
   }
+  // procedural detail on top of the tiles (layers, rocks, veins, ice lenses ...), never over the rooms or the shaft
+  const toPx = (r, m = 4) => ({ x: (r.x - m - SOIL.x0) * SOIL.scale, y: (r.y - m - (WORLD.groundY - 40)) * SOIL.scale, w: (r.w + 2 * m) * SOIL.scale, h: (r.h + 2 * m) * SOIL.scale });
+  const avoid = Object.keys(LAYOUT.rooms).filter((id) => roomRect(id).y > WORLD.groundY - 1).map((id) => toPx(roomRect(id)));
+  avoid.push(toPx({ x: LAYOUT.shaftX, y: WORLD.groundY - 40, w: LAYOUT.shaftWidth, h: baseBottom - WORLD.groundY + 40 }));
+  paintSoilDetail(ctx, {
+    w: c.width, h: c.height, groundPx: Math.round(40 * SOIL.scale), hash, avoid, ice,
+    airlockX: (SURFACE.airlock.x - SOIL.x0) * SOIL.scale, garageX: (roomRect('garage').x + LAYOUT.roomWidth / 2 - SOIL.x0) * SOIL.scale,
+  });
+  // depth gradient: darker with depth, a little stronger at the very bottom
   const g = ctx.createLinearGradient(0, 0, 0, c.height);
   g.addColorStop(0, 'rgba(24,6,12,0)');
-  g.addColorStop(1, 'rgba(24,6,12,0.55)');
+  g.addColorStop(0.8, 'rgba(24,6,12,0.5)');
+  g.addColorStop(1, 'rgba(24,6,12,0.72)');
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, c.width, c.height);
   return c;
