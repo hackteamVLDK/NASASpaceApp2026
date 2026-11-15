@@ -219,7 +219,9 @@ export function expeditionMinute(s, emit) {
     if (pct >= mark && !a.fired.includes(mark)) {
       a.fired.push(mark);
       if (ex.id === 4 && mark === 20) s.flags.passedIngenuity = true;
-      emit({ type: 'radio', id: radioId(s, ex, mark), percent: mark });
+      // a dilemma decision has no radio line of its own: its card carries the text (SCENARIO 5.2, Expedition 4 at 60%)
+      const dilemmaMark = Boolean(ex.decision?.dilemma) && ex.decision.at === mark;
+      if (!dilemmaMark) emit({ type: 'radio', id: radioId(s, ex, mark), percent: mark });
       if (ex.decision?.at === mark && !a.decisionDone) {
         if (ex.decision.dilemma) { s.pending = { kind: 'dilemma', id: ex.decision.dilemma }; if (ex.decision.dilemma === 'd5') s.flags.flare = true; emit({ type: 'dilemma', id: ex.decision.dilemma }); } else { s.pending = { kind: 'radio', id: `exp${ex.id}.${mark}` }; emit({ type: 'radio-decision', id: `exp${ex.id}.${mark}` }); }
         return;

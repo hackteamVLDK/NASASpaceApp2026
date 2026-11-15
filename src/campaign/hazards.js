@@ -5,7 +5,7 @@
  * Severity: 'info' (blue), 'warn' (amber), 'alarm' (red).
  */
 import { clockAt } from './util.js';
-import { SOL, SHIELD } from './data.js';
+import { SOL, SHIELD, EMERGENCY_CLEAR_AT } from './data.js';
 import { awayProgress } from './expeditions.js';
 import { powerCap } from './engine.js';
 
@@ -26,12 +26,21 @@ const EMPTY = {
   morale: ['Morale is gone', 'The crew has lost heart: builds and crafts are 25% slower.', 'Build Recreation, call Earth, keep the base warm and lit.'],
 };
 
-/** Title and line for each empty meter (the old text said "everything except life support is off" for heat and oxygen too). */
+/**
+ * Title and line for each open Emergency. It opens at 0 and stays open until the meter is back at EMERGENCY_CLEAR_AT,
+ * so the text names the meter's real value: "at 0" only while it really is 0.
+ */
 const EMERGENCY = {
-  power: ['No power', 'The batteries are empty. Everything except life support is off.'],
-  heat: ['No heat', 'The heaters are off and the base is getting very cold.'],
-  oxygen: ['No oxygen', 'Oxygen is at 0. Fix the air machine now.'],
+  power: ['No power', 'The batteries are empty. Everything except life support is off.', 'Power'],
+  heat: ['No heat', 'The heaters are off and the base is getting very cold.', 'Heat'],
+  oxygen: ['No oxygen', 'Oxygen is at 0. Fix the air machine now.', 'Oxygen'],
 };
+export function emergencyText(s, k) {
+  const [title, zeroLine, name] = EMERGENCY[k];
+  const v = Math.max(0, Math.floor(s.res[k] ?? 0));
+  if (v <= 0) return [title, zeroLine];
+  return [`${name} emergency`, `${name} is at ${v}. The emergency ends when it is back at ${EMERGENCY_CLEAR_AT}.`];
+}
 
 export function hazards(s) {
   const h = [];
@@ -41,7 +50,7 @@ export function hazards(s) {
   if (s.pending?.id === 'e1' || s.pending?.id === 'd5') add('flare', 'alarm', 'Solar flare', 'Fast particles reach Mars in under an hour. Anyone outside takes a big dose.', 'surface', 'Shelter in the Bedroom, or hide behind rock or the Rover shield.');
   if (s.flags.flareWarned && !s.pending) add('flare-watch', 'info', 'Space weather watch', 'The Sun has a stormy spot facing Mars. A flare may come soon.', 'surface', 'Get ready to shelter.');
   for (const [k, place] of [['power', 'surface'], ['heat', 'battery'], ['oxygen', 'lifesupport']]) {
-    if (s.emergency[k]) add(`emergency-${k}`, 'alarm', EMERGENCY[k][0], EMERGENCY[k][1], place, 'Open the Tasks tab and play the job.');
+    if (s.emergency[k]) add(`emergency-${k}`, 'alarm', ...emergencyText(s, k), place, 'Open the Tasks tab and play the job.');
   }
   if (s.recycleEta < 0.98) add('filter', 'warn', 'Cracked water filter', `The recycler saves only ${Math.round(s.recycleEta * 100)}% of the water.`, 'lifesupport', 'Fix it: Water Sort, or spare parts.');
   if (s.mods.some((m) => m.id === 'leak')) add('leak', 'warn', 'Airlock leak', 'A tiny leak costs Oxygen and Water every Sol.', 'surface', 'Hunt the leak with the Valve Balance job.');

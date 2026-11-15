@@ -1,6 +1,7 @@
 # git_status_Vlad
 
 ## DOING NOW
+- 2026-11-15: DONE C23-C26 on main: radio.exp4.60 (no radio line at a dilemma mark) + emitted-strings test; Emergency chip names the real value (EMERGENCY_CLEAR_AT); black box "No power" checked = real emergency; darker, bluer night with dimmed soil and window glow. Files: src/campaign/{expeditions,hazards,data,engine}.js, src/render/campaign-world.js, src/data/surface-lighting.js, tools/balance/campaign-bot.mjs (onEvents hook), tests/{strings-emitted,emergency-text}.test.mjs, docs/ERRORS.md. Nothing in progress.
 - 2026-11-15: C6 done on main (open Emergency costs Morale -5 per Sol + ASTRA warning; Sols with empty Heat/Food/Oxygen cost rating stars; Report line). Not touching C11 (Mykhailo), A28, C8, C20.
 - 2026-11-15: DONE C13, C14, C15, C16, C19 (playthrough + mini-game clarity) on main; new OPEN C20-C22. No deploy (C18 deploy part dropped). Files edited: src/campaign/{data,engine,hazards}.js, src/ui/{astra-panel,minigames2,campaign-ui,prefs}.js, src/audio/{soundManager,audioDirector}.js, src/main.js, index.html, styles/game.css, tests, SCENARIO.md (3.3 note), docs/ERRORS.md. Nothing in progress.
 - 2026-11-14: ERRORS.md C10-C18 added (role modifiers, Earth windows + bent dish, Research use, Recreation refill, Rover rest, settings/a11y, mobile check, missing portraits, submission + Pages deploy)

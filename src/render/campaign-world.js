@@ -98,11 +98,17 @@ export function drawCampaign(ctx, atlas, S) {
     const tint = `rgba(${effect.tint},${effect.opacity})`;
     ctx.fillStyle = tint;
     ctx.fillRect(SOIL_X.x0, -250, SOIL_X.x1 - SOIL_X.x0, GROUND_Y + 250);
-    const fade = ctx.createLinearGradient(0, GROUND_Y, 0, GROUND_Y + SURFACE_LIGHTING.groundFadeDepth);
+    const depth = effect.fadeDepth ?? SURFACE_LIGHTING.groundFadeDepth;
+    const fade = ctx.createLinearGradient(0, GROUND_Y, 0, GROUND_Y + depth);
     fade.addColorStop(0, tint);
     fade.addColorStop(1, `rgba(${effect.tint},0)`);
     ctx.fillStyle = fade;
-    ctx.fillRect(SOIL_X.x0, GROUND_Y, SOIL_X.x1 - SOIL_X.x0, SURFACE_LIGHTING.groundFadeDepth);
+    ctx.fillRect(SOIL_X.x0, GROUND_Y, SOIL_X.x1 - SOIL_X.x0, depth);
+  }
+
+  if (dark > 0) { // night dims the soil of the cutaway as well; the rooms are drawn on top with their own light
+    ctx.fillStyle = `rgba(${SURFACE_LIGHTING.night.tint},${SURFACE_LIGHTING.soilNight * dark})`;
+    ctx.fillRect(SOIL_X.x0, GROUND_Y, SOIL_X.x1 - SOIL_X.x0, S.soil.height / 0.5);
   }
 
   // ---- shaft down to the lowest floor
@@ -119,6 +125,19 @@ export function drawCampaign(ctx, atlas, S) {
   surfaceSprite('airlock', 'airlock', hatchOpen ? 1 : 0, SURFACE.airlock.x, ground, { w: SURFACE.airlock.w });
   if (!cut || cut.landed) surfaceSprite('lander', 'lander', 1, SURFACE.lander.x, ground, { w: SURFACE.lander.w });
   if (cut?.showMound) SURFACE.mound.forEach((m, i) => surfaceSprite(`mound:${i}`, 'mound', 0, m.x, ground, { w: m.w, flip: m.flip })); // the cutscene only: afterwards the drones wait in the Garage
+  if (dark > 0 && !cut) { // at night the lit windows of the dome and the lander glow warm against the dark blue
+    const { color, alpha } = SURFACE_LIGHTING.windowGlow;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (const [x, y, rad] of [[SURFACE.airlock.x - 250, ground - 60, 90], [SURFACE.airlock.x, ground - 90, 120], [SURFACE.airlock.x + 250, ground - 60, 90], [SURFACE.lander.x, ground - 70, 70]]) {
+      const g = ctx.createRadialGradient(x, y, 0, x, y, rad);
+      g.addColorStop(0, `rgba(${color},${alpha * dark})`);
+      g.addColorStop(1, `rgba(${color},0)`);
+      ctx.fillStyle = g;
+      ctx.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+    }
+    ctx.restore();
+  }
 
   // ---- the lander in flight (cutscene)
   if (cut?.lander?.visible && !cut.lander.landed) {

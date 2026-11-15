@@ -13,7 +13,7 @@ const CRAFT_ORDER = ['repair_kit', 'reboot_kit', 'titanium_wheels', 'deep_ice_dr
 const UPGRADE_ORDER = ['solar', 'greenhouse', 'lifesupport', 'battery', 'workshop', 'lab', 'recreation', 'garage'];
 const CHOICES = { d1: 'a', d2: 'a', d3: 'c', d4: 'c', d5: 'b', e1: 'a', e2: 'c', e3: 'a', e4: 'a' };
 
-export function autoplay(seed = 1, { maxSols = 40, verbose = false } = {}) {
+export function autoplay(seed = 1, { maxSols = 40, verbose = false, onEvents = null } = {}) {
   const s = createCampaign({ seed });
   const log = [];
   const note = (m) => { log.push(`Sol ${clockAt(s.minute).sol} ${String(clockAt(s.minute).hour).padStart(2, '0')}:00  ${m}`); if (verbose) console.log(log.at(-1)); };
@@ -64,10 +64,11 @@ export function autoplay(seed = 1, { maxSols = 40, verbose = false } = {}) {
   let guard = 0;
   while (s.minute < maxSols * 1440 && !s.flags.finaleDone && guard++ < 200000) {
     act();
-    step(s, 30);
+    const ev = step(s, 30);
+    onEvents?.(ev);
   }
   // let the finale lines play
-  for (let i = 0; i < 4 && s.flags.finaleDone; i++) { act(); step(s, 60); }
+  for (let i = 0; i < 4 && s.flags.finaleDone; i++) { act(); onEvents?.(step(s, 60)); }
   return { s, log, finaleReady: canFinale(s) };
 }
 

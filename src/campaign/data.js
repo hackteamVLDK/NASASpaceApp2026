@@ -31,6 +31,8 @@ export const RULES = Object.freeze({ hpZeroEndsRun: true });
  * While an Emergency stays open, Morale -5 at the end of each Sol (never below 0, no HP change).
  * The Mission Rating loses 1 star after more than 3 Sols with Heat, Food or Oxygen at 0, and 2 after more than 8.
  */
+/** An Emergency Mode opens when Power, Heat or Oxygen hits 0 and closes when the meter is back at this value. Provenance: `gameplay`. */
+export const EMERGENCY_CLEAR_AT = 20;
 export const EMERGENCY_COST = Object.freeze({ moralePerSol: 5, zeroSolsOneStar: 3, zeroSolsTwoStars: 8, zeroRes: Object.freeze(['heat', 'food', 'oxygen']) });
 
 export const HP = Object.freeze({

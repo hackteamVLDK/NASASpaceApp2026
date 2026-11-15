@@ -13,7 +13,7 @@
 import { seedFrom, nextRandom } from '../sim/rng.js';
 import {
   SOL, START_MINUTE, RES, START_RES, CAP, NEEDS, BASE_HEAT_LOSS, RECYCLER, HP, SHIELD, SLEEP_FROM, SLEEP_TO, MEALS,
-  MODULES, FITNESS, BUILD_SOLS, UPGRADE_SOLS, DRONE_BUILD_POWER, STORM, RECIPES, UPGRADES, MODULE_LINES, BREAKDOWN_RULES, RULES, STORAGE_REFILL, EMERGENCY_COST,
+  MODULES, FITNESS, BUILD_SOLS, UPGRADE_SOLS, DRONE_BUILD_POWER, STORM, RECIPES, UPGRADES, MODULE_LINES, BREAKDOWN_RULES, RULES, STORAGE_REFILL, EMERGENCY_COST, EMERGENCY_CLEAR_AT,
 } from './data.js';
 import { clockAt, isNight, online } from './util.js';
 import { blockAt, planMoralePerSol, workSpeed, exercisePlace, fitnessPerHour, PLAN_IDS } from './plan.js';
@@ -409,7 +409,7 @@ function checkMeters(s, emit) {
       const mini = { power: 'solar_wipe', heat: 'heat_pump', oxygen: 'valve_balance' }[k];
       emit({ type: 'emergency', kind: k, mini });
       if (!s.tasks.some((t) => t.game === mini)) s.tasks.push({ game: mini, why: 'Emergency! Fix it now.' });
-    } else if (s.res[k] >= 20 && s.emergency[k]) s.emergency[k] = false;
+    } else if (s.res[k] >= EMERGENCY_CLEAR_AT && s.emergency[k]) s.emergency[k] = false;
   }
 }
 
