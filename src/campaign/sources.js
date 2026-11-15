@@ -78,7 +78,7 @@ export const SOIL_SOURCES = Object.freeze({
     ['Perseverance RIMFAX: buried ancient delta (NASA/JPL/UCLA/UiO)', 'https://physicalsciences.ucla.edu/ucla-researchers-uncover-buried-ancient-delta-on-mars', 'approximation'],
   ],
   colour: [['NASA: why Mars is red (ferrihydrite mixed with basalt)', 'https://www.nasa.gov/solar-system/nasa-new-study-on-why-mars-is-red-supports-potentially-habitable-past', 'nasa_measurement']],
-  bedrock: [['Perseverance RIMFAX / crater floor: volcanic rock in Jezero', 'https://physicalsciences.ucla.edu/ucla-researchers-uncover-buried-ancient-delta-on-mars', 'nasa_measurement']],
+  bedrock: [['Perseverance: igneous (volcanic) rocks on the Jezero crater floor (Farley et al., Science 2022)', 'https://doi.org/10.1126/science.abo2196', 'nasa_measurement']],
   boulders: [['Perseverance, Delta Scarp: flood-carried boulders (Mangold et al., Science 2021)', 'https://doi.org/10.1126/science.abl4051', 'nasa_measurement']],
   veins: [
     ['Curiosity ChemCam: hydrated calcium sulfates in Martian rocks', 'https://science.nasa.gov/resource/signs-of-hydrated-calcium-sulfates-in-martian-rocks?site=msl', 'nasa_measurement'],
