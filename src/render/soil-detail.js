@@ -92,16 +92,16 @@ export function paintSoilDetail(ctx, o) {
       }
       if (d < ero) { // lake sediments: nearly horizontal, alternating ochre / rust with thin darker lines
         const L = lakeLayer[Math.min(lakeLayer.length - 1, d + wob + 4)];
-        if (L < 0) mix(x, y, P.line, 0.38); else mix(x, y, L % 2 ? P.rust : P.ochre, 0.24);
-      } else if (d === ero || d === ero + 1) { // the erosion surface cuts across the layers
-        mix(x, y, P.line, 0.6);
+        if (L < 0) mix(x, y, P.line, 0.55); else mix(x, y, L % 2 ? P.rust : P.ochre, 0.42);
+      } else if (d <= ero + 2) { // the erosion surface cuts across the layers: a dark wavy line with a light lag on top
+        mix(x, y, d === ero ? P.ochre : P.line, d === ero ? 0.6 : 0.75);
       } else if (d < bas) { // the buried delta: tilted layers, truncated at the top by the erosion surface
         const u = Math.min(deltaLayer.length - 1, Math.max(0, Math.floor(d - x * TILT + 1000)));
         const L = deltaLayer[u];
-        if (L < 0) mix(x, y, P.deltaLine, 0.32); else mix(x, y, L % 2 ? P.deltaDark : P.deltaLight, 0.22);
+        if (L < 0) mix(x, y, P.deltaLine, 0.5); else mix(x, y, L % 2 ? P.deltaDark : P.deltaLight, 0.4);
       } else { // basalt bedrock: grey, blocky joints
         const k = d - bas;
-        mix(x, y, P.basalt, 0.42 + 0.3 * clamp01(k / 250));
+        mix(x, y, P.basalt, 0.55 + 0.3 * clamp01(k / 250));
         if (k === 0) mix(x, y, P.basaltDark, 0.6);
         else if (k % 14 === 0 || (x + Math.floor(k / 14) * 9) % 23 === 0) mix(x, y, P.basaltDark, 0.35);
       }
@@ -134,15 +134,15 @@ export function paintSoilDetail(ctx, o) {
   // a few large flood boulders in the upper layers (nasa_measurement: delta boulders carried by floods)
   for (let i = 0; i < 6; i++) {
     const x = Math.floor(hash(i, 301) * W), d = SOIL_ZONES.surfaceBand + 30 + Math.floor(hash(i, 302) * 200);
-    rock(x, G + d, 11 + Math.floor(hash(i, 303) * 8), grey(shade(top.mid, 0.95), 0.35), 300 + i);
+    rock(x, G + d, 13 + Math.floor(hash(i, 303) * 9), grey(shade(top.light, 0.9), 0.45), 300 + i);
   }
   // 160-180 rocks of mixed sizes; small pebbles near the surface
-  const nRocks = 160 + Math.floor(hash(5, 5) * 20);
+  const nRocks = 180 + Math.floor(hash(5, 5) * 20); // 180-199
   for (let i = 0; i < nRocks; i++) {
     const near = hash(i, 401) < 0.35;
     const d = near ? 4 + Math.floor(hash(i, 402) * 70) : SOIL_ZONES.surfaceBand + Math.floor(hash(i, 402) * (H - G - SOIL_ZONES.surfaceBand - 10));
-    const R = near ? 1 + Math.floor(hash(i, 403) * 2) : 1 + Math.floor(hash(i, 403) ** 2 * 6);
-    const base = d > basaltAt(0) ? P.basaltLight : hash(i, 404) > 0.5 ? grey(top.mid, 0.4) : grey(low.dark, 0.3);
+    const R = near ? 1 + Math.floor(hash(i, 403) * 2) : 2 + Math.floor(hash(i, 403) ** 2 * 6);
+    const base = d > basaltAt(0) ? P.basaltLight : hash(i, 404) > 0.5 ? grey(top.light, 0.45) : grey(shade(low.mid, 1.1), 0.4);
     rock(Math.floor(hash(i, 400) * W), G + d, R, base, 1000 + i);
   }
 
