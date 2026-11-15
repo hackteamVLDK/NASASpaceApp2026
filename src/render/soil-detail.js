@@ -141,8 +141,8 @@ export function paintSoilDetail(ctx, o) {
   for (let i = 0; i < nRocks; i++) {
     const near = hash(i, 401) < 0.35;
     const d = near ? 4 + Math.floor(hash(i, 402) * 70) : SOIL_ZONES.surfaceBand + Math.floor(hash(i, 402) * (H - G - SOIL_ZONES.surfaceBand - 10));
-    const R = near ? 1 + Math.floor(hash(i, 403) * 2) : 2 + Math.floor(hash(i, 403) ** 2 * 6);
-    const base = d > basaltAt(0) ? P.basaltLight : hash(i, 404) > 0.5 ? grey(top.light, 0.45) : grey(shade(low.mid, 1.1), 0.4);
+    const R = near ? 1 + Math.floor(hash(i, 403) * 2) : 2 + Math.floor(hash(i, 403) ** 1.5 * 7);
+    const base = d > basaltAt(0) ? P.basaltLight : hash(i, 404) > 0.5 ? grey(shade(top.light, 1.08), 0.35) : grey(shade(low.light, 0.95), 0.5);
     rock(Math.floor(hash(i, 400) * W), G + d, R, base, 1000 + i);
   }
 
