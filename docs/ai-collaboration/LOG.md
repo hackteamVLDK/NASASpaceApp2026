@@ -18,3 +18,4 @@ One row per delegated task, newest last. Written by `tools/codex/delegate.mjs`.
 | 2026-11-15 10:26 | [UI for lives, rewind, choice previews, Jobs tab](records/20261115-112650-lives-ui.md) | proposal | write | 0 | 4 |
 | 2026-11-15 10:26 | [Lives, checkpoints, rewind and danger](records/20261115-112622-lives-checkpoints.md) | simulation | write | 0 | 8 |
 | 2026-11-15 10:26 | [Decisions that change the game](records/20261115-112631-decision-consequences.md) | simulation | write | 0 | 5 |
+| 2026-11-15 10:52 | [Structural decision branches](records/20261115-115248-decision-branches.md) | simulation | write | 0 | 6 |

@@ -4,9 +4,9 @@
  * line ID (strings.js); this file only decides WHEN something happens and WHAT it changes.
  * Delayed effects are timers with a name (`runTimer`), so the whole state stays plain data.
  */
-import { SOL, MODULES, MODULE_LINES, RECYCLER, BREAKDOWNS, BREAKDOWN_RULES, DEEP_SCAN_RESEARCH, MINERAL_SCAN_RESEARCH, NEEDS, STORM } from './data.js';
+import { SOL, MODULES, MODULE_LINES, RECYCLER, BREAKDOWNS, BREAKDOWN_RULES, DEEP_SCAN_RESEARCH, MINERAL_SCAN_RESEARCH, NEEDS, STORM, BRANCH_RULES, FOLLOWUPS } from './data.js';
 import { clockAt, online, at, addMod, after, clampTo, powerCapOf } from './util.js';
-import { CHOICE_RULES, CHOICE_EFFECTS, activeChoiceEffects } from './choices-data.js';
+import { CHOICE_RULES, CHOICE_EFFECTS, activeChoiceEffects, BRANCH_GATES } from './choices-data.js';
 export { STRINGS } from './choices-data.js';
 
 const say = (emit, lineId, mood = 'calm') => emit({ type: 'astra', lineId, mood });
@@ -30,6 +30,7 @@ export const STORM_TO = at(6, 23);
 export function storyMinute(s, emit, now) {
   const { sol, hour } = now;
   stepChoiceEffects(s, emit);
+  stepBranches(s, emit);
   once(s, 'act1', () => true, () => emit({ type: 'act', act: 1, lineId: 'astra.act1.title' }));
   if (now.minute === 0) scheduleBreakdown(s, emit, sol);
   once(s, 'sunset', () => sol === 1 && now.hourFloat >= 17.5, () => say(emit, 'astra.act1.first_sunset', 'curious'));
@@ -44,7 +45,7 @@ export function storyMinute(s, emit, now) {
   if (s.storm && s.minute >= s.storm.until) endStorm(s, emit);
 
   // dilemma 1 at the end of Sol 3
-  once(s, 'd1', () => sol >= 3 && hour >= 20 && !s.away, () => startPending(s, emit, 'dilemma', 'd1'));
+  once(s, 'd1', () => sol >= 3 && hour >= 20 && !s.away && !s.pending, () => startPending(s, emit, 'dilemma', 'd1'));
   // dilemmas 2, 3, 4 follow the story, not fixed Sols
   once(s, 'd2', () => sol >= 8 && hour >= 10 && online(s, 'workshop') && !s.away && !s.pending, () => startPending(s, emit, 'dilemma', 'd2'));
   once(s, 'd3', () => sol >= 11 && hour >= 10 && online(s, 'greenhouse') && !s.away && !s.pending, () => startPending(s, emit, 'dilemma', 'd3'));
@@ -80,7 +81,7 @@ function scanMinerals(s, emit) {
   emit({ type: 'toast', text: `The Lab scanned ${found - scanned} Mineral Sample${found - scanned > 1 ? 's' : ''}: +${(found - scanned) * MINERAL_SCAN_RESEARCH} Research.` });
 }
 
-export const canFinale = (s) => Boolean(s.upgrades.titanium_wheels && s.upgrades.deep_ice_drill && s.upgrades.rover_shielding && s.modules.garage.tier === 2 && deepScanDone(s));
+export const canFinale = (s) => Boolean(s.upgrades.titanium_wheels && s.upgrades.deep_ice_drill && s.upgrades.rover_shielding && s.modules.garage.tier === 2 && deepScanDone(s) && !branchBlock(s, 'launch', 5));
 
 function endStorm(s, emit) {
   s.storm = null;
@@ -126,7 +127,7 @@ export function onSol(s, emit, now, rand) {
     if (rand() >= ev.chance) continue;
     s.flags.lastEvent[ev.id] = sol;
     // D-T17g: the Lab T2 forecast comes one Sol early (6, E1) and is used up when that flare is answered
-    const forecast = ev.id === 'e1' && s.modules.lab.tier === 2;
+    const forecast = ev.id === 'e1' && (s.modules.lab.tier === 2 || s.flags.branchForecast);
     if (forecast) { say(emit, 'astra.e1.watch', 'curious'); s.flags.flareWarned = true; }
     after(s, at(forecast ? sol + 1 : sol, 10), `event:${ev.id}`);
     break;
@@ -210,9 +211,11 @@ export function onDroneAwake(s, id, emit) {
 // ------------------------------------------------------------------ pending dilemmas and events
 
 export function startPending(s, emit, kind, id) {
+  if (s.pending) return false;
   s.pending = { kind, id };
   if (id === 'e1' || id === 'd5') s.flags.flare = true; // the sky shows the flare while the Commander decides
   emit({ type: kind, id });
+  return true;
 }
 
 /**
@@ -221,11 +224,150 @@ export function startPending(s, emit, kind, id) {
  */
 export function choiceBlock(s, pending, choice) {
   const key = `${pending.id}${choice}`;
+  if (Object.hasOwn(FOLLOWUPS, pending.id)) {
+    const record = s.flags.branches?.followups?.[pending.id];
+    if (!record?.shown || record.answered) return 'That follow-up is not open.';
+    const cost = FOLLOWUPS[pending.id][choice]?.cost ?? {};
+    for (const [res, amount] of Object.entries(cost)) if (s.res[res] < amount) return `Needs ${amount} ${res === 'sp' ? 'Spare Parts' : res}. Pick another way.`;
+  }
   if ((key === 'd2a' || key === 'd2b') && s.res.sp < 12) return 'Not enough Spare Parts for that. Pick another way.';
   if (key === 'd2b' && !['building', 'online'].includes(s.modules.garage.status)) return 'The Cargo Trailer needs the Garage & Airlock. Start building it first, or pick another way.';
   if (key === 'd3a' && s.res.water < 10) return 'Not enough Water for that. Pick another way.';
   if (key === 'd3b' && s.res.water < 20) return 'Not enough Water for that. Pick another way.';
   return null;
+}
+
+// ------------------------------------------------------------------ structural branches
+
+const isRecord = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+// Older save validators treat extension flags as opaque JSON. Repair their shape at the boundary.
+function branchState(s) {
+  if (!isRecord(s.flags.branches)) s.flags.branches = {};
+  const b = s.flags.branches;
+  for (const field of ['followups', 'gates', 'upkeep']) if (!isRecord(b[field])) b[field] = {};
+  for (const [id, r] of Object.entries(b.followups)) {
+    if (!Object.hasOwn(FOLLOWUPS, id) || !isRecord(r) || r.key !== FOLLOWUPS[id].parent || !Number.isFinite(r.due)
+      || typeof r.shown !== 'boolean' || typeof r.answered !== 'boolean') delete b.followups[id];
+  }
+  for (const [id, gate] of Object.entries(b.gates)) {
+    if (!Object.hasOwn(BRANCH_GATES, id) || !isRecord(gate) || (gate.until != null && !Number.isFinite(gate.until))) delete b.gates[id];
+  }
+  for (const [id, r] of Object.entries(b.upkeep)) {
+    if (!Object.hasOwn(BRANCH_RULES.upkeep, id) || !isRecord(r) || !Number.isFinite(r.next) || typeof r.open !== 'boolean') {
+      delete b.upkeep[id];
+      s.mods = s.mods.filter((m) => m.id !== `branch:${id}`);
+    }
+  }
+  return b;
+}
+
+/** Shared by build/upgrade reasons, the expedition map and canFinale. Saves need no new root fields. */
+export function branchBlock(s, action, target) {
+  for (const [id, gate] of Object.entries(s.flags.branches?.gates ?? {})) {
+    if (!isRecord(gate)) continue;
+    if (gate.until != null && s.minute >= gate.until) continue;
+    const rule = BRANCH_GATES[id];
+    const match = rule?.[action];
+    if (match === '*' || match === target || (Array.isArray(match) && match.includes(target))) return rule.reason;
+  }
+  return null;
+}
+
+function setBranchGate(s, id, options = {}) {
+  branchState(s).gates[id] = { ...options };
+}
+
+function startUpkeep(s, id) {
+  branchState(s).upkeep[id] = { next: s.minute + BRANCH_RULES.upkeepSols * SOL, open: false };
+}
+
+function structuralChoice(s, key) {
+  if (key === 'd1a') s.flags.earlyRecreation = true;
+  if (key === 'd2a') s.flags.earlyRoof = true;
+  if (key === 'd2b') setBranchGate(s, 'trailer');
+  if (key === 'd3a') setBranchGate(s, 'soil');
+  if (key === 'd4a' || key === 'd4b') setBranchGate(s, 'canyon');
+  if (key === 'e1b') startUpkeep(s, 'suit');
+  if (key === 'e2c') startUpkeep(s, 'panels');
+  if (key === 'e2b') { setBranchGate(s, 'stowed', { game: 'solar_wipe' }); addTask(s, 'solar_wipe', BRANCH_GATES.stowed.reason); }
+  if (key === 'e3a') setBranchGate(s, 'airlock', { game: 'valve_balance' });
+  for (const [id, follow] of Object.entries(FOLLOWUPS)) {
+    if (follow.parent !== key) continue;
+    branchState(s).followups[id] = { key, due: s.minute + follow.delay * SOL, shown: false, answered: false };
+  }
+}
+
+function finishBranchGate(s, id, gate, emit) {
+  delete s.flags.branches.gates[id];
+  if (gate.forecast) s.flags.branchForecast = true;
+  say(emit, 'astra.branch.ready', 'cheerful');
+}
+
+function stepBranches(s, emit) {
+  if (s.flags.branches === undefined) return;
+  const b = branchState(s);
+  for (const [id, gate] of Object.entries(b.gates)) {
+    if (gate.until != null && s.minute >= gate.until) finishBranchGate(s, id, gate, emit);
+  }
+  for (const [id, record] of Object.entries(b.upkeep)) {
+    const rule = BRANCH_RULES.upkeep[id];
+    if (s.modules.workshop.tier >= BRANCH_RULES.repairTier && online(s, 'workshop')) {
+      delete b.upkeep[id];
+      s.mods = s.mods.filter((m) => m.id !== `branch:${id}`);
+      const plan = s.flags.choiceEffects?.[rule.decision];
+      if (isRecord(plan)) plan.maintenanceRepaired = true;
+      // Do not remove a task another breakdown also needs. Winning it remains useful.
+      say(emit, 'astra.branch.repaired', 'cheerful');
+      continue;
+    }
+    if (!s.away && !s.pending && s.minute >= record.next) {
+      const why = 'Our special setup needs a check. Workshop T2 repairs it for good.';
+      addTask(s, rule.game, why);
+      if (!record.open) say(emit, 'astra.branch.upkeep', 'calm');
+      record.open = true;
+      record.next = s.minute + BRANCH_RULES.upkeepSols * SOL;
+    }
+    if (record.open) addMod(s, `branch:${id}`, rule.res, rule.perSol);
+  }
+  if (s.away || s.pending) return;
+  const waiting = Object.entries(b.followups).filter(([, r]) => !r.shown && !r.answered && s.minute >= r.due
+    && s.path?.[r.key.slice(0, -1)] === r.key.slice(-1)).sort((a, c) => a[1].due - c[1].due);
+  const next = waiting[0];
+  if (next && startPending(s, emit, 'dilemma', next[0])) next[1].shown = true;
+}
+
+function applyFollowup(s, id, choice, emit) {
+  const record = branchState(s).followups[id];
+  if (!record?.shown || record.answered) return;
+  const fx = FOLLOWUPS[id][choice];
+  if (!fx) return;
+  record.answered = true;
+  for (const [res, amount] of Object.entries(fx.cost ?? {})) setRes(s, res, -amount);
+  for (const [res, amount] of Object.entries(fx.grant ?? {})) {
+    if (res === 'research') s.research += amount;
+    else setRes(s, res, amount);
+  }
+  if (fx.hp) hurt(s, fx.hp);
+  if (fx.clear) delete s.flags.branches.gates[fx.clear];
+  if (fx.gate) {
+    const gate = fx.wait ? { until: s.minute + fx.wait * SOL, forecast: fx.forecast ?? false } : { game: fx.game };
+    setBranchGate(s, fx.gate, gate);
+    if (fx.game) addTask(s, fx.game, BRANCH_GATES[fx.gate].reason);
+  }
+  if (fx.forecast && !fx.wait) s.flags.branchForecast = true;
+  if (fx.upkeep) startUpkeep(s, fx.upkeep);
+  if (fx.endPlan && isRecord(s.flags.choiceEffects?.[fx.endPlan])) s.flags.choiceEffects[fx.endPlan].until = s.minute;
+  if (fx.stopLeak) {
+    s.mods = s.mods.filter((m) => m.id !== 'leak' && m.id !== 'leak_w');
+    s.timers = s.timers.filter((t) => t.id !== 'leak_returns');
+  }
+  if (fx.soilWash) {
+    s.flags.washUnlocked = true;
+    s.flags.soilWashing = true;
+    after(s, s.minute + fx.wait * SOL, 'd3b');
+  }
+  rememberChoice(s, id, choice);
+  refreshChoiceEffects(s);
 }
 
 /** Run an action the player picked. Called by command({type:'choose'}). */
@@ -306,7 +448,7 @@ export function refreshChoiceEffects(s) {
         add(res, output * fraction);
       }
     }
-    if (fx.maintenance && s.tasks.some((t) => t.game === fx.maintenance)) {
+    if (fx.maintenance && !r.maintenanceRepaired && s.tasks.some((t) => t.game === fx.maintenance)) {
       add('power', fx.maintenancePower ?? 0);
       add('water', fx.maintenanceWater ?? 0);
       add('hp', fx.maintenanceHp ?? 0);
@@ -323,7 +465,7 @@ function stepChoiceEffects(s, emit) {
       s.research = Math.max(0, s.research + output * fx.research / SOL);
     }
     if (s.minute < r.nextChore || s.away || s.pending) continue;
-    if (fx.maintenance) addTask(s, fx.maintenance, 'Our earlier choice needs another equipment check.');
+    if (fx.maintenance && !r.maintenanceRepaired) addTask(s, fx.maintenance, 'Our earlier choice needs another equipment check.');
     if (fx.drone) {
       // A delayed chore never fills every queue with copies of the same job.
       const busy = s.drones.some((d) => d.task?.id === fx.drone.id || d.queue.some((j) => j.id === fx.drone.id));
@@ -348,6 +490,7 @@ function choiceCallback(s, timerId, emit) {
 }
 
 export function applyChoice(s, pending, choice, emit, rand) {
+  if (Object.hasOwn(FOLLOWUPS, pending.id)) { applyFollowup(s, pending.id, choice, emit); return; }
   const key = `${pending.id}${choice}`;
   const { sol } = clockAt(s.minute);
   if (pending.id === 'e1' || pending.id === 'd5') s.flags.flare = false;
@@ -451,6 +594,7 @@ export function applyChoice(s, pending, choice, emit, rand) {
       if (pending.id === 'd5') s.flags.d5Choice = choice; // read by expeditions.js
   }
   rememberChoice(s, pending.id, choice);
+  structuralChoice(s, key);
 }
 
 // ------------------------------------------------------------------ delayed effects
@@ -516,6 +660,18 @@ export function miniBlock(s, game) {
 }
 
 export function onMini(s, { game, win, auto = false }, emit) {
+  if (win && s.flags.branches !== undefined) {
+    const b = branchState(s);
+    for (const [id, gate] of Object.entries(b.gates)) {
+      if (gate.game === game) finishBranchGate(s, id, gate, emit);
+    }
+    for (const [id, record] of Object.entries(b.upkeep)) {
+      if (BRANCH_RULES.upkeep[id].game !== game) continue;
+      record.open = false;
+      record.next = s.minute + BRANCH_RULES.upkeepSols * SOL;
+      s.mods = s.mods.filter((m) => m.id !== `branch:${id}`);
+    }
+  }
   // `auto`: a drone did the job for the player (B2): the system is repaired, but there is no +2 SP, no win count and no ASTRA explanation
   const rec = (s.flags.mini ??= {});
   // The prep games pay once per trip, not once per try.

@@ -14,7 +14,7 @@ import { SOL, HP, DEEP_SCAN_RESEARCH, MINERAL_SCAN_RESEARCH } from './data.js';
 import { fitMult } from './plan.js';
 import { clockAt, online, after, clampTo } from './util.js';
 import { nextRandom } from '../sim/rng.js';
-import { addTask, scheduleBreakdown, rememberChoice } from './story.js';
+import { addTask, scheduleBreakdown, rememberChoice, branchBlock } from './story.js';
 import { CHOICE_EFFECTS, activeChoiceEffects, choiceTripMult } from './choices-data.js';
 
 const RR_COMMANDER = 0.15;
@@ -29,10 +29,12 @@ const EXP4_REST = Object.freeze({ sp: 15, items: { rare_battery_cell: 1, mineral
 
 const done = (s, id) => Boolean(s.flags.done?.[id]);
 /** A story place can be visited once; then the map shows it as explored. */
-const once = (id, rule) => (s) => (done(s, id) ? ALREADY : rule(s));
+const once = (id, rule) => (s) => (done(s, id) ? ALREADY : branchBlock(s, 'launch', id) ?? rule(s));
 
 /** Why the finale cannot start yet, naming exactly what is missing (so the player knows what to do next). */
 export function finaleBlock(s) {
+  const branch = branchBlock(s, 'launch', 5);
+  if (branch) return branch;
   const missing = [];
   if (!s.upgrades.titanium_wheels) missing.push('Titanium Wheels');
   if (!s.upgrades.deep_ice_drill) missing.push('the Deep Ice Drill');
@@ -59,16 +61,16 @@ export const EXPEDITIONS = Object.freeze({
     loot: { sp: 20, items: { ice_core: 3, water_filter_membrane: 1, titanium_plate: 2, circuit_board: 1 } }, story: ['water_filter_membrane'],
     radio: [0, 30, 55, 70, 85, 100], decision: { at: 85 }, returnLine: 'astra.exp3.return', mapPos: [0.3, 0.28] },
   4: { id: 4, nameId: 'ui.exp4.name', sol: 2, route: 'delta', risk: 'high',
-    requires: (s) => (done(s, 4) && !s.flags.exp4Repeat ? ALREADY : s.upgrades.rover_shielding ? null : 'Craft Regolith Radiation Shielding first.'),
+    requires: (s) => (done(s, 4) && !s.flags.exp4Repeat ? ALREADY : branchBlock(s, 'launch', 4) ?? (s.upgrades.rover_shielding ? null : 'Craft Regolith Radiation Shielding first.')),
     loot: { sp: 25, items: { rare_battery_cell: 3, lab_sensor_kit: 1, mineral_sample: 3, titanium_plate: 1, circuit_board: 2 } }, story: ['lab_sensor_kit'],
     radio: [0, 20, 35, 50, 60, 80, 100], astra: { 20: 'astra.exp4.at20', 35: 'astra.exp4.at35' }, decision: { at: 60, dilemma: 'd5' }, mapPos: [0.2, 0.55] },
   5: { id: 5, nameId: 'ui.exp5.name', sol: 2, route: 'canyon', risk: 'low', scripted: true, requires: once(5, (s) => finaleBlock(s)),
     loot: { sp: 30, items: { canyon_samples: 1, brine_sample: 1 } }, story: ['canyon_samples', 'brine_sample'], // 5.2: Canyon Samples, Brine Sample, 30 SP
     radio: [0, 25, 50, 55, 70, 95], radioIdMap: { 0: '01', 25: '02', 50: '03', 55: '04', 70: '05', 95: '06' }, astra: { 75: 'astra.finale.leopard', 85: 'astra.finale.methane' }, mapPos: [0.08, 0.35] },
-  run: { id: 'run', nameId: 'ui.exp_run.name', sol: 1, route: 'floor', risk: 'low', requires: (s) => (online(s, 'garage') ? null : 'Build the Garage & Airlock first.'),
+  run: { id: 'run', nameId: 'ui.exp_run.name', sol: 1, route: 'floor', risk: 'low', requires: (s) => (branchBlock(s, 'launch', 'run') ?? (online(s, 'garage') ? null : 'Build the Garage & Airlock first.')),
     loot: { sp: 15, items: {} }, story: [], radio: [0, 50, 100], radioPool: { 0: [1, 2], 50: [1, 3], 100: [1, 2] }, mapPos: [0.6, 0.7] },
   // Ice mode of the repeatable run (5.2, row R): two Ice Cores, no Spare Parts.
-  ice: { id: 'ice', nameId: 'ui.exp_run.name', sol: 1, route: 'floor', risk: 'low', requires: (s) => (!online(s, 'garage') ? 'Build the Garage & Airlock first.' : s.upgrades.deep_ice_drill ? null : 'Craft the Deep Ice Drill first.'),
+  ice: { id: 'ice', nameId: 'ui.exp_run.name', sol: 1, route: 'floor', risk: 'low', requires: (s) => (branchBlock(s, 'launch', 'ice') ?? (!online(s, 'garage') ? 'Build the Garage & Airlock first.' : s.upgrades.deep_ice_drill ? null : 'Craft the Deep Ice Drill first.')),
     loot: { sp: 0, items: { ice_core: 2 } }, story: [], radio: [0, 50, 100], radioPool: { 0: [3], 50: [2, 3], 100: [1, 2] }, mapPos: [0.38, 0.72] },
 });
 
@@ -114,7 +116,7 @@ export function startExpedition(s, key, emit) {
   if (s.pending) return 'Decide first.';
   if (s.flags.noLaunchUntil && s.minute < s.flags.noLaunchUntil) return 'The airlock is sealed for now.';
   if (s.medRest) return 'The Commander is resting.';
-  const why = ex.requires(s);
+  const why = branchBlock(s, 'launch', ex.id) ?? ex.requires(s);
   if (why) return why;
   if (s.hp < 25) return 'HP is too low. Rest first.';
   s.res.water = Math.max(0, s.res.water - 2); // the airlock cycle costs 2 Water; trips are never blocked by an empty tank

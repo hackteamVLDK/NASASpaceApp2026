@@ -17,7 +17,7 @@ import {
 } from './data.js';
 import { clockAt, isNight, online } from './util.js';
 import { blockAt, planMoralePerSol, workSpeed, exercisePlace, fitnessPerHour, PLAN_IDS } from './plan.js';
-import { storyMinute, onSol, applyChoice, choiceBlock, onModuleStart, onModuleBuilt, onKit, onMini, miniBlock, runTimer, onDroneAwake, onMove, startSoilWash, soilWashBlock, MINI_GAMES } from './story.js';
+import { storyMinute, onSol, applyChoice, choiceBlock, onModuleStart, onModuleBuilt, onKit, onMini, miniBlock, runTimer, onDroneAwake, onMove, startSoilWash, soilWashBlock, MINI_GAMES, branchBlock } from './story.js';
 export { soilWashBlock };
 import { expeditionMinute, startExpedition, radioChoice } from './expeditions.js';
 import { takeCheckpoint, loseLife } from './lives.js';
@@ -442,7 +442,10 @@ function checkMeters(s, emit) {
  * Why a module cannot be built yet, or null. (3.3 "Unlocks when")
  * docs/ERRORS.md A29: every lock says what to do AND why that comes first, in short kid-friendly words.
  */
-export function unlockReason(s, id) {
+export function unlockReason(s, id, action = 'build') {
+  const branch = branchBlock(s, action, id);
+  if (branch) return branch;
+  if (action === 'upgrade') return null;
   const started = (m) => ['building', 'online'].includes(s.modules[m].status);
   switch (id) {
     case 'battery': return null;
@@ -452,8 +455,8 @@ export function unlockReason(s, id) {
     case 'lab': return online(s, 'garage')
       ? ((s.items.dish_antenna ?? 0) > 0 ? null : 'Needs the Dish Antenna from Pathfinder-X: send the Rover on Expedition 2 to bring it home.')
       : 'Build the Garage first: the Lab needs a big dish antenna, and only the Rover can fetch one.';
-    case 'recreation': return started('lab') ? null : 'Start the Lab first: the drones finish the work rooms before the rest room.';
-    case 'roof': return started('lab')
+    case 'recreation': return started('lab') || (s.flags.earlyRecreation && online(s, 'workshop')) ? null : 'Start the Lab first: the drones finish the work rooms before the rest room.';
+    case 'roof': return started('lab') || (s.flags.earlyRoof && online(s, 'garage'))
       ? ((s.items.titanium_plate ?? 0) > 0 ? null : 'Needs a Titanium Plate to hold up the soil: find one on Expedition 2 or a Scrap Run.')
       : 'Start the Lab first: the roof covers the right-wing rooms, so their frames must stand first.';
     default: return 'Already built.';
@@ -557,7 +560,7 @@ function startJob(s, d, job, emit) {
   if (m.status === 'building') return 'That room is still being built.';
   if (m.status !== 'online') return 'Build it first.';
   if (m.tier === 2 || m.upgrading) return 'Already upgraded.';
-  const why = canPay(s, u);
+  const why = unlockReason(s, id, 'upgrade') ?? canPay(s, u);
   if (why) return why;
   pay(s, u);
   m.upgrading = { progress: 0, drone: d.id };

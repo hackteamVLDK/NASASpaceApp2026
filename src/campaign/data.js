@@ -33,6 +33,31 @@ export const LIVES = Object.freeze({
   emptyMeterHpPerSol: Object.freeze({ oxygen: 60, heat: 30, water: 30, food: 20 }),
 });
 
+/** Structural decision extensions (B2). Every delay, cost and penalty here is `gameplay`.
+ * These are proposed additions to SCENARIO Section 6, not NASA engineering measurements. */
+export const BRANCH_RULES = Object.freeze({
+  upkeepSols: 2, repairTier: 2,
+  upkeep: {
+    suit: { decision: 'e1', game: 'suit_seal', res: 'hp', perSol: -24 },
+    panels: { decision: 'e2', game: 'solar_wipe', res: 'power', perSol: -18 },
+    tape: { decision: 'e3', game: 'valve_balance', res: 'oxygen', perSol: -6 },
+  },
+});
+
+/** Follow-up effects; costs are checked before the paused card can be answered.
+ * `wait` holds its gate for that many Sols; `game` holds it until a successful repair.
+ * All values are `gameplay`. Every card has a free option, even with empty stores. */
+export const FOLLOWUPS = Object.freeze({
+  f1: { parent: 'd1b', delay: 1, a: { cost: { sp: 8 }, endPlan: 'd1' }, b: { cost: { power: 20 }, wait: 1, gate: 'mount', endPlan: 'd1' }, c: { endPlan: 'd1', grant: { morale: -3 } } },
+  f2: { parent: 'd2b', delay: 1, a: { cost: { sp: 8 }, gate: 'trailer', game: 'wheel_vacuum' }, b: { wait: 2, gate: 'trailer' }, c: { clear: 'trailer', endPlan: 'd2', grant: { morale: -3 } } },
+  f3: { parent: 'd3a', delay: 2, a: { cost: { water: 5 }, gate: 'soil', game: 'nutrient_match' }, b: { cost: { water: 20 }, gate: 'soil', wait: 2, soilWash: true }, c: { clear: 'soil', grant: { morale: -5, research: 8 } } },
+  f4: { parent: 'd3c', delay: 1, a: { cost: { sp: 10 }, grant: { research: 5 } }, b: { gate: 'lamps', game: 'heat_pump' }, c: { endPlan: 'd3', grant: { research: 5 } } },
+  f5: { parent: 'd4a', delay: 1, a: { gate: 'canyon', wait: 1 }, b: { gate: 'canyon', wait: 3, grant: { research: 15 } }, c: { cost: { food: 15 }, clear: 'canyon' } },
+  f6: { parent: 'd4b', delay: 1, a: { cost: { sp: 12 }, gate: 'canyon', game: 'antenna' }, b: { gate: 'canyon', wait: 4, grant: { research: 20 } }, c: { gate: 'canyon', wait: 2, hp: 8 } },
+  f7: { parent: 'e1c', delay: 1, a: { cost: { sp: 6 }, forecast: true }, b: { gate: 'forecast', wait: 2, forecast: true }, c: { endPlan: 'e1', grant: { research: 8 } } },
+  f8: { parent: 'e3b', delay: 3, a: { cost: { sp: 8 }, gate: 'seal', game: 'valve_balance', endPlan: 'e3' }, b: { gate: 'seal', wait: 2, stopLeak: true, endPlan: 'e3' }, c: { upkeep: 'tape' } },
+});
+
 /**
  * C6 (team decision, 2026-11-15): an ignored Emergency is not free. Provenance: `gameplay`.
  * While an Emergency stays open, Morale -5 at the end of each Sol (never below 0, no HP change).
