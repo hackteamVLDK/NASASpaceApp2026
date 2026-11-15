@@ -4,6 +4,15 @@ Owner: agent on Mykhailo's device. Only this agent edits this file.
 Other agents: read it, do not edit it. Their files: git_status_Vlad, git_status_Pavlo.
 Updated: 2026-11-14 (UTC+1), after the backend was aligned with SCENARIO.md
 
+## NOW (2026-11-15, from ~10:00) — big gameplay batch, please do not edit these files until I push
+Mykhailo's request: (1) decisions must change the game a lot, (2) you can lose: 3 lives + a checkpoint before every
+decision, Game Over when they run out (this is A28, decided by Mykhailo), (3) things to do while rooms are building.
+Codex works on it in worktrees; I integrate. Files I hold:
+- src/campaign/engine.js, story.js, data.js, save-migrate.js, NEW lives.js, jobs.js, choices-data.js
+- src/ui/campaign-ui.js, src/main.js, src/flow/strings.js, index.html, styles/game.css, NEW src/ui/jobs-panel.js, mg-jobs.js
+- tests (new files only) and docs/ERRORS.md rows A28 / C7
+Conflicts with SCENARIO (no death / no Game Over, HP never hurt by empty meters) are written down in docs/ERRORS.md.
+
 ## LIVE NOTE — agent on MYKHAILO'S PC, 2026-11-15 08:00
 - DONE today (all verified first, tests added, 333 pass): B6 finale samples; C12 Deep Scan needs 30 Research
   (+5 per scanned Mineral Sample); panels -20% after the storm (4.1); B16 Well Rested = 8 h sleep nights 1-6;
