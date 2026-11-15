@@ -57,11 +57,11 @@ export function paintSoilDetail(ctx, o) {
   const grey = (c, k) => { const l = (c[0] + c[1] + c[2]) / 3; return c.map((v) => Math.round(v + (l - v) * k)); };
   const shade = (c, f) => c.map((v) => Math.max(0, Math.min(255, Math.round(v * f))));
   const P = {
-    ochre: shade(top.light, 1.05), rust: shade(top.dark, 1.0), line: shade(top.dark, 0.7),
-    deltaLight: grey(low.light, 0.15), deltaDark: grey(low.dark, 0.15), deltaLine: shade(low.dark, 0.7),
+    ochre: shade(top.light, 1.22), rust: shade(top.dark, 0.82), line: shade(top.dark, 0.5),
+    deltaLight: grey(shade(low.light, 1.2), 0.15), deltaDark: grey(shade(low.dark, 0.82), 0.15), deltaLine: shade(low.dark, 0.5),
     dust: shade(top.light, 1.18),
     basalt: grey(deep.mid, 0.7), basaltDark: grey(shade(deep.dark, 0.85), 0.7), basaltLight: grey(deep.light, 0.6),
-    vein: [242, 236, 214], veinYellow: [232, 220, 162], crack: shade(top.dark, 0.45),
+    vein: [255, 252, 236], veinYellow: [252, 240, 178], crack: shade(top.dark, 0.45),
     iron: [168, 172, 178], ironLight: [214, 217, 221], ironDark: [92, 95, 101],
     ice: [206, 232, 246], white: [255, 255, 255],
   };
@@ -71,14 +71,16 @@ export function paintSoilDetail(ctx, o) {
     D[k] = Math.round(D[k] + (c[0] - D[k]) * a); D[k + 1] = Math.round(D[k + 1] + (c[1] - D[k + 1]) * a); D[k + 2] = Math.round(D[k + 2] + (c[2] - D[k + 2]) * a);
   };
   const put = (x, y, c) => mix(x, y, c, 1);
+  const bright = new Uint8Array(W * H); // veins and ice keep their light colour under the depth gradient
+  const putBright = (x, y, c) => { if (free(x, y)) { put(x, y, c); bright[y * W + x] = 1; } };
 
   // ---- 1) layers, the erosion surface and the bedrock contact (approximation, RIMFAX)
   const erosionAt = (x) => SOIL_ZONES.erosion + Math.round(10 * Math.sin(x / 97 + 1.3) + 6 * Math.sin(x / 41 + 0.4) + 3 * Math.sin(x / 13));
   const basaltAt = (x) => SOIL_ZONES.basalt + Math.round(8 * Math.sin(x / 130) + 5 * Math.sin(x / 53 + 2));
   const lakeLayer = new Int16Array(1400); // depth -> layer number (thin, regular: 4-8 px each)
-  for (let d = 0, n = 0; d < lakeLayer.length; n++) { const t = 4 + Math.floor(hash(n, 11) * 5); for (let i = 0; i < t && d < lakeLayer.length; i++, d++) lakeLayer[d] = i === 0 ? -(n + 1) : n; }
+  for (let d = 0, n = 0; d < lakeLayer.length; n++) { const t = 8 + Math.floor(hash(n, 11) * 7), ln = 2 + (hash(n, 12) > 0.5 ? 1 : 0); for (let i = 0; i < t && d < lakeLayer.length; i++, d++) lakeLayer[d] = i < ln ? -(n + 1) : n; }
   const deltaLayer = new Int16Array(4096); // tilted coordinate -> layer number (thicker: 6-12 px)
-  for (let u = 0, n = 0; u < deltaLayer.length; n++) { const t = 6 + Math.floor(hash(n, 23) * 7); for (let i = 0; i < t && u < deltaLayer.length; i++, u++) deltaLayer[u] = i === 0 ? -(n + 1) : n; }
+  for (let u = 0, n = 0; u < deltaLayer.length; n++) { const t = 10 + Math.floor(hash(n, 23) * 8), ln = 2 + (hash(n, 24) > 0.5 ? 1 : 0); for (let i = 0; i < t && u < deltaLayer.length; i++, u++) deltaLayer[u] = i < ln ? -(n + 1) : n; }
   const TILT = 0.27; // tan(15 deg): delta foresets dip 10-20 deg (approximation)
   for (let x = 0; x < W; x++) {
     const ero = erosionAt(x), bas = basaltAt(x);
@@ -92,13 +94,13 @@ export function paintSoilDetail(ctx, o) {
       }
       if (d < ero) { // lake sediments: nearly horizontal, alternating ochre / rust with thin darker lines
         const L = lakeLayer[Math.min(lakeLayer.length - 1, d + wob + 4)];
-        if (L < 0) mix(x, y, P.line, 0.55); else mix(x, y, L % 2 ? P.rust : P.ochre, 0.42);
-      } else if (d <= ero + 2) { // the erosion surface cuts across the layers: a dark wavy line with a light lag on top
+        if (L < 0) mix(x, y, P.line, 0.8); else mix(x, y, L % 2 ? P.rust : P.ochre, 0.7);
+      } else if (d <= ero + 3) { // the erosion surface cuts across the layers: a dark wavy line with a light lag on top
         mix(x, y, d === ero ? P.ochre : P.line, d === ero ? 0.6 : 0.75);
       } else if (d < bas) { // the buried delta: tilted layers, truncated at the top by the erosion surface
         const u = Math.min(deltaLayer.length - 1, Math.max(0, Math.floor(d - x * TILT + 1000)));
         const L = deltaLayer[u];
-        if (L < 0) mix(x, y, P.deltaLine, 0.5); else mix(x, y, L % 2 ? P.deltaDark : P.deltaLight, 0.4);
+        if (L < 0) mix(x, y, P.deltaLine, 0.78); else mix(x, y, L % 2 ? P.deltaDark : P.deltaLight, 0.66);
       } else { // basalt bedrock: grey, blocky joints
         const k = d - bas;
         mix(x, y, P.basalt, 0.55 + 0.3 * clamp01(k / 250));
@@ -120,11 +122,14 @@ export function paintSoilDetail(ctx, o) {
       const a = Math.atan2(dy, dx), j = 0.82 + 0.18 * hash(seed, Math.floor((a + Math.PI) * 2.2));
       return dist <= R * j;
     };
-    for (let y = Math.floor(cy - R); y <= cy + R; y++) for (let x = Math.floor(cx - R); x <= cx + R; x++) {
-      if (!inside(x, y)) { if (inside(x - 1, y - 1)) mix(x, y, P.crack, 0.45); continue; } // shadow lower right
-      const edgeTop = !inside(x, y - 1) || !inside(x - 1, y);
-      const edgeLow = !inside(x, y + 1) && !inside(x + 1, y);
-      put(x, y, edgeTop ? shade(body, 1.35) : edgeLow ? shade(body, 0.62) : (hash(x * 3 + seed, y) > 0.86 ? shade(body, 0.85) : body));
+    const e = Math.max(1, Math.round(R / 5)); // edge and shadow thickness grow with the rock
+    const sh = Math.max(1, Math.round(R / 6));
+    for (let y = Math.floor(cy - R - 1); y <= cy + R + sh + 1; y++) for (let x = Math.floor(cx - R - 1); x <= cx + R + sh + 1; x++) {
+      if (!inside(x, y)) { if (inside(x - sh, y - sh)) mix(x, y, P.crack, 0.6); continue; } // a dark shadow, lower right
+      let top = false, low = false;
+      for (let k = 1; k <= e && !top; k++) top = !inside(x, y - k) || !inside(x - k, y);
+      if (!top) for (let k = 1; k <= e && !low; k++) low = !inside(x, y + k) || !inside(x + k, y);
+      put(x, y, top ? shade(body, 1.45) : low ? shade(body, 0.6) : (hash(x * 3 + seed, y) > 0.86 ? shade(body, 0.86) : body));
     }
     if (R >= 3) for (let c = 0; c < 1 + (hash(seed, 7) > 0.5 ? 1 : 0); c++) { // 1-2 pixel cracks
       let x = Math.round(cx - R / 2 + hash(seed, 8 + c) * R), y = Math.round(cy - R / 3);
@@ -137,11 +142,11 @@ export function paintSoilDetail(ctx, o) {
     rock(x, G + d, 13 + Math.floor(hash(i, 303) * 9), grey(shade(top.light, 0.9), 0.45), 300 + i);
   }
   // 160-180 rocks of mixed sizes; small pebbles near the surface
-  const nRocks = 180 + Math.floor(hash(5, 5) * 20); // 180-199
+  const nRocks = 580 + Math.floor(hash(5, 5) * 40); // about 600
   for (let i = 0; i < nRocks; i++) {
-    const near = hash(i, 401) < 0.35;
+    const near = hash(i, 401) < 0.2;
     const d = near ? 4 + Math.floor(hash(i, 402) * 70) : SOIL_ZONES.surfaceBand + Math.floor(hash(i, 402) * (H - G - SOIL_ZONES.surfaceBand - 10));
-    const R = near ? 1 + Math.floor(hash(i, 403) * 2) : 2 + Math.floor(hash(i, 403) ** 1.2 * 8);
+    const R = near ? 3 + Math.floor(hash(i, 403) * 2) : 3 + Math.floor(hash(i, 403) ** 2.2 * 27); // 6-60 px across
     const base = d > basaltAt(0) ? P.basaltLight : hash(i, 404) > 0.5 ? grey(shade(top.light, 1.2), 0.35) : grey(shade(low.light, 1.15), 0.5);
     rock(Math.floor(hash(i, 400) * W), G + d, R, base, 1000 + i);
   }
@@ -152,15 +157,15 @@ export function paintSoilDetail(ctx, o) {
     const col = hash(seed, 1) > 0.5 ? P.vein : P.veinYellow;
     let dx = hash(seed, 2) > 0.5 ? 1 : -1;
     for (let i = 0; i < len; i++) {
-      put(x, y, col);
+      putBright(x, y, col); putBright(x + 1, y, col); // 2 px wide
       if (hash(seed, 100 + i) > 0.6) x += dx; else y += 1;
       if (hash(seed, 300 + i) > 0.93) dx = -dx;
       if (depth === 0 && hash(seed, 500 + i) > 0.965) vein(x, y, 8 + Math.floor(hash(seed, 600 + i) * 16), seed * 7 + i, 1);
     }
     veinEnds.push([x, y]);
   };
-  const nVeins = 10 + Math.floor(hash(9, 9) * 6);
-  for (let i = 0; i < nVeins; i++) vein(Math.floor(hash(i, 501) * W), G + SOIL_ZONES.surfaceBand + Math.floor(hash(i, 502) * (H - G - 200)), 30 + Math.floor(hash(i, 503) * 60), 700 + i);
+  const nVeins = 20 + Math.floor(hash(9, 9) * 6); // 20-25
+  for (let i = 0; i < nVeins; i++) vein(Math.floor(hash(i, 501) * W), G + SOIL_ZONES.surfaceBand + Math.floor(hash(i, 502) * (H - G - 200)), 120 + Math.floor(hash(i, 503) * 140), 700 + i);
 
   // ---- 5) cracks: thin dark zig-zag fractures; some end in a vein
   for (let i = 0; i < 28; i++) {
@@ -180,12 +185,11 @@ export function paintSoilDetail(ctx, o) {
   for (let i = 0; i < 2; i++) {
     let x = Math.floor(hash(i, 1101) * W), d = SOIL_ZONES.surfaceBand + 40 + Math.floor(hash(i, 1102) * 180);
     for (let t = 0; t < 12 && (lakeLayer[d] < 0 || lakeLayer[d] % 2 === 0); t++) d++; // sit in a rust (dark) layer
-    rock(x, G + d, 3, P.iron, 1100 + i);
-    for (let p = 0; p < 3; p++) put(x - 1 + Math.floor(hash(i, 1110 + p) * 3), G + d - 1 + Math.floor(hash(i, 1120 + p) * 3), P.ironDark); // pits
-    put(x - 1, G + d - 2, P.ironLight);
+    rock(x, G + d, 5, P.iron, 1100 + i);
+    for (let p = 0; p < 5; p++) put(x - 2 + Math.floor(hash(i, 1110 + p) * 5), G + d - 2 + Math.floor(hash(i, 1120 + p) * 4), P.ironDark); // pits
   }
 
-  drawIce(o.ice, put);
+  drawIce(o.ice, putBright);
 
   // ---- 8) faint wheel tracks on the surface, leading to the airlock
   if (o.airlockX != null && o.garageX != null) {
@@ -193,7 +197,21 @@ export function paintSoilDetail(ctx, o) {
     for (let x = Math.floor(a); x < b; x++) if (x % 5 < 2) { mix(x, G + 3, P.line, 0.3); mix(x + 2, G + 6, P.line, 0.22); }
   }
 
+  // depth gradient: darker with depth, a little stronger at the very bottom; veins and ice stay bright
+  const stops = o.depthGradient ?? [[0, 0], [0.8, 0.5], [1, 0.72]];
+  const tint = o.depthTint ?? [24, 6, 12];
+  for (let y = 0; y < H; y++) {
+    const f = y / (H - 1);
+    let a = 0;
+    for (let i = 1; i < stops.length; i++) if (f <= stops[i][0]) { const [f0, a0] = stops[i - 1], [f1, a1] = stops[i]; a = a0 + (a1 - a0) * ((f - f0) / (f1 - f0)); break; }
+    if (a <= 0) continue;
+    for (let x = 0, k = y * W * 4; x < W; x++, k += 4) {
+      if (bright[y * W + x]) continue;
+      D[k] = Math.round(D[k] + (tint[0] - D[k]) * a); D[k + 1] = Math.round(D[k + 1] + (tint[1] - D[k + 1]) * a); D[k + 2] = Math.round(D[k + 2] + (tint[2] - D[k + 2]) * a);
+    }
+  }
   ctx.putImageData(img, 0, 0);
+  return true;
 }
 
 /**
@@ -203,7 +221,7 @@ export function paintSoilDetail(ctx, o) {
  */
 function drawIce(ice, put) {
   for (const { x: cx, y: cy } of ice) {
-    const rx = 14, ry = 5;
+    const rx = 21, ry = 8;
     for (let y = -ry; y <= ry; y++) for (let x = -rx; x <= rx; x++) {
       const v = (x * x) / (rx * rx) + (y * y) / (ry * ry);
       if (v > 1) continue;

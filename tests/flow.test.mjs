@@ -208,4 +208,9 @@ test('the old crawl story lives on, word for word, in the Mission file story car
   const text = t('card.mission_file.text');
   for (const part of ['YEAR 2038.', 'PATHFINDER-X', 'every 37 minutes', 'puff of methane gas', 'goes silent', 'YEAR 2042. MISSION ARES-KIDS.', 'buried them too', 'Find the signal.']) assert.ok(text.includes(part), part);
   assert.equal(t('card.mission_file.title'), 'Mission file');
+  const { cardParagraphs } = await import('../src/campaign/logbook.js');
+  const paras = cardParagraphs(STORY_CARDS[0], text);
+  assert.equal(paras.length, 3); // 2038 / 2042 / Now it's your turn
+  assert.ok(paras[0].startsWith('YEAR 2038.') && paras[1].startsWith('YEAR 2042.') && paras[2].startsWith("Now it's your turn."));
+  assert.equal(paras.join(' '), text);
 });

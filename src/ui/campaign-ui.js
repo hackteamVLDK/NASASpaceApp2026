@@ -10,7 +10,7 @@ import { EXPEDITIONS, hpCost, durationMinutes, awayProgress, expectedLoot } from
 import { t, hasString } from '../flow/strings.js';
 import { ICON } from '../render/atlas.js';
 import { play, director } from './audio.js';
-import { CARDS, STORY_CARDS, BADGES, buildReport } from '../campaign/logbook.js';
+import { CARDS, STORY_CARDS, BADGES, buildReport, cardParagraphs } from '../campaign/logbook.js';
 import { LOW_LIMITS } from '../campaign/hazards.js';
 import { missingItems, whereText } from '../campaign/sources.js';
 import { choiceBlock } from '../campaign/story.js';
@@ -235,7 +235,7 @@ export function createUi({ atlas, s, send, openMini, closeModalHook = () => {}, 
   function showCard(c) {
     modalKey = `card:${c.id}`;
     modalRoot.hidden = false;
-    modalRoot.innerHTML = `<div class="card logcard"><div class="hd">${c.tier === 'story' ? 'MISSION FILE' : c.tier === 'core' ? 'CORE CARD' : 'BONUS CARD'} \u00b7 ${c.org}</div><canvas class="cardpic" width="96" height="96"></canvas><h2>${t(`card.${c.id}.title`)}</h2><p>${t(`card.${c.id}.text`)}</p>${c.url ? `<p><a href="${c.url}" target="_blank" rel="noopener">${t('ui.logbook.how_we_know')}</a> <small>(${c.org})</small></p>` : ''}<button class="choice" id="cardOk">Close</button></div>`;
+    modalRoot.innerHTML = `<div class="card logcard"><div class="hd">${c.tier === 'story' ? 'MISSION FILE' : c.tier === 'core' ? 'CORE CARD' : 'BONUS CARD'} \u00b7 ${c.org}</div><canvas class="cardpic" width="96" height="96"></canvas><h2>${t(`card.${c.id}.title`)}</h2>${cardParagraphs(c, t(`card.${c.id}.text`)).map((p) => `<p>${p}</p>`).join('')}${c.url ? `<p><a href="${c.url}" target="_blank" rel="noopener">${t('ui.logbook.how_we_know')}</a> <small>(${c.org})</small></p>` : ''}<button class="choice" id="cardOk">Close</button></div>`;
     $('cardOk').addEventListener('click', closeModal);
     const pic = modalRoot.querySelector('.cardpic').getContext('2d');
     pic.imageSmoothingEnabled = false;

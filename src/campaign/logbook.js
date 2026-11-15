@@ -75,7 +75,17 @@ export const CARDS = [
  * Story cards (SCENARIO 8.1, tier `story`): open from the start, never counted among the science cards, no source link.
  * `mission_file` keeps the old intro crawl word for word (fiction), now that the intro is a picture storyboard.
  */
-export const STORY_CARDS = Object.freeze([Object.freeze({ id: 'mission_file', tier: 'story', triggers: Object.freeze([]), org: 'Ares-Kids story (fiction)', url: null })]);
+export const STORY_CARDS = Object.freeze([Object.freeze({
+  id: 'mission_file', tier: 'story', triggers: Object.freeze([]), org: 'Ares-Kids story (fiction)', url: null,
+  paragraphs: Object.freeze(['YEAR 2042.', "Now it's your turn."]), // short paragraphs: 2038 / 2042 / Now it's your turn
+})]);
+
+/** A card's text as paragraphs: a story card breaks before each of its `paragraphs` openings. */
+export function cardParagraphs(card, text) {
+  let parts = [text];
+  for (const start of card.paragraphs ?? []) parts = parts.flatMap((p) => { const i = p.indexOf(start); return i > 0 ? [p.slice(0, i).trim(), p.slice(i)] : [p]; });
+  return parts;
+}
 
 const BY_TRIGGER = new Map();
 for (const c of CARDS) for (const t of c.triggers) { if (!BY_TRIGGER.has(t)) BY_TRIGGER.set(t, []); BY_TRIGGER.get(t).push(c.id); }

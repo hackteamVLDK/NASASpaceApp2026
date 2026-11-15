@@ -63,17 +63,18 @@ export function buildSoil(atlas) {
   const toPx = (r, m = 4) => ({ x: (r.x - m - SOIL.x0) * SOIL.scale, y: (r.y - m - (WORLD.groundY - 40)) * SOIL.scale, w: (r.w + 2 * m) * SOIL.scale, h: (r.h + 2 * m) * SOIL.scale });
   const avoid = Object.keys(LAYOUT.rooms).filter((id) => roomRect(id).y > WORLD.groundY - 1).map((id) => toPx(roomRect(id)));
   avoid.push(toPx({ x: LAYOUT.shaftX, y: WORLD.groundY - 40, w: LAYOUT.shaftWidth, h: baseBottom - WORLD.groundY + 40 }));
-  paintSoilDetail(ctx, {
+  const painted = paintSoilDetail(ctx, {
     w: c.width, h: c.height, groundPx: Math.round(40 * SOIL.scale), hash, avoid, ice,
     airlockX: (SURFACE.airlock.x - SOIL.x0) * SOIL.scale, garageX: (roomRect('garage').x + LAYOUT.roomWidth / 2 - SOIL.x0) * SOIL.scale,
   });
-  // depth gradient: darker with depth, a little stronger at the very bottom
-  const g = ctx.createLinearGradient(0, 0, 0, c.height);
-  g.addColorStop(0, 'rgba(24,6,12,0)');
-  g.addColorStop(0.8, 'rgba(24,6,12,0.5)');
-  g.addColorStop(1, 'rgba(24,6,12,0.72)');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, c.width, c.height);
+  if (!painted) { // no pixel access (a tainted canvas): the plain depth gradient
+    const g = ctx.createLinearGradient(0, 0, 0, c.height);
+    g.addColorStop(0, 'rgba(24,6,12,0)');
+    g.addColorStop(0.8, 'rgba(24,6,12,0.5)');
+    g.addColorStop(1, 'rgba(24,6,12,0.72)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, c.width, c.height);
+  }
   return c;
 }
 
